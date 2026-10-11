@@ -1139,6 +1139,15 @@
         <div class="stat-box"><div class="value" id="adminPostsCount">—</div><div class="label">Публикаций</div></div>
       </div>
       <div class="card" style="margin-top:24px;">
+        <div class="section-heading"><h2><i class="fa-solid fa-gamepad"></i>Каталог игр</h2></div>
+        <div class="grid grid-3" style="align-items:end;">
+          <div class="form-group"><label for="adminGameName">Название</label><input id="adminGameName" maxlength="60" placeholder="Название игры"></div>
+          <div class="form-group"><label for="adminGameGenre">Жанр</label><input id="adminGameGenre" maxlength="40" placeholder="Жанр"></div>
+          <div class="form-group"><button class="btn btn-primary" onclick="adminCreateGame()">Добавить игру</button></div>
+        </div>
+        <div id="adminGamesList"></div>
+      </div>
+      <div class="card" style="margin-top:24px;">
         <div class="section-heading"><h2><i class="fa-solid fa-user-gear"></i>Игроки</h2><button class="btn btn-ghost" onclick="loadAdminPanel()"><i class="fa-solid fa-rotate"></i> Обновить</button></div>
         <p id="adminStatus" class="subtitle">Загружаю данные…</p>
         <div style="overflow-x:auto;"><table><thead><tr><th>Игрок</th><th>Игра</th><th>Регион</th><th>Ранг</th><th>Уровень</th><th>Рейтинг</th><th>Создан</th><th>Доступ и действия</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
@@ -2241,6 +2250,7 @@
     const reportsEl=document.getElementById('adminReportsList');
     if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="list-divider" style="padding:12px 0"><strong>'+escapeHtml(r.reason)+'</strong><span class="subtitle"> • '+escapeHtml(r.status)+' • '+new Date(r.created_at).toLocaleString('ru-RU')+'</span><p>'+escapeHtml(r.details||'Без описания')+'</p><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работе</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
     if(status) status.textContent='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';
+    await loadAdminGames();
   }
 
   async function adminUserAction(targetUserId,action,role) {
@@ -2255,6 +2265,32 @@
     if(error||data?.error){console.error('Admin user action failed:',error||data);showNotification(data?.error||'Не удалось изменить аккаунт.');return;}
     showNotification(action==='ban'?'Аккаунт заблокирован.':action==='unban'?'Аккаунт разблокирован.':action==='grant_role'?'Роль назначена.':'Роль снята.');
     await loadAdminPanel();
+  }
+
+  async function loadAdminGames() {
+    const host=document.getElementById('adminGamesList');
+    if(!host||!isAdmin||!supabaseClient)return;
+    const {data,error}=await supabaseClient.from('games').select('id,name,genre,is_active,platform').order('sort_order').order('name');
+    if(error){console.error('Could not load game catalog:',error);host.innerHTML='<p class="subtitle">Не удалось загрузить каталог.</p>';return;}
+    host.innerHTML=(data||[]).map(g=>'<article class="list-divider" style="padding:12px 0;display:flex;justify-content:space-between;align-items:center;gap:14px"><div><strong>'+escapeHtml(g.name)+'</strong><div class="subtitle">'+escapeHtml(g.genre)+' • '+escapeHtml((g.platform||[]).join(', ')||'Платформы не заданы')+' • '+(g.is_active?'Активна':'Скрыта')+'</div></div><button class="btn btn-ghost" onclick="adminToggleGame(&quot;'+escapeHtml(g.id)+'&quot;,'+(!g.is_active)+')">'+(g.is_active?'Скрыть':'Опубликовать')+'</button></article>').join('')||'<p class="subtitle">Каталог пуст.</p>';
+  }
+
+  async function adminCreateGame() {
+    if(!isAdmin||!supabaseClient)return;
+    const name=document.getElementById('adminGameName').value.trim(),genre=document.getElementById('adminGameGenre').value.trim()||'Other';
+    if(name.length<2)return showNotification('Введи название игры.');
+    const id=name.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'game-'+crypto.randomUUID();
+    const {error}=await supabaseClient.from('games').insert({id,name,genre,is_active:true});
+    if(error){console.error(error);return showNotification('Не удалось добавить игру. Возможно, она уже есть.');}
+    document.getElementById('adminGameName').value='';document.getElementById('adminGameGenre').value='';
+    showNotification('Игра добавлена.');await loadAdminGames();await loadGames();
+  }
+
+  async function adminToggleGame(id,isActive) {
+    if(!isAdmin||!supabaseClient)return;
+    const {error}=await supabaseClient.from('games').update({is_active:isActive}).eq('id',id);
+    if(error){console.error(error);return showNotification('Не удалось изменить игру.');}
+    await loadAdminGames();await loadGames();await loadLeaderboards();
   }
 
   async function adminDeletePost(postId) {
