@@ -964,47 +964,11 @@
       <h1><i class="fa-solid fa-flag-checkered"></i>Турниры</h1>
       <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTournamentModal')"><i class="fa-solid fa-plus"></i> Создать турнир</button>
 
-      <div class="grid grid-3" style="margin-bottom:30px;">
-        <div class="card">
-          <span class="badge badge-danger badge-live">LIVE</span>
-          <h3 style="margin-top:10px;">Squadra Cup</h3>
-          <p style="color:var(--muted); font-size:14px;">CS2 • 32 команды</p>
-          <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 500 000</strong></p>
-          <button class="btn btn-primary" data-tournament-id="squadra-cup" onclick="registerForTournament(&quot;squadra-cup&quot;)" style="margin-top:12px; width:100%;">Участвовать</button>
-        </div>
-        <div class="card">
-          <span class="badge badge-warning">Регистрация</span>
-          <h3 style="margin-top:10px;">Winter League</h3>
-          <p style="color:var(--muted); font-size:14px;">Dota 2 • 16 команд</p>
-          <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 250 000</strong></p>
-          <button class="btn btn-ghost" data-tournament-id="winter-league" onclick="registerForTournament(&quot;winter-league&quot;)" style="margin-top:12px; width:100%;">Зарегистрироваться</button>
-        </div>
-        <div class="card">
-          <span class="badge badge-info">Скоро</span>
-          <h3 style="margin-top:10px;">Spring Championship</h3>
-          <p style="color:var(--muted); font-size:14px;">Valorant • 64 команды</p>
-          <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 1 000 000</strong></p>
-          <button class="btn btn-ghost" data-tournament-id="spring-championship" onclick="registerForTournament(&quot;spring-championship&quot;)" style="margin-top:12px; width:100%;">Уведомить</button>
-        </div>
-      </div>
-      <div class="grid grid-3" id="createdTournamentGrid" style="margin:0 0 30px;"></div>
+      <div class="grid grid-3" id="createdTournamentGrid" style="margin:0 0 30px;"><p class="subtitle">Загружаем турниры…</p></div>
 
       <h2><i class="fa-solid fa-sitemap"></i>Турнирная сетка</h2>
-      <div class="bracket">
-        <div class="bracket-round">
-          <div class="bracket-match"><div class="team winner">Phoenix Squad <span>(2)</span></div><div class="team">Storm Riders <span>(0)</span></div></div>
-          <div class="bracket-match"><div class="team winner">Ice Wolves <span>(2)</span></div><div class="team">Fire Dragons <span>(1)</span></div></div>
-          <div class="bracket-match"><div class="team">Shadow Kings</div><div class="team">Light Warriors</div></div>
-          <div class="bracket-match"><div class="team winner">Crimson Ninjas <span>(2)</span></div><div class="team">Tech Titans <span>(0)</span></div></div>
-        </div>
-        <div class="bracket-round">
-          <div class="bracket-match"><div class="team winner">Phoenix Squad <span>(2)</span></div><div class="team">Ice Wolves <span>(1)</span></div></div>
-          <div class="bracket-match"><div class="team">Crimson Ninjas</div><div class="team">—</div></div>
-        </div>
-        <div class="bracket-round">
-          <div class="bracket-match"><div class="team">Phoenix Squad</div><div class="team">—</div></div>
-        </div>
-      </div>
+      <div class="form-group" style="max-width:460px;margin:14px 0;"><label for="tournamentBracketSelect">Выбери турнир</label><select id="tournamentBracketSelect" onchange="loadTournamentBracket(this.value)"><option value="">Выбери турнир</option></select></div>
+      <div id="tournamentBracket" class="bracket"><p class="subtitle">Сетка появится после регистрации команд.</p></div>
     </section>
 
     <!-- COMMUNITY -->
@@ -1918,11 +1882,93 @@
     const {error}=await req;if(error)console.error(error);await loadAccountData();
   }
   async function loadCreatedTournaments() {
-    const el=document.getElementById('createdTournamentGrid');if(!el||!supabaseClient||!currentUser)return;
-    const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,description,participant_limit').not('owner_id','is',null).order('created_at',{ascending:false}).limit(30);
-    if(error){console.error('Could not load community tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить созданные турниры.</p>';return;}
-    el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='registration'?'badge-warning':'badge-info')+'">'+(t.status==='registration'?'Регистрация':escapeHtml(t.status))+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong style="color:var(--red)">'+escapeHtml(t.prize)+'</strong></p>':'')+(t.description?'<p>'+escapeHtml(t.description)+'</p>':'')+(t.status==='registration'?'<button class="btn btn-primary" data-tournament-id="'+escapeHtml(t.id)+'" onclick="registerForTournament(\''+escapeHtml(t.id)+'\')">Участвовать</button>':'')+'</article>').join('');
+    const el=document.getElementById('createdTournamentGrid');
+    if(!el||!supabaseClient)return;
+    const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,description,participant_limit,owner_id').order('created_at',{ascending:false}).limit(100);
+    if(error){console.error('Could not load tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить турниры.</p>';return;}
+    const ids=(data||[]).map(t=>t.id);
+    const [registrations,teams]=ids.length?await Promise.all([
+      supabaseClient.from('tournament_registrations').select('tournament_id,team_id,user_id').in('tournament_id',ids),
+      supabaseClient.from('teams').select('id,name,tag').in('id',(data||[]).length?[]:[''])
+    ]):[{data:[]},{data:[]}];
+    const allTeamIds=[...new Set((registrations.data||[]).map(x=>x.team_id).filter(Boolean))];
+    const teamResult=allTeamIds.length?await supabaseClient.from('teams').select('id,name,tag').in('id',allTeamIds):{data:[]};
+    const teamMap=new Map((teamResult.data||[]).map(t=>[t.id,t]));
+    const registrationCounts=new Map();
+    (registrations.data||[]).forEach(x=>registrationCounts.set(x.tournament_id,(registrationCounts.get(x.tournament_id)||0)+1));
+    const own= (data||[]).filter(t=>t.owner_id===currentUser?.id).map(t=>'<button class="btn btn-ghost" onclick="generateTournamentBracket(\''+escapeHtml(t.id)+'\')">Сформировать сетку</button>');
+    el.innerHTML=(data||[]).map(t=>{
+      const count=registrationCounts.get(t.id)||0;
+      const myReg=(registrations.data||[]).some(x=>x.tournament_id===t.id&&x.user_id===currentUser?.id);
+      const registeredTeams=(registrations.data||[]).filter(x=>x.tournament_id===t.id&&x.team_id).map(x=>teamMap.get(x.team_id)?.name).filter(Boolean);
+      return '<article class="card"><span class="badge '+(t.status==='registration'?'badge-warning':'badge-info')+'">'+escapeHtml(t.status==='registration'?'Регистрация':t.status)+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+' • заявок '+count+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong style="color:var(--red)">'+escapeHtml(t.prize)+'</strong></p>':'')+(t.description?'<p>'+escapeHtml(t.description)+'</p>':'')+'<p class="subtitle">Команды: '+escapeHtml(registeredTeams.join(', ')||'пока нет команд')+'</p>'+(t.status==='registration'&&!myReg?'<button class="btn btn-primary" data-tournament-id="'+escapeHtml(t.id)+'" onclick="registerForTournament(\''+escapeHtml(t.id)+'\')">Зарегистрировать команду</button>':myReg?'<span class="badge badge-info">Заявка отправлена</span>':'')+' <button class="btn btn-ghost" onclick="loadTournamentBracket(\''+escapeHtml(t.id)+'\')">Сетка и матчи</button>'+(t.owner_id===currentUser?.id?'<button class="btn btn-ghost" onclick="generateTournamentBracket(\''+escapeHtml(t.id)+'\')">Создать сетку</button>':'')+'</article>';
+    }).join('')||'<p class="subtitle">Турниров пока нет. Создай первый.</p>';
+    const select=document.getElementById('tournamentBracketSelect');
+    if(select){const selected=select.value;select.innerHTML='<option value="">Выбери турнир</option>'+(data||[]).map(t=>'<option value="'+escapeHtml(t.id)+'">'+escapeHtml(t.name)+'</option>').join('');if((data||[]).some(t=>t.id===selected))select.value=selected;}
     renderTournamentRegistrations(accountTournamentIds||[]);
+  }
+
+  async function generateTournamentBracket(tournamentId) {
+    if(!currentUser)return requireAccount();
+    const {data:tournament}=await supabaseClient.from('tournaments').select('id,owner_id,participant_limit').eq('id',tournamentId).maybeSingle();
+    if(!tournament||tournament.owner_id!==currentUser.id&&!isAdmin)return showNotification('Сетку может создать организатор турнира.');
+    const {data:regs,error}=await supabaseClient.from('tournament_registrations').select('team_id').eq('tournament_id',tournamentId).not('team_id','is',null);
+    if(error)return showNotification('Не удалось получить список команд.');
+    const teamIds=[...new Set((regs||[]).map(r=>r.team_id))];
+    if(teamIds.length<2)return showNotification('Для сетки нужны заявки минимум двух команд.');
+    if(tournament.participant_limit&&teamIds.length>tournament.participant_limit)return showNotification('Количество заявок превышает лимит турнира.');
+    const existing=await supabaseClient.from('tournament_matches').select('id').eq('tournament_id',tournamentId).limit(1);
+    if(existing.data?.length&&!confirm('Сетка уже создана. Пересоздать её и удалить результаты?'))return;
+    if(existing.data?.length){const del=await supabaseClient.from('tournament_matches').delete().eq('tournament_id',tournamentId);if(del.error)return showNotification('Не удалось пересоздать сетку.');}
+    teamIds.sort(()=>Math.random()-.5);
+    let slots=1;while(slots<teamIds.length)slots*=2;
+    const rows=[];let entrants=Array.from({length:slots},(_,i)=>teamIds[i]||null);
+    let round=1;let matchCount=Math.ceil(slots/2);
+    for(let i=0;i<matchCount;i++){
+      const teamA=entrants[i*2]||null,teamB=entrants[i*2+1]||null;
+      rows.push({tournament_id:tournamentId,round_number:round,match_number:i+1,team_a_id:teamA,team_b_id:teamB,winner_id:teamA&&!teamB?teamA:null,status:teamA&&!teamB?'completed':'scheduled'});
+    }
+    while(matchCount>1){round++;matchCount=Math.ceil(matchCount/2);for(let i=0;i<matchCount;i++)rows.push({tournament_id:tournamentId,round_number:round,match_number:i+1,status:'scheduled'});}
+    const {error:saveError}=await supabaseClient.from('tournament_matches').insert(rows);
+    if(saveError){console.error(saveError);return showNotification('Не удалось создать сетку. Проверь права доступа.');}
+    showNotification('Турнирная сетка создана.');await loadTournamentBracket(tournamentId);await loadCreatedTournaments();
+  }
+
+  async function loadTournamentBracket(tournamentId) {
+    const select=document.getElementById('tournamentBracketSelect'),el=document.getElementById('tournamentBracket');
+    if(select&&tournamentId)select.value=tournamentId;
+    if(!el||!tournamentId)return;
+    const {data:matches,error}=await supabaseClient.from('tournament_matches').select('*').eq('tournament_id',tournamentId).order('round_number').order('match_number');
+    if(error){console.error(error);el.innerHTML='<p class="subtitle">Не удалось загрузить сетку.</p>';return;}
+    if(!matches?.length){el.innerHTML='<p class="subtitle">Сетка ещё не создана организатором.</p>';return;}
+    const ids=[...new Set(matches.flatMap(m=>[m.team_a_id,m.team_b_id]).filter(Boolean))];
+    const teams=ids.length?await supabaseClient.from('teams').select('id,name,tag').in('id',ids):{data:[]};
+    const names=new Map((teams.data||[]).map(t=>[t.id,t.name+(t.tag?' ['+t.tag+']':'')]));
+    const canManage=!!currentUser&&(isAdmin||(await supabaseClient.from('tournaments').select('owner_id').eq('id',tournamentId).maybeSingle()).data?.owner_id===currentUser.id);
+    const rounds=new Map();matches.forEach(m=>{const list=rounds.get(m.round_number)||[];list.push(m);rounds.set(m.round_number,list);});
+    el.innerHTML=[...rounds.entries()].sort((a,b)=>a[0]-b[0]).map(([round,list])=>'<div class="bracket-round"><h3>Раунд '+round+'</h3>'+list.map(m=>{
+      const a=m.team_a_id?names.get(m.team_a_id)||'Команда':'Ожидает команду',b=m.team_b_id?names.get(m.team_b_id)||'Команда':'Ожидает команду';
+      return '<div class="bracket-match"><div class="team '+(m.winner_id===m.team_a_id?'winner':'')+'">'+escapeHtml(a)+' <span>'+(m.score_a??'')+'</span></div><div class="team '+(m.winner_id===m.team_b_id?'winner':'')+'">'+escapeHtml(b)+' <span>'+(m.score_b??'')+'</span></div>'+(canManage&&m.team_a_id&&m.team_b_id&&m.status!=='completed'?'<button class="btn btn-ghost" onclick="recordTournamentResult(\''+m.id+'\',\''+tournamentId+'\',\''+m.team_a_id+'\',\''+m.team_b_id+'\',\''+round+'\',\''+m.match_number+'\')">Внести результат</button>':'')+'</div>';
+    }).join('')+'</div>').join('');
+  }
+
+  async function recordTournamentResult(matchId,tournamentId,teamA,teamB,round,matchNumber) {
+    if(!currentUser)return requireAccount();
+    const scoreA=Number(prompt('Счёт команды 1 (неотрицательное целое):'));
+    if(!Number.isInteger(scoreA)||scoreA<0)return;
+    const scoreB=Number(prompt('Счёт команды 2 (неотрицательное целое):'));
+    if(!Number.isInteger(scoreB)||scoreB<0||scoreA===scoreB)return showNotification('Матч должен иметь победителя и целый счёт.');
+    const winner=scoreA>scoreB?teamA:teamB;
+    const {error}=await supabaseClient.from('tournament_matches').update({score_a:scoreA,score_b:scoreB,winner_id:winner,status:'completed'}).eq('id',matchId);
+    if(error){console.error(error);return showNotification('Не удалось сохранить результат.');}
+    const nextRound=Number(round)+1,nextNumber=Math.ceil(Number(matchNumber)/2),slot=Number(matchNumber)%2===1?'team_a_id':'team_b_id';
+    const next=await supabaseClient.from('tournament_matches').select('id,team_a_id,team_b_id').eq('tournament_id',tournamentId).eq('round_number',nextRound).eq('match_number',nextNumber).maybeSingle();
+    if(next.data&&!next.data.team_a_id&&!next.data.team_b_id){
+      await supabaseClient.from('tournament_matches').update({[slot]:winner}).eq('id',next.data.id);
+    } else if(next.data&&!next.data[slot]) {
+      await supabaseClient.from('tournament_matches').update({[slot]:winner}).eq('id',next.data.id);
+    }
+    showNotification('Результат сохранён, победитель прошёл дальше.');await loadTournamentBracket(tournamentId);
   }
   async function createTournament() {
     if(!currentUser)return requireAccount();
