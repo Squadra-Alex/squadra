@@ -754,7 +754,7 @@
   .google-fallback {
     display:flex; align-items:center; justify-content:center; gap:10px; width:min(100%,320px); min-height:46px;
     margin:8px auto 2px; padding:0 18px; color:#202124; background:#fff;
-    border:1px solid #dadce0; border-radius:6px; font:600 14px Arial,sans-serif; cursor:pointer;
+    border:1px solid #dadce0; border-radius:6px; font:600 14px Arial,sans-serif; cursor:pointer; text-decoration:none;
   }
   .google-fallback[hidden] { display:none !important; }
   .google-fallback i { color:#4285f4; font-size:17px; }
@@ -1265,7 +1265,7 @@
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
     <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
-    <div id="googleLoginButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleOAuth()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleLoginButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
@@ -1275,7 +1275,7 @@
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
     <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
-    <div id="googleSignupButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleOAuth()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleSignupButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div>
   </div>
 </div>
 
@@ -1651,18 +1651,6 @@
   }
 
   let supabaseAuthLoader = null;
-
-  function startGoogleOAuth() {
-    if (!authIsConfigured()) {
-      showNotification('Вход Google пока не настроен.');
-      return;
-    }
-    const redirectTo = window.location.origin + window.location.pathname;
-    const authorizeUrl = new URL('/auth/v1/authorize', SUPABASE_URL);
-    authorizeUrl.searchParams.set('provider', 'google');
-    authorizeUrl.searchParams.set('redirect_to', redirectTo);
-    window.location.assign(authorizeUrl.toString());
-  }
 
   async function ensureSupabaseClient() {
     if (!authIsConfigured()) throw new Error('Supabase Auth is not configured.');
