@@ -3,412 +3,456 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OrbitArena — Космическая игровая платформа 🚀</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>SQUADRA — Киберспортивная платформа</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Font Awesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
   :root {
-    --bg: #0a0e1a;
-    --bg-2: #121826;
-    --bg-3: #1a2236;
-    --accent: #00f0ff;
-    --accent-2: #ff00aa;
-    --accent-3: #a855f7;
-    --text: #e6edf3;
-    --muted: #8b95a7;
-    --success: #00ff88;
-    --danger: #ff3860;
-    --border: #2a3348;
+    --bg:        #07070a;
+    --bg-2:      #0e0e13;
+    --bg-3:      #15151d;
+    --panel:     rgba(18,18,25,.72);
+    --red:       #ff2b35;
+    --red-deep:  #c1121f;
+    --red-dark:  #7a0c14;
+    --red-glow:  rgba(255,43,53,.55);
+    --text:      #ececef;
+    --muted:     #8b8b96;
+    --border:    rgba(255,43,53,.14);
+    --border-hi: rgba(255,43,53,.42);
+    --success:   #3ddc84;
+    --warning:   #ffb020;
+    --danger:    #ff2b35;
+    --info:      #b0b0bc;
+    --neon: 0 0 6px rgba(255,43,53,.55), 0 0 18px rgba(255,43,53,.28);
+    --neon-soft: 0 0 10px rgba(255,43,53,.18);
   }
+  html { scroll-behavior:smooth; }
   body {
-    background: radial-gradient(ellipse 120% 80% at 20% -10%, #1b1440 0%, transparent 55%),
-                radial-gradient(ellipse 100% 70% at 85% 15%, #0b2a4a 0%, transparent 50%),
-                radial-gradient(ellipse 90% 60% at 50% 110%, #2a0b3d 0%, transparent 55%),
-                linear-gradient(180deg, #05070f 0%, #030409 100%);
-    background-attachment: fixed;
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,h4,.logo,th,.btn,.stat-box .value,.badge,.rank-pos { font-family:'Oswald',sans-serif; letter-spacing:.03em; }
+
+  /* ===== BACKGROUND FX ===== */
+  #fx-canvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .bg-redglow {
+    position:fixed; width:720px; height:720px; border-radius:50%;
+    background:radial-gradient(circle, rgba(193,18,31,.20), transparent 65%);
+    filter:blur(70px); z-index:0; pointer-events:none;
+    top:-260px; right:-200px; animation:breathe 12s ease-in-out infinite alternate;
+  }
+  .bg-blackhole {
+    position:fixed; width:560px; height:560px; border-radius:50%;
+    background:radial-gradient(circle, rgba(122,12,20,.12), transparent 60%);
+    filter:blur(60px); z-index:0; pointer-events:none;
+    bottom:-240px; left:-180px; animation:breathe 16s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes breathe { from{transform:scale(1);opacity:.7} to{transform:scale(1.15);opacity:1} }
+  .scanlines {
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.5;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0 1px, transparent 1px 4px);
   }
 
-  /* ===== SPACE BACKGROUND ===== */
-  #space-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-  .nebula {
-    position: fixed; border-radius: 50%; filter: blur(90px);
-    z-index: 0; pointer-events: none; opacity: .35;
-  }
-  .nebula-1 { width: 600px; height: 600px; top: -180px; left: -140px;
-    background: radial-gradient(circle, rgba(168,85,247,.5), transparent 70%);
-    animation: drift 26s ease-in-out infinite alternate; }
-  .nebula-2 { width: 520px; height: 520px; bottom: -160px; right: -120px;
-    background: radial-gradient(circle, rgba(0,240,255,.35), transparent 70%);
-    animation: drift 32s ease-in-out infinite alternate-reverse; }
-  .nebula-3 { width: 420px; height: 420px; top: 35%; right: 20%;
-    background: radial-gradient(circle, rgba(255,0,170,.22), transparent 70%);
-    animation: drift 40s ease-in-out infinite alternate; }
-  @keyframes drift {
-    from { transform: translate(0,0) scale(1); }
-    to   { transform: translate(60px, -40px) scale(1.15); }
-  }
-  header, .container, .modal, .notification { position: relative; z-index: 1; }
-  header { z-index: 100; }
-  /* HEADER */
+  /* ===== HEADER ===== */
   header {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(10, 14, 26, 0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 30px;
-    display: flex; align-items: center; justify-content: space-between;
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:24px;
+    padding:0 32px; height:68px;
+    background:rgba(7,7,10,.82); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+    box-shadow:0 1px 0 rgba(255,43,53,.25), 0 8px 30px rgba(0,0,0,.6);
   }
   .logo {
-    font-size: 24px; font-weight: 900;
-    background: linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
-    background-size: 300% 100%;
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    letter-spacing: 2px;
-    animation: holo 6s linear infinite;
-    text-shadow: 0 0 30px rgba(0,240,255,.35);
-    display: flex; align-items: center; gap: 8px;
+    font-size:26px; font-weight:700; letter-spacing:.14em; cursor:pointer; user-select:none;
+    display:flex; align-items:center; gap:10px; white-space:nowrap;
   }
-  @keyframes holo { to { background-position: 300% 0; } }
-  nav ul { display: flex; gap: 8px; list-style: none; flex-wrap: wrap; }
+  .logo i { color:var(--red); filter:drop-shadow(0 0 6px var(--red-glow)); font-size:22px; }
+  .logo .sq-a { color:var(--text); }
+  .logo .sq-b {
+    color:var(--red); text-shadow:var(--neon);
+    animation:flicker 6s infinite;
+  }
+  @keyframes flicker {
+    0%,92%,100% { opacity:1; }
+    93% { opacity:.55; } 94% { opacity:1; } 96% { opacity:.7; } 97% { opacity:1; }
+  }
+  nav ul { display:flex; list-style:none; gap:4px; }
   nav a {
-    color: var(--muted); text-decoration: none; padding: 8px 14px;
-    border-radius: 8px; font-size: 14px; transition: all .2s;
-    cursor: pointer;
+    display:block; padding:8px 14px; font-size:13px; font-weight:600; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--muted); cursor:pointer; position:relative;
+    transition:color .2s;
   }
-  nav a:hover, nav a.active {
-    color: var(--accent); background: rgba(0, 240, 255, 0.1);
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+  nav a::after {
+    content:''; position:absolute; left:14px; right:14px; bottom:2px; height:2px;
+    background:var(--red); transform:scaleX(0); transition:transform .25s; box-shadow:var(--neon);
   }
-  .auth-buttons { display: flex; gap: 10px; }
-  .btn {
-    padding: 10px 20px; border: none; border-radius: 8px;
-    font-weight: 600; cursor: pointer; transition: all .2s;
-    font-size: 14px;
-  }
-  .btn-primary {
-    background: linear-gradient(90deg, var(--accent), var(--accent-3));
-    color: #05070d;
-    box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 26px rgba(0, 240, 255, 0.55); }
-  .btn-ghost { background: rgba(18,24,38,.4); color: var(--text); border: 1px solid var(--border); }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 14px rgba(0,240,255,.25); }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-success { background: var(--success); color: #05070d; }
+  nav a:hover { color:var(--text); }
+  nav a.active { color:var(--red); text-shadow:var(--neon-soft); }
+  nav a.active::after { transform:scaleX(1); }
+  .auth-buttons { margin-left:auto; display:flex; gap:10px; }
 
-  /* HOLO HEADINGS */
-  h1 { font-size: 34px; margin-bottom: 8px; letter-spacing: .5px; }
-  h1, h2.grad {
-    background: linear-gradient(90deg, #fff 0%, var(--accent) 45%, var(--accent-3) 75%, var(--accent-2) 100%);
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  /* ===== LAYOUT ===== */
+  .container {
+    position:relative; z-index:2;
+    display:grid; grid-template-columns:240px 1fr; gap:26px;
+    max-width:1440px; margin:28px auto; padding:0 28px;
   }
-
-  /* LAYOUT */
-  .container { display: flex; min-height: calc(100vh - 70px); }
   aside {
-    width: 240px; background: var(--bg-2);
-    padding: 20px 0; border-right: 1px solid var(--border);
-    position: sticky; top: 70px; height: calc(100vh - 70px);
-    overflow-y: auto;
+    position:sticky; top:92px; align-self:start;
+    background:var(--panel); backdrop-filter:blur(12px);
+    border:1px solid var(--border); border-left:3px solid var(--red-dark);
+    border-radius:12px; padding:20px 16px;
+    box-shadow:0 10px 40px rgba(0,0,0,.5), inset 20px 0 40px -30px rgba(255,43,53,.15);
   }
   aside h3 {
-    padding: 0 20px; color: var(--muted); font-size: 12px;
-    text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;
+    font-size:12px; text-transform:uppercase; letter-spacing:.18em;
+    color:var(--muted); margin:18px 8px 8px;
   }
-  aside ul { list-style: none; margin-bottom: 20px; }
+  aside h3:first-child { margin-top:0; }
+  aside ul { list-style:none; }
   aside li {
-    padding: 10px 20px; cursor: pointer; transition: all .2s;
-    font-size: 14px; border-left: 3px solid transparent;
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px; margin:2px 0; border-radius:8px;
+    font-size:14px; font-weight:500; color:var(--muted); cursor:pointer;
+    border-left:2px solid transparent; transition:all .2s;
   }
-  aside li:hover { background: var(--bg-3); color: var(--accent); }
+  aside li i { width:18px; text-align:center; font-size:14px; }
+  aside li:hover { background:rgba(255,43,53,.07); color:var(--text); }
   aside li.active {
-    background: linear-gradient(90deg, rgba(0, 240, 255, 0.1), transparent);
-    color: var(--accent); border-left-color: var(--accent);
+    background:linear-gradient(90deg, rgba(255,43,53,.16), rgba(255,43,53,.03));
+    color:var(--red); border-left-color:var(--red);
+    text-shadow:var(--neon-soft);
   }
-  main { flex: 1; padding: 30px; }
 
-  /* GLASSMORPHISM PANELS */
-  aside, .card, .stat-box, .game-card, table, .chat-container, .modal-content,
-  .achievement, .bracket-match, .profile-header, input, select, textarea {
-    background: rgba(18, 24, 38, 0.55);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-  }
-  aside { border-right: 1px solid rgba(0, 240, 255, 0.12); }
+  main { min-width:0; }
+  .section { display:none; animation:fadein .35s ease; }
+  .section.active { display:block; }
+  @keyframes fadein { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
 
-  /* SECTIONS */
-  .section { display: none; animation: fadeIn .4s; }
-  .section.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  h1 { font-size:34px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+  h1 .accent { color:var(--red); text-shadow:var(--neon); }
+  h1 i { color:var(--red); font-size:26px; margin-right:10px; filter:drop-shadow(0 0 6px var(--red-glow)); }
+  h2 { font-size:20px; text-transform:uppercase; letter-spacing:.06em; margin:28px 0 14px; }
+  h2 i { color:var(--red); margin-right:8px; }
+  .subtitle { color:var(--muted); margin-bottom:22px; font-size:14px; }
 
-  h1 { font-size: 34px; margin-bottom: 8px; letter-spacing: .5px; }
-  h2 { font-size: 24px; margin-bottom: 16px; }
-  h3 { font-size: 18px; margin-bottom: 12px; }
-  .subtitle { color: var(--muted); margin-bottom: 24px; }
-
-  /* CARDS */
-  .grid { display: grid; gap: 20px; }
-  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  /* ===== CARDS / GRID ===== */
   .card {
-    background: var(--bg-2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px; transition: all .3s;
-    position: relative; overflow: hidden;
+    background:var(--panel); backdrop-filter:blur(12px);
+    border:1px solid var(--border); border-radius:12px; padding:20px;
+    box-shadow:0 8px 30px rgba(0,0,0,.45);
+    transition:border-color .25s, box-shadow .25s, transform .25s;
+    position:relative; overflow:hidden;
   }
   .card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    transform: scaleX(0); transition: transform .3s;
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(255,43,53,.6), transparent);
+    opacity:0; transition:opacity .25s;
   }
-  .card:hover::before { transform: scaleX(1); }
-  .card:hover { transform: translateY(-4px); border-color: var(--accent); }
-  .card h3 { color: var(--accent); }
-  .card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .card:hover { border-color:var(--border-hi); box-shadow:0 8px 34px rgba(0,0,0,.55), var(--neon-soft); transform:translateY(-2px); }
+  .card:hover::before { opacity:1; }
+  .grid { display:grid; gap:16px; }
+  .grid-2 { grid-template-columns:repeat(2,1fr); }
+  .grid-3 { grid-template-columns:repeat(3,1fr); }
+  .grid-4 { grid-template-columns:repeat(4,1fr); }
 
-  /* GAME CARDS */
-  .game-card {
-    border-radius: 14px; overflow: hidden;
-    border: 1px solid rgba(0, 240, 255, 0.15); cursor: pointer; transition: all .3s;
+  /* ===== BUTTONS ===== */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:10px 20px; border-radius:8px; border:1px solid transparent;
+    font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+    cursor:pointer; transition:all .2s; color:var(--text); background:transparent;
   }
-  .game-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 240, 255, 0.25), 0 0 0 1px rgba(0,240,255,.3);
+  .btn-primary {
+    background:linear-gradient(135deg, var(--red-deep), var(--red));
+    box-shadow:0 0 10px rgba(255,43,53,.25);
   }
-  .game-img {
-    height: 140px;
-    background: linear-gradient(135deg, #2b1a6b, #7b2ff7 45%, #00d4ff);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 48px; position: relative;
-  }
-  .game-img::after {
-    content: ''; position: absolute; inset: 0;
-    background-image: radial-gradient(rgba(255,255,255,.7) 1px, transparent 1px);
-    background-size: 26px 26px; opacity: .12; pointer-events: none;
-  }
-  .game-info { padding: 16px; }
-  .game-info h4 { margin-bottom: 6px; }
-  .game-info .genre { color: var(--muted); font-size: 12px; }
-  .game-info .online { color: var(--success); font-size: 13px; margin-top: 8px; }
+  .btn-primary:hover { box-shadow:var(--neon); transform:translateY(-1px); filter:brightness(1.12); }
+  .btn-ghost { border-color:rgba(255,43,53,.35); color:var(--red); background:rgba(255,43,53,.04); }
+  .btn-ghost:hover { background:rgba(255,43,53,.12); box-shadow:var(--neon-soft); }
+  .btn-danger { background:#1a0a0d; border-color:var(--red-dark); color:#ff8a90; }
+  .btn-danger:hover { background:var(--red-dark); color:#fff; box-shadow:var(--neon-soft); }
 
-  /* PROFILE */
-  .profile-header {
-    background: linear-gradient(135deg, rgba(43,26,107,.6), rgba(0,212,255,.12) 60%, rgba(18,24,38,.5));
-    border-radius: 16px; padding: 30px; display: flex;
-    align-items: center; gap: 24px; margin-bottom: 24px;
-    border: 1px solid rgba(0, 240, 255, 0.2);
-    box-shadow: 0 0 40px rgba(0, 240, 255, 0.08) inset;
-    position: relative; overflow: hidden;
-  }
-  .profile-header::after {
-    content: ''; position: absolute; top: -60%; left: -20%;
-    width: 140px; height: 220%; transform: rotate(25deg);
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
-    animation: shine 5s ease-in-out infinite;
-  }
-  @keyframes shine { 0%,60% { left: -20%; } 100% { left: 120%; } }
-  .avatar {
-    width: 100px; height: 100px; border-radius: 50%;
-    background: conic-gradient(from 180deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 40px; font-weight: 900; color: #05070d;
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.45), 0 0 60px rgba(168, 85, 247, 0.25);
-    border: 3px solid rgba(5, 7, 13, .9);
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 25px rgba(0,240,255,.4), 0 0 50px rgba(168,85,247,.2); }
-    50%      { box-shadow: 0 0 40px rgba(0,240,255,.65), 0 0 80px rgba(168,85,247,.35); }
-  }
-  .profile-info h2 { margin-bottom: 4px; }
-  .profile-info .level { color: var(--accent); font-size: 14px; }
-  .profile-info .status { color: var(--muted); font-size: 13px; margin-top: 6px; }
-
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  /* ===== STATS ===== */
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin:18px 0; }
   .stat-box {
-    background: var(--bg-2); padding: 20px; border-radius: 12px;
-    border: 1px solid var(--border); text-align: center;
+    background:var(--bg-2); border:1px solid var(--border); border-radius:10px;
+    padding:16px; text-align:center; position:relative; overflow:hidden;
   }
-  .stat-box .value {
-    font-size: 28px; font-weight: 900;
-    background: linear-gradient(90deg, var(--accent), var(--accent-3));
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px rgba(0,240,255,.35));
+  .stat-box::after {
+    content:''; position:absolute; inset:auto 0 0 0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--red), transparent); opacity:.5;
   }
-  .stat-box .label { color: var(--muted); font-size: 12px; text-transform: uppercase; margin-top: 4px; letter-spacing: 1px; }
+  .stat-box .value { font-size:26px; font-weight:700; color:var(--red); text-shadow:var(--neon-soft); }
+  .stat-box .label { font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin-top:4px; }
 
-  /* TABLE */
-  table { width: 100%; border-collapse: collapse; background: var(--bg-2); border-radius: 12px; overflow: hidden; }
-  th, td { padding: 14px; text-align: left; border-bottom: 1px solid var(--border); }
-  th { background: rgba(26, 34, 54, 0.8); color: var(--accent); font-size: 13px; text-transform: uppercase; }
-  tr:hover { background: rgba(0, 240, 255, 0.05); }
-
-  /* FORMS */
-  .form-group { margin-bottom: 16px; }
-  label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted); }
+  /* ===== FORM ===== */
   input, select, textarea {
-    width: 100%; padding: 10px 14px; background: var(--bg-3);
-    border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-size: 14px; transition: all .2s;
+    width:100%; padding:11px 14px; border-radius:8px;
+    background:var(--bg-2); border:1px solid var(--border);
+    color:var(--text); font-family:'Inter',sans-serif; font-size:14px;
+    transition:border-color .2s, box-shadow .2s;
   }
   input:focus, select:focus, textarea:focus {
-    outline: none; border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
+    outline:none; border-color:var(--red); box-shadow:0 0 0 3px rgba(255,43,53,.12), var(--neon-soft);
   }
+  input::placeholder, textarea::placeholder { color:#55555f; }
+  label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin-bottom:6px; }
+  .form-group { margin-bottom:14px; }
 
-  /* MODAL */
-  .modal {
-    display: none; position: fixed; inset: 0; z-index: 1000;
-    background: rgba(3, 4, 9, 0.75); backdrop-filter: blur(6px);
-    align-items: center; justify-content: center;
+  /* ===== TABLE ===== */
+  table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  th {
+    text-align:left; padding:12px 16px; font-size:12px; text-transform:uppercase; letter-spacing:.1em;
+    color:var(--red); background:rgba(255,43,53,.06); border-bottom:1px solid var(--border-hi);
   }
-  .modal.active { display: flex; }
-  .modal-content {
-    border-radius: 18px; padding: 30px;
-    width: 90%; max-width: 450px;
-    border: 1px solid rgba(0, 240, 255, 0.3);
-    box-shadow: 0 0 60px rgba(0, 240, 255, 0.15), 0 20px 60px rgba(0,0,0,.6);
-    position: relative;
-    animation: modalIn .3s cubic-bezier(.2,.9,.3,1.2);
-  }
-  @keyframes modalIn { from { transform: scale(.9) translateY(20px); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .modal-close {
-    position: absolute; top: 14px; right: 14px;
-    background: none; border: none; color: var(--muted);
-    font-size: 24px; cursor: pointer;
-  }
+  td { padding:12px 16px; font-size:14px; border-bottom:1px solid rgba(255,255,255,.04); color:#cfcfd6; }
+  tr:last-child td { border-bottom:none; }
+  tbody tr { transition:background .2s; }
+  tbody tr:hover { background:rgba(255,43,53,.05); }
 
-  /* CHAT */
-  .chat-container {
-    background: var(--bg-2); border-radius: 12px;
-    border: 1px solid var(--border); height: 500px;
-    display: flex; flex-direction: column;
-  }
-  .chat-header {
-    padding: 16px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 12px;
-  }
-  .chat-messages {
-    flex: 1; overflow-y: auto; padding: 16px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  .message {
-    max-width: 70%; padding: 10px 14px; border-radius: 12px;
-    background: var(--bg-3); font-size: 14px;
-  }
-  .message.own { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-3)); color: #05070d; box-shadow: 0 0 18px rgba(0,240,255,.25); }
-  .message .author { font-size: 11px; color: var(--accent); margin-bottom: 4px; font-weight: 600; }
-  .message.own .author { color: rgba(5,7,13,0.65); }
-  .chat-input {
-    padding: 12px; border-top: 1px solid var(--border);
-    display: flex; gap: 10px;
-  }
-  .chat-input input { flex: 1; }
-
-  /* BADGES */
+  /* ===== BADGES ===== */
   .badge {
-    display: inline-block; padding: 4px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    display:inline-block; padding:3px 10px; border-radius:4px; font-size:11px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.08em; border:1px solid transparent;
   }
-  .badge-success { background: rgba(0, 255, 136, 0.15); color: var(--success); }
-  .badge-danger { background: rgba(255, 56, 96, 0.15); color: var(--danger); }
-  .badge-info { background: rgba(0, 240, 255, 0.15); color: var(--accent); }
-  .badge-warning { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+  .badge-success { background:rgba(61,220,132,.1); color:var(--success); border-color:rgba(61,220,132,.3); }
+  .badge-warning { background:rgba(255,176,32,.1); color:var(--warning); border-color:rgba(255,176,32,.3); }
+  .badge-danger  { background:rgba(255,43,53,.12); color:var(--red); border-color:rgba(255,43,53,.4); text-shadow:var(--neon-soft); }
+  .badge-info    { background:rgba(255,255,255,.05); color:var(--info); border-color:rgba(255,255,255,.14); }
+  .badge-live { animation:livepulse 1.6s infinite; }
+  @keyframes livepulse {
+    0%,100% { box-shadow:0 0 0 0 rgba(255,43,53,.5); }
+    50% { box-shadow:0 0 0 6px rgba(255,43,53,0); }
+  }
 
-  /* PROGRESS */
-  .progress {
-    height: 8px; background: var(--bg-3); border-radius: 4px; overflow: hidden;
-    margin-top: 8px;
+  /* ===== GAME CARDS ===== */
+  .game-card { cursor:pointer; padding:0; }
+  .game-img {
+    height:120px; display:flex; align-items:center; justify-content:center; font-size:44px;
+    background:linear-gradient(135deg, #1c0d10, #2a0a0e);
+    color:var(--red); position:relative;
   }
+  .game-img img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; transition:opacity .3s, transform .5s; }
+  .game-card:hover .game-img img { opacity:1; transform:scale(1.06); }
+  .game-img .fallback-icon { filter:drop-shadow(0 0 12px var(--red-glow)); }
+  .game-info { padding:14px 16px; }
+  .game-info h4 { font-size:16px; margin-bottom:2px; }
+  .genre { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+  .online { font-size:12px; color:var(--success); margin:6px 0 8px; }
+  .online::before { content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--success); margin-right:6px; box-shadow:0 0 6px var(--success); }
+
+  /* ===== PROGRESS ===== */
+  .progress { height:6px; background:var(--bg-3); border-radius:3px; overflow:hidden; }
   .progress-bar {
-    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    border-radius: 4px; transition: width .6s;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+    height:100%; border-radius:3px;
+    background:linear-gradient(90deg, var(--red-dark), var(--red));
+    box-shadow:0 0 8px rgba(255,43,53,.5);
+    transition:width .4s ease;
   }
 
-  /* ACHIEVEMENTS */
-  .achievement {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px; border-radius: 12px;
-    border: 1px solid rgba(255, 215, 0, 0.18);
-    transition: all .3s;
+  /* ===== PROFILE ===== */
+  .profile-header {
+    display:flex; align-items:center; gap:20px; padding:24px;
+    background:linear-gradient(120deg, rgba(193,18,31,.16), rgba(21,21,29,.7) 55%);
+    border:1px solid var(--border); border-radius:12px; margin-bottom:20px; position:relative; overflow:hidden;
   }
-  .achievement:hover { border-color: rgba(255,215,0,.5); box-shadow: 0 0 20px rgba(255,215,0,.12); transform: translateY(-2px); }
+  .profile-header::after {
+    content:''; position:absolute; top:0; bottom:0; width:120px;
+    background:linear-gradient(100deg, transparent, rgba(255,43,53,.12), transparent);
+    animation:sweep 5s infinite;
+  }
+  @keyframes sweep { from{left:-140px} to{left:110%} }
+  .avatar {
+    width:84px; height:84px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald'; font-weight:700; font-size:26px; color:#fff;
+    background:conic-gradient(from 180deg, var(--red), #3a0a0e, var(--red-deep), var(--red));
+    border:2px solid rgba(255,43,53,.5);
+    box-shadow:0 0 0 4px rgba(255,43,53,.08), var(--neon);
+    position:relative; z-index:1;
+  }
+  .level { color:var(--warning); font-size:14px; margin:6px 0 2px; }
+  .status { color:var(--success); font-size:13px; }
+
+  /* ===== ACHIEVEMENTS ===== */
+  .achievement { display:flex; gap:14px; align-items:center; }
   .achievement-icon {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #ffe9a8, #ffd700 45%, #ff8c00);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+    width:52px; height:52px; border-radius:10px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+    color:var(--red); background:rgba(255,43,53,.08); border:1px solid var(--border-hi);
+    box-shadow:var(--neon-soft);
   }
 
-  /* NOTIFICATIONS */
-  .notification {
-    position: fixed; top: 90px; right: 30px; z-index: 999;
-    background: var(--bg-2); border: 1px solid var(--accent);
-    border-radius: 10px; padding: 14px 20px;
-    box-shadow: 0 10px 30px rgba(0, 240, 255, 0.3);
-    animation: slideIn .4s;
-  }
-  @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
-
-  /* TOURNAMENT BRACKET */
-  .bracket {
-    display: flex; gap: 40px; overflow-x: auto; padding: 20px 0;
-  }
-  .bracket-round { display: flex; flex-direction: column; justify-content: space-around; gap: 16px; min-width: 200px; }
+  /* ===== BRACKET ===== */
+  .bracket { display:flex; gap:34px; overflow-x:auto; padding:8px 4px 18px; }
+  .bracket-round { display:flex; flex-direction:column; justify-content:space-around; gap:22px; min-width:210px; }
   .bracket-match {
-    background: var(--bg-2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px; font-size: 13px;
+    background:var(--bg-2); border:1px solid var(--border); border-radius:8px; overflow:hidden;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
   }
-  .bracket-match .team { padding: 6px 8px; border-radius: 4px; margin: 2px 0; }
-  .bracket-match .team.winner { background: rgba(0, 255, 136, 0.15); color: var(--success); font-weight: 600; }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent), var(--accent-3)); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
-  /* SHOOTING STAR */
-  .shooting-star {
-    position: fixed; top: 12%; left: -160px; width: 150px; height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.95));
-    border-radius: 2px; z-index: 0; pointer-events: none; opacity: 0;
-    transform: rotate(18deg);
-    animation: shoot 11s ease-in infinite;
-    box-shadow: 0 0 12px rgba(0,240,255,.7);
+  .bracket-match .team {
+    padding:9px 12px; font-size:13px; display:flex; justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,.04); color:#cfcfd6;
   }
-  @keyframes shoot {
-    0%   { transform: translateX(0) translateY(0) rotate(18deg); opacity: 0; }
-    4%   { opacity: 1; }
-    14%  { transform: translateX(115vw) translateY(38vh) rotate(18deg); opacity: 0; }
-    100% { transform: translateX(115vw) translateY(38vh) rotate(18deg); opacity: 0; }
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .bracket-match .team:last-child { border-bottom:none; }
+  .bracket-match .team.winner { color:var(--red); background:rgba(255,43,53,.07); font-weight:600; text-shadow:var(--neon-soft); }
 
-  @media (max-width: 768px) {
-    aside { display: none; }
-    nav ul { display: none; }
-    main { padding: 16px; }
+  /* ===== CHAT ===== */
+  .chat-container { display:flex; flex-direction:column; height:520px; background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .chat-header { display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--border); background:rgba(255,43,53,.05); }
+  .chat-messages { flex:1; padding:18px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+  .message { max-width:70%; padding:10px 14px; border-radius:10px 10px 10px 2px; background:var(--bg-3); font-size:14px; border:1px solid rgba(255,255,255,.05); }
+  .message.own { margin-left:auto; border-radius:10px 10px 2px 10px; background:linear-gradient(135deg, var(--red-dark), #4d0a10); border-color:var(--border-hi); box-shadow:var(--neon-soft); }
+  .message .author { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:4px; }
+  .message.own .author { color:#ff9aa0; }
+  .chat-input { display:flex; gap:10px; padding:14px; border-top:1px solid var(--border); }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-track { background:var(--bg-2); }
+  ::-webkit-scrollbar-thumb { background:var(--red-dark); border-radius:4px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--red-deep); }
+
+  /* ===== MODAL ===== */
+  .modal {
+    position:fixed; inset:0; z-index:100; display:none;
+    align-items:center; justify-content:center; padding:20px;
+    background:rgba(4,4,6,.78); backdrop-filter:blur(6px);
+  }
+  .modal.active { display:flex; animation:fadein .25s; }
+  .modal-content {
+    width:100%; max-width:440px; background:var(--bg-2);
+    border:1px solid var(--border-hi); border-radius:14px; padding:28px;
+    box-shadow:0 0 40px rgba(255,43,53,.15), 0 30px 60px rgba(0,0,0,.7);
+    position:relative;
+  }
+  .modal-content::before {
+    content:''; position:absolute; top:0; left:20px; right:20px; height:2px;
+    background:linear-gradient(90deg, transparent, var(--red), transparent); box-shadow:var(--neon);
+  }
+  .modal-close {
+    position:absolute; top:14px; right:14px; width:32px; height:32px; border-radius:8px;
+    background:transparent; border:1px solid var(--border); color:var(--muted);
+    font-size:16px; cursor:pointer; transition:all .2s;
+  }
+  .modal-close:hover { color:var(--red); border-color:var(--red); box-shadow:var(--neon-soft); }
+
+  /* ===== NOTIFICATION ===== */
+  .notification {
+    position:fixed; bottom:24px; right:24px; z-index:200;
+    padding:14px 20px; border-radius:10px; font-size:14px; font-weight:600;
+    background:var(--bg-2); color:var(--text);
+    border:1px solid var(--border-hi); border-left:3px solid var(--red);
+    box-shadow:0 0 20px rgba(255,43,53,.2), 0 12px 30px rgba(0,0,0,.6);
+    animation:notificon .3s ease;
+  }
+  @keyframes notificon { from{transform:translateY(20px); opacity:0} to{transform:none; opacity:1} }
+
+  /* ===== HERO ===== */
+  .hero {
+    display:flex; align-items:center; gap:26px; flex-wrap:wrap; margin-bottom:26px; padding:26px;
+    background:
+      linear-gradient(120deg, rgba(193,18,31,.22), rgba(14,14,19,.85) 60%),
+      url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1400&q=60') center/cover;
+    border:1px solid var(--border-hi); border-radius:14px; position:relative; overflow:hidden;
+  }
+  .hero::after {
+    content:''; position:absolute; inset:0;
+    background:repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.12) 3px 4px);
+    pointer-events:none;
+  }
+  .hero-emblem {
+    width:92px; height:92px; border-radius:14px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:40px;
+    color:#fff; background:linear-gradient(135deg, var(--red-deep), var(--red-dark));
+    border:1px solid rgba(255,43,53,.6); box-shadow:var(--neon);
+  }
+  .hero-body { flex:1; min-width:260px; position:relative; z-index:1; }
+  .hero-body h2 { margin:0 0 6px; font-size:26px; text-transform:uppercase; }
+  .hero-body p { color:#d5d5dc; font-size:14px; }
+  .hero-actions { display:flex; gap:10px; flex-wrap:wrap; position:relative; z-index:1; }
+
+  /* ===== MM RADAR ===== */
+  .mm-panel { text-align:center; padding:34px; }
+  .mm-icon { font-size:56px; color:var(--red); filter:drop-shadow(0 0 14px var(--red-glow)); line-height:1; }
+  .mm-icon.scanning { animation:spin 1.4s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* ===== RANK TABS ===== */
+  .rank-tabs { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+  .rank-tab.active { box-shadow:var(--neon); }
+
+  /* ===== SEASON BANNER ===== */
+  .season-banner { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:14px 20px; margin-bottom:20px; }
+  .season-banner .s-title { color:var(--red); text-shadow:var(--neon-soft); font-weight:700; }
+
+  /* ===== MISC ===== */
+  .trend-up { color:var(--success); } .trend-down { color:var(--red); } .trend-flat { color:var(--muted); }
+  .post-meta { color:var(--muted); font-size:12px; }
+  .post-actions { display:flex; gap:18px; margin-top:12px; color:var(--muted); font-size:13px; }
+  .post-actions span { cursor:pointer; transition:color .2s; }
+  .post-actions span:hover { color:var(--red); }
+  .post-actions i { margin-right:6px; }
+  .list-divider { padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+  .list-divider:last-child { border-bottom:none; }
+  .friend-row { display:flex; justify-content:space-between; align-items:center; }
+  .mini-avatar {
+    width:44px; height:44px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    border:2px solid rgba(255,43,53,.45); box-shadow:var(--neon-soft);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald'; font-weight:700; font-size:15px; color:#fff;
+    background:linear-gradient(135deg, var(--red-dark), #2a0a0e);
+  }
+  .presence-online { color:var(--success); font-size:12px; }
+  .presence-offline { color:var(--muted); font-size:12px; }
+  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
+  .dot.on { background:var(--success); box-shadow:0 0 6px var(--success); }
+  .dot.off { background:#4a4a52; }
+
+  footer {
+    position:relative; z-index:2; text-align:center; padding:34px 20px; margin-top:40px;
+    color:var(--muted); font-size:12px; border-top:1px solid var(--border);
+    background:rgba(10,10,14,.6);
+  }
+  footer .logo { justify-content:center; font-size:18px; margin-bottom:8px; }
+
+  @media (max-width: 1100px) {
+    .grid-4 { grid-template-columns:repeat(2,1fr); }
+    .grid-3 { grid-template-columns:repeat(2,1fr); }
+    nav ul { display:none; }
+  }
+  @media (max-width: 820px) {
+    .container { grid-template-columns:1fr; }
+    aside { position:static; }
+    .grid-2 { grid-template-columns:1fr; }
   }
 </style>
 </head>
 <body>
 
-<!-- SPACE BACKGROUND -->
-<canvas id="space-canvas"></canvas>
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div>
-<div class="shooting-star"></div>
+<!-- BACKGROUND FX -->
+<canvas id="fx-canvas"></canvas>
+<div class="bg-redglow"></div>
+<div class="bg-blackhole"></div>
+<div class="scanlines"></div>
 
 <!-- HEADER -->
 <header>
-  <div class="logo">🚀 ORBIT<span style="-webkit-text-fill-color:currentColor; opacity:.9;">ARENA</span></div>
+  <div class="logo" onclick="showSection('home')">
+    <i class="fa-solid fa-shield-halved"></i><span class="sq-a">SQUAD</span><span class="sq-b">RA</span>
+  </div>
   <nav>
     <ul>
       <li><a onclick="showSection('home')" class="active">Главная</a></li>
@@ -422,8 +466,8 @@
     </ul>
   </nav>
   <div class="auth-buttons">
-    <button class="btn btn-ghost" onclick="openModal('loginModal')">Войти</button>
-    <button class="btn btn-primary" onclick="openModal('registerModal')">Регистрация</button>
+    <button class="btn btn-ghost" onclick="openModal('loginModal')"><i class="fa-solid fa-right-to-bracket"></i> Войти</button>
+    <button class="btn btn-primary" onclick="openModal('registerModal')"><i class="fa-solid fa-user-plus"></i> Регистрация</button>
   </div>
 </header>
 
@@ -432,18 +476,18 @@
   <aside>
     <h3>Личный кабинет</h3>
     <ul>
-      <li class="active" onclick="showSection('profile')">👤 Профиль</li>
-      <li onclick="showSection('library')">📚 Библиотека</li>
-      <li onclick="showSection('friends')">👥 Друзья</li>
-      <li onclick="showSection('messages')">💬 Сообщения</li>
-      <li onclick="showSection('achievements')">🏆 Достижения</li>
-      <li onclick="showSection('history')">📊 История</li>
-      <li onclick="showSection('settings')">⚙️ Настройки</li>
+      <li class="active" onclick="showSection('profile')"><i class="fa-solid fa-user"></i> Профиль</li>
+      <li onclick="showSection('library')"><i class="fa-solid fa-gamepad"></i> Библиотека</li>
+      <li onclick="showSection('friends')"><i class="fa-solid fa-users"></i> Друзья</li>
+      <li onclick="showSection('messages')"><i class="fa-solid fa-comment-dots"></i> Сообщения</li>
+      <li onclick="showSection('achievements')"><i class="fa-solid fa-trophy"></i> Достижения</li>
+      <li onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left"></i> История</li>
+      <li onclick="showSection('settings')"><i class="fa-solid fa-gear"></i> Настройки</li>
     </ul>
     <h3>Матчмейкинг</h3>
     <ul>
-      <li onclick="showSection('matchmaking')">🎯 Поиск игры</li>
-      <li onclick="showSection('events')">📅 События</li>
+      <li onclick="showSection('matchmaking')"><i class="fa-solid fa-crosshairs"></i> Поиск игры</li>
+      <li onclick="showSection('events')"><i class="fa-solid fa-calendar-days"></i> События</li>
     </ul>
   </aside>
 
@@ -451,17 +495,19 @@
 
     <!-- HOME -->
     <section id="home" class="section active">
-      <h1>Добро пожаловать на орбиту! OrbitArena ждёт тебя 🚀</h1>
-      <p class="subtitle">Платформа для киберспорта, турниров и игрового сообщества</p>
+      <h1><i class="fa-solid fa-bolt"></i>Добро пожаловать в <span class="accent">Squadra</span></h1>
+      <p class="subtitle">Киберспортивная платформа: команды, турниры, рейтинги и живое сообщество</p>
 
-      <div class="card" style="margin-bottom:30px; background:linear-gradient(135deg, rgba(43,26,107,.55), rgba(0,212,255,.1)); border-color:rgba(0,240,255,.25); display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-        <div style="font-size:56px; filter:drop-shadow(0 0 18px rgba(0,240,255,.6)); animation:pulse-glow 3s infinite;">🪐</div>
-        <div style="flex:1; min-width:240px;">
-          <h2 style="margin-bottom:6px;">Твоя орбита. Твоя лига. Твоя эпоха.</h2>
-          <p>Собирай команду, покоряй турниры и поднимайся в галактическом рейтинге — 24/7, из любой точки Вселенной.</p>
+      <div class="hero">
+        <div class="hero-emblem"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="hero-body">
+          <h2>Собери состав. Выйди на арену.</h2>
+          <p>Подбор тиммейтов по рейтингу и роли, турнирные сетки, сезонные лиги и статистика каждого матча — всё в одном месте.</p>
         </div>
-        <button class="btn btn-primary" onclick="showSection('matchmaking')">🛰️ Найти тиммейтов</button>
-        <button class="btn btn-ghost" onclick="showSection('tournaments')">Смотреть турниры</button>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="showSection('matchmaking')"><i class="fa-solid fa-satellite-dish"></i> Найти тиммейтов</button>
+          <button class="btn btn-ghost" onclick="showSection('tournaments')"><i class="fa-solid fa-list-ul"></i> Турниры</button>
+        </div>
       </div>
 
       <div class="grid grid-4" style="margin-bottom: 30px;">
@@ -471,40 +517,23 @@
         <div class="stat-box"><div class="value">₽ 2.4M</div><div class="label">Призовой фонд</div></div>
       </div>
 
-      <h2>🔥 Популярные игры</h2>
-      <div class="grid grid-4" style="margin-bottom: 30px;">
-        <div class="game-card" onclick="showSection('games')">
-          <div class="game-img">👾</div>
-          <div class="game-info"><h4>CS2</h4><div class="genre">FPS • Шутер</div><div class="online">● 45 230 онлайн</div></div>
-        </div>
-        <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div>
-          <div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA • Стратегия</div><div class="online">● 38 120 онлайн</div></div>
-        </div>
-        <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#00d4ff,#7b2ff7);">🌟</div>
-          <div class="game-info"><h4>Valorant</h4><div class="genre">FPS • Тактика</div><div class="online">● 29 870 онлайн</div></div>
-        </div>
-        <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#12d8a0,#00d4ff);">🛸</div>
-          <div class="game-info"><h4>League of Legends</h4><div class="genre">MOBA</div><div class="online">● 52 410 онлайн</div></div>
-        </div>
-      </div>
+      <h2><i class="fa-solid fa-fire"></i>Популярные игры</h2>
+      <div class="grid grid-4" style="margin-bottom: 30px;" id="homeGames"></div>
 
-      <h2>📢 Активные турниры</h2>
+      <h2><i class="fa-solid fa-flag-checkered"></i>Активные турниры</h2>
       <div class="grid grid-2">
         <div class="card">
-          <span class="badge badge-success">LIVE</span>
-          <h3 style="margin-top:10px;">OrbitArena Championship 2026</h3>
-          <p>CS2 • Призовой фонд: ₽ 500 000</p>
-          <p style="margin-top:10px;">🏆 32 команды • 📅 Финал: 15 декабря</p>
+          <span class="badge badge-danger badge-live">LIVE</span>
+          <h3 style="margin-top:10px;">Squadra Championship 2026</h3>
+          <p style="color:var(--muted); font-size:14px;">CS2 • Призовой фонд: ₽ 500 000</p>
+          <p style="margin-top:10px; font-size:14px;"><i class="fa-solid fa-trophy" style="color:var(--red); margin-right:8px;"></i>32 команды &nbsp;&nbsp;<i class="fa-solid fa-calendar" style="color:var(--red); margin-right:8px;"></i>Финал: 15 декабря</p>
           <button class="btn btn-primary" style="margin-top:14px;">Смотреть</button>
         </div>
         <div class="card">
           <span class="badge badge-warning">Скоро</span>
-          <h3 style="margin-top:10px;">Winter Galaxy League Dota 2</h3>
-          <p>Dota 2 • Призовой фонд: ₽ 250 000</p>
-          <p style="margin-top:10px;">🏆 16 команд • 📅 Старт: 1 декабря</p>
+          <h3 style="margin-top:10px;">Winter Crimson League Dota 2</h3>
+          <p style="color:var(--muted); font-size:14px;">Dota 2 • Призовой фонд: ₽ 250 000</p>
+          <p style="margin-top:10px; font-size:14px;"><i class="fa-solid fa-trophy" style="color:var(--red); margin-right:8px;"></i>16 команд &nbsp;&nbsp;<i class="fa-solid fa-calendar" style="color:var(--red); margin-right:8px;"></i>Старт: 1 декабря</p>
           <button class="btn btn-ghost" style="margin-top:14px;">Регистрация</button>
         </div>
       </div>
@@ -512,16 +541,16 @@
 
     <!-- PROFILE -->
     <section id="profile" class="section">
-      <h1>Мой профиль</h1>
+      <h1><i class="fa-solid fa-user"></i>Мой профиль</h1>
       <div class="profile-header">
-        <div class="avatar">NX</div>
+        <img class="avatar" src="https://picsum.photos/seed/squadra-nightx/200/200" alt="NightX_Pro" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:'NX'}))">
         <div class="profile-info">
           <h2>NightX_Pro</h2>
-          <div class="level">⭐ Уровень 47 • Ранг: Diamond II</div>
-          <div class="status">🟢 В сети • Последняя игра: 2 часа назад</div>
+          <div class="level"><i class="fa-solid fa-star"></i> Уровень 47 • Ранг: Diamond II</div>
+          <div class="status"><span class="dot on"></span>В сети • Последняя игра: 2 часа назад</div>
         </div>
         <div style="margin-left:auto;">
-          <button class="btn btn-primary">Редактировать</button>
+          <button class="btn btn-primary"><i class="fa-solid fa-pen"></i> Редактировать</button>
         </div>
       </div>
 
@@ -533,126 +562,97 @@
         <div class="stat-box"><div class="value">156</div><div class="label">Достижений</div></div>
       </div>
 
-      <h2>📈 Статистика по играм</h2>
-      <div style="background:var(--bg-2); padding:20px; border-radius:12px; margin-bottom:24px;">
-        <canvas id="statsChart" height="100"></canvas>
-      </div>
+      <h2><i class="fa-solid fa-chart-line"></i>Статистика по играм</h2>
+      <div class="card" style="margin-bottom:24px;"><canvas id="statsChart" height="110"></canvas></div>
 
-      <h2>🏅 Последние достижения</h2>
+      <h2><i class="fa-solid fa-medal"></i>Последние достижения</h2>
       <div class="grid grid-2">
-        <div class="achievement">
-          <div class="achievement-icon">🏆</div>
-          <div><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px;">Получено 2 дня назад</p></div>
-        </div>
-        <div class="achievement">
-          <div class="achievement-icon">🎯</div>
-          <div><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px;">1000 точных попаданий</p></div>
-        </div>
-        <div class="achievement">
-          <div class="achievement-icon">⚡</div>
-          <div><h4>Молния</h4><p style="color:var(--muted); font-size:13px;">Победа за 5 минут</p></div>
-        </div>
-        <div class="achievement">
-          <div class="achievement-icon">👑</div>
-          <div><h4>Легенда</h4><p style="color:var(--muted); font-size:13px;">Топ-100 рейтинга</p></div>
-        </div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-trophy"></i></div><div><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px;">Получено 2 дня назад</p></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bullseye"></i></div><div><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px;">1000 точных попаданий</p></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bolt"></i></div><div><h4>Молния</h4><p style="color:var(--muted); font-size:13px;">Победа за 5 минут</p></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-crown"></i></div><div><h4>Легенда</h4><p style="color:var(--muted); font-size:13px;">Топ-100 рейтинга</p></div></div>
       </div>
     </section>
 
     <!-- GAMES -->
     <section id="games" class="section">
-      <h1>Каталог игр</h1>
-      <p class="subtitle">Найди свою следующую любимую игру</p>
+      <h1><i class="fa-solid fa-gamepad"></i>Каталог игр</h1>
+      <p class="subtitle">Найди свою следующую дисциплину</p>
 
       <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <input placeholder="🔍 Поиск игры..." style="max-width:300px;">
-        <select style="max-width:200px;">
-          <option>Все жанры</option><option>FPS</option><option>MOBA</option><option>Стратегия</option><option>RPG</option>
+        <input id="gameSearch" placeholder="Поиск игры..." style="max-width:300px;" oninput="renderGames()">
+        <select id="gameGenre" style="max-width:200px;" onchange="renderGames()">
+          <option value="">Все жанры</option><option value="FPS">FPS</option><option value="MOBA">MOBA</option><option value="Battle Royale">Battle Royale</option><option value="Спорт">Спорт</option><option value="RPG">RPG</option>
         </select>
-        <select style="max-width:200px;">
-          <option>По популярности</option><option>По рейтингу</option><option>По дате</option>
+        <select id="gameSort" style="max-width:200px;" onchange="renderGames()">
+          <option value="pop">По популярности</option><option value="online">По онлайну</option>
         </select>
       </div>
 
-      <div class="grid grid-4">
-        <div class="game-card"><div class="game-img">👾</div><div class="game-info"><h4>CS2</h4><div class="genre">FPS</div><div class="online">● 45 230</div><div class="progress"><div class="progress-bar" style="width:90%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div><div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA</div><div class="online">● 38 120</div><div class="progress"><div class="progress-bar" style="width:75%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#48dbfb,#0abde3);">🎯</div><div class="game-info"><h4>Valorant</h4><div class="genre">FPS</div><div class="online">● 29 870</div><div class="progress"><div class="progress-bar" style="width:65%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#1dd1a1,#10ac84);">🏆</div><div class="game-info"><h4>LoL</h4><div class="genre">MOBA</div><div class="online">● 52 410</div><div class="progress"><div class="progress-bar" style="width:95%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#5f27cd,#341f97);">🚀</div><div class="game-info"><h4>Apex Legends</h4><div class="genre">Battle Royale</div><div class="online">● 18 650</div><div class="progress"><div class="progress-bar" style="width:45%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ee5a6f,#f29263);">🏁</div><div class="game-info"><h4>Fortnite</h4><div class="genre">Battle Royale</div><div class="online">● 34 200</div><div class="progress"><div class="progress-bar" style="width:70%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#00d2d3,#54a0ff);">⚽</div><div class="game-info"><h4>Rocket League</h4><div class="genre">Спорт</div><div class="online">● 12 400</div><div class="progress"><div class="progress-bar" style="width:35%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff9ff3,#f368e0);">🗡️</div><div class="game-info"><h4>Genshin Impact</h4><div class="genre">RPG</div><div class="online">● 22 800</div><div class="progress"><div class="progress-bar" style="width:55%"></div></div></div></div>
-      </div>
+      <div class="grid grid-4" id="gamesGrid"></div>
     </section>
 
     <!-- PLAYERS -->
     <section id="players" class="section">
-      <h1>Поиск игроков</h1>
+      <h1><i class="fa-solid fa-magnifying-glass"></i>Поиск игроков</h1>
       <p class="subtitle">Найди тиммейта по навыкам и предпочтениям</p>
 
       <div class="card" style="margin-bottom:24px;">
         <div class="grid grid-4">
-          <div class="form-group"><label>Никнейм</label><input placeholder="Введите ник..."></div>
-          <div class="form-group"><label>Игра</label><select><option>Любая</option><option>CS2</option><option>Dota 2</option><option>Valorant</option></select></div>
-          <div class="form-group"><label>Ранг</label><select><option>Любой</option><option>Bronze</option><option>Silver</option><option>Gold</option><option>Diamond</option></select></div>
-          <div class="form-group"><label>Регион</label><select><option>Любой</option><option>EU</option><option>NA</option><option>Asia</option></select></div>
+          <div class="form-group"><label>Никнейм</label><input id="plName" placeholder="Введите ник..." oninput="filterPlayers()"></div>
+          <div class="form-group"><label>Игра</label><select id="plGame" onchange="filterPlayers()"><option value="">Любая</option><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
+          <div class="form-group"><label>Ранг</label><select id="plRank" onchange="filterPlayers()"><option value="">Любой</option><option>Bronze</option><option>Silver</option><option>Gold</option><option>Diamond</option><option>Master</option><option>Grandmaster</option></select></div>
+          <div class="form-group"><label>Регион</label><select id="plRegion" onchange="filterPlayers()"><option value="">Любой</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
         </div>
-        <button class="btn btn-primary">🔍 Найти игроков</button>
+        <button class="btn btn-primary" onclick="filterPlayers()"><i class="fa-solid fa-magnifying-glass"></i> Найти игроков</button>
       </div>
 
       <table>
-        <thead><tr><th>Игрок</th><th>Ранг</th><th>Уровень</th><th>Игра</th><th>Винрейт</th><th>Рейтинг</th><th>Действия</th></tr></thead>
-        <tbody>
-          <tr><td><strong>ShadowKiller</strong></td><td><span class="badge badge-info">Diamond</span></td><td>52</td><td>CS2</td><td>72%</td><td>3 240</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>ProGamer99</strong></td><td><span class="badge badge-warning">Master</span></td><td>68</td><td>Valorant</td><td>68%</td><td>3 890</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>PhoenixRise</strong></td><td><span class="badge badge-success">Gold</span></td><td>34</td><td>Dota 2</td><td>61%</td><td>2 150</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>IceQueen</strong></td><td><span class="badge badge-info">Diamond</span></td><td>45</td><td>LoL</td><td>74%</td><td>3 120</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>ThunderBolt</strong></td><td><span class="badge badge-danger">Grandmaster</span></td><td>89</td><td>CS2</td><td>78%</td><td>4 560</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-        </tbody>
+        <thead><tr><th>Игрок</th><th>Ранг</th><th>Уровень</th><th>Игра</th><th>Регион</th><th>Винрейт</th><th>Рейтинг</th><th>Действия</th></tr></thead>
+        <tbody id="playersBody"></tbody>
       </table>
     </section>
 
     <!-- TEAMS -->
     <section id="teams" class="section">
-      <h1>Мои команды</h1>
-      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTeamModal')">+ Создать команду</button>
+      <h1><i class="fa-solid fa-users"></i>Мои команды</h1>
+      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTeamModal')"><i class="fa-solid fa-plus"></i> Создать команду</button>
 
       <div class="grid grid-2">
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div>
-              <h3>🔥 Phoenix Squad</h3>
-              <p>CS2 • EU Region</p>
+            <div style="display:flex; gap:14px; align-items:center;">
+              <img src="https://picsum.photos/seed/squadra-phoenix/120/120" alt="" style="width:52px;height:52px;border-radius:10px;border:1px solid var(--border-hi);" onerror="this.outerHTML='<div class=achievement-icon><i class=&quot;fa-solid fa-fire&quot;></i></div>'">
+              <div><h3>Phoenix Squad</h3><p style="color:var(--muted); font-size:13px;">CS2 • EU Region</p></div>
             </div>
             <span class="badge badge-success">Активна</span>
           </div>
           <div class="stats-grid" style="margin-top:16px;">
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent);">5/5</div><div style="font-size:12px; color:var(--muted);">Состав</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--success);">2 847</div><div style="font-size:12px; color:var(--muted);">Рейтинг</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent-2);">68%</div><div style="font-size:12px; color:var(--muted);">Побед</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:var(--red); font-family:Oswald;">5/5</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Состав</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:var(--text); font-family:Oswald;">2 847</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Рейтинг</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:var(--success); font-family:Oswald;">68%</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Побед</div></div>
           </div>
           <div style="margin-top:14px; display:flex; gap:8px;">
-            <button class="btn btn-ghost">Управление</button>
-            <button class="btn btn-primary">Пригласить</button>
+            <button class="btn btn-ghost"><i class="fa-solid fa-sliders"></i> Управление</button>
+            <button class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Пригласить</button>
           </div>
         </div>
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div>
-              <h3>⚡ Storm Riders</h3>
-              <p>Valorant • NA Region</p>
+            <div style="display:flex; gap:14px; align-items:center;">
+              <img src="https://picsum.photos/seed/squadra-storm/120/120" alt="" style="width:52px;height:52px;border-radius:10px;border:1px solid var(--border-hi);" onerror="this.outerHTML='<div class=achievement-icon><i class=&quot;fa-solid fa-bolt-lightning&quot;></i></div>'">
+              <div><h3>Storm Riders</h3><p style="color:var(--muted); font-size:13px;">Valorant • NA Region</p></div>
             </div>
             <span class="badge badge-success">Активна</span>
           </div>
           <div class="stats-grid" style="margin-top:16px;">
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent);">4/5</div><div style="font-size:12px; color:var(--muted);">Состав</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--success);">3 120</div><div style="font-size:12px; color:var(--muted);">Рейтинг</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent-2);">72%</div><div style="font-size:12px; color:var(--muted);">Побед</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:var(--red); font-family:Oswald;">4/5</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Состав</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:var(--text); font-family:Oswald;">3 120</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Рейтинг</div></div>
+            <div><div style="font-size:20px; font-weight:700; color:var(--success); font-family:Oswald;">72%</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Побед</div></div>
           </div>
           <div style="margin-top:14px; display:flex; gap:8px;">
-            <button class="btn btn-ghost">Управление</button>
-            <button class="btn btn-primary">Пригласить</button>
+            <button class="btn btn-ghost"><i class="fa-solid fa-sliders"></i> Управление</button>
+            <button class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Пригласить</button>
           </div>
         </div>
       </div>
@@ -660,44 +660,44 @@
 
     <!-- TOURNAMENTS -->
     <section id="tournaments" class="section">
-      <h1>Турниры</h1>
-      <button class="btn btn-primary" style="margin-bottom:20px;">+ Создать турнир</button>
+      <h1><i class="fa-solid fa-flag-checkered"></i>Турниры</h1>
+      <button class="btn btn-primary" style="margin-bottom:20px;"><i class="fa-solid fa-plus"></i> Создать турнир</button>
 
       <div class="grid grid-3" style="margin-bottom:30px;">
         <div class="card">
-          <span class="badge badge-success">LIVE</span>
-          <h3 style="margin-top:10px;">OrbitArena Cup</h3>
-          <p>CS2 • 32 команды</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent);">₽ 500 000</strong></p>
+          <span class="badge badge-danger badge-live">LIVE</span>
+          <h3 style="margin-top:10px;">Squadra Cup</h3>
+          <p style="color:var(--muted); font-size:14px;">CS2 • 32 команды</p>
+          <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 500 000</strong></p>
           <button class="btn btn-primary" style="margin-top:12px; width:100%;">Участвовать</button>
         </div>
         <div class="card">
           <span class="badge badge-warning">Регистрация</span>
           <h3 style="margin-top:10px;">Winter League</h3>
-          <p>Dota 2 • 16 команд</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent);">₽ 250 000</strong></p>
+          <p style="color:var(--muted); font-size:14px;">Dota 2 • 16 команд</p>
+          <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 250 000</strong></p>
           <button class="btn btn-ghost" style="margin-top:12px; width:100%;">Зарегистрироваться</button>
         </div>
         <div class="card">
           <span class="badge badge-info">Скоро</span>
           <h3 style="margin-top:10px;">Spring Championship</h3>
-          <p>Valorant • 64 команды</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent);">₽ 1 000 000</strong></p>
+          <p style="color:var(--muted); font-size:14px;">Valorant • 64 команды</p>
+          <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 1 000 000</strong></p>
           <button class="btn btn-ghost" style="margin-top:12px; width:100%;">Уведомить</button>
         </div>
       </div>
 
-      <h2>🏆 Турнирная сетка</h2>
+      <h2><i class="fa-solid fa-sitemap"></i>Турнирная сетка</h2>
       <div class="bracket">
         <div class="bracket-round">
-          <div class="bracket-match"><div class="team winner">Phoenix Squad (2)</div><div class="team">Storm Riders (0)</div></div>
-          <div class="bracket-match"><div class="team winner">Ice Wolves (2)</div><div class="team">Fire Dragons (1)</div></div>
+          <div class="bracket-match"><div class="team winner">Phoenix Squad <span>(2)</span></div><div class="team">Storm Riders <span>(0)</span></div></div>
+          <div class="bracket-match"><div class="team winner">Ice Wolves <span>(2)</span></div><div class="team">Fire Dragons <span>(1)</span></div></div>
           <div class="bracket-match"><div class="team">Shadow Kings</div><div class="team">Light Warriors</div></div>
-          <div class="bracket-match"><div class="team winner">Cyber Ninjas (2)</div><div class="team">Tech Titans (0)</div></div>
+          <div class="bracket-match"><div class="team winner">Crimson Ninjas <span>(2)</span></div><div class="team">Tech Titans <span>(0)</span></div></div>
         </div>
         <div class="bracket-round">
-          <div class="bracket-match"><div class="team winner">Phoenix Squad (2)</div><div class="team">Ice Wolves (1)</div></div>
-          <div class="bracket-match"><div class="team">Cyber Ninjas</div><div class="team">—</div></div>
+          <div class="bracket-match"><div class="team winner">Phoenix Squad <span>(2)</span></div><div class="team">Ice Wolves <span>(1)</span></div></div>
+          <div class="bracket-match"><div class="team">Crimson Ninjas</div><div class="team">—</div></div>
         </div>
         <div class="bracket-round">
           <div class="bracket-match"><div class="team">Phoenix Squad</div><div class="team">—</div></div>
@@ -707,27 +707,29 @@
 
     <!-- COMMUNITY -->
     <section id="community" class="section">
-      <h1>Сообщество</h1>
-      <div class="grid" style="grid-template-columns: 2fr 1fr; gap:20px;">
+      <h1><i class="fa-solid fa-comments"></i>Сообщество</h1>
+      <div class="grid" style="grid-template-columns: 2fr 1fr;">
         <div>
           <div class="card" style="margin-bottom:16px;">
-            <h3>📝 Создать публикацию</h3>
-            <textarea rows="3" placeholder="Что нового?" style="margin-top:10px;"></textarea>
+            <h3><i class="fa-solid fa-pen-to-square" style="color:var(--red); margin-right:8px;"></i>Создать публикацию</h3>
+            <textarea rows="3" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
             <div style="display:flex; gap:10px; margin-top:10px;">
-              <button class="btn btn-primary">Опубликовать</button>
-              <button class="btn btn-ghost">📷 Фото</button>
-              <button class="btn btn-ghost">🎥 Видео</button>
+              <button class="btn btn-primary"><i class="fa-solid fa-upload"></i> Опубликовать</button>
+              <button class="btn btn-ghost"><i class="fa-solid fa-image"></i> Фото</button>
+              <button class="btn btn-ghost"><i class="fa-solid fa-video"></i> Видео</button>
             </div>
           </div>
 
           <div class="card" style="margin-bottom:16px;">
             <div style="display:flex; gap:12px; align-items:start;">
-              <div class="avatar" style="width:48px; height:48px; font-size:18px;">SK</div>
+              <img class="mini-avatar" src="https://picsum.photos/seed/squadra-shadow/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'SK'}))">
               <div style="flex:1;">
-                <strong>ShadowKiller</strong> <span style="color:var(--muted); font-size:12px;">• 2 часа назад</span>
-                <p style="margin-top:8px;">Только что выиграли турнир CyberArena Cup! 🏆 Спасибо команде за невероятную игру!</p>
-                <div style="display:flex; gap:16px; margin-top:12px; color:var(--muted); font-size:13px;">
-                  <span>❤️ 234</span><span>💬 45</span><span>🔄 12</span>
+                <strong>ShadowKiller</strong> <span class="post-meta">• 2 часа назад</span>
+                <p style="margin-top:8px; font-size:14px;">Только что выиграли Squadra Cup! Спасибо команде за невероятную игру. Это только начало — едем на чемпионат <span style="color:var(--red);">#SquadraCup</span></p>
+                <div class="post-actions">
+                  <span><i class="fa-solid fa-heart"></i>234</span>
+                  <span><i class="fa-solid fa-comment"></i>45</span>
+                  <span><i class="fa-solid fa-share"></i>12</span>
                 </div>
               </div>
             </div>
@@ -735,12 +737,14 @@
 
           <div class="card" style="margin-bottom:16px;">
             <div style="display:flex; gap:12px; align-items:start;">
-              <div class="avatar" style="width:48px; height:48px; font-size:18px; background:linear-gradient(135deg,#ff6b6b,#feca57);">PG</div>
+              <img class="mini-avatar" src="https://picsum.photos/seed/squadra-progamer/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'PG'}))">
               <div style="flex:1;">
-                <strong>ProGamer99</strong> <span style="color:var(--muted); font-size:12px;">• 5 часов назад</span>
-                <p style="margin-top:8px;">Кто хочет поиграть в Valorant сегодня вечером? Нужен саппорт на ранг Diamond+ 🎯</p>
-                <div style="display:flex; gap:16px; margin-top:12px; color:var(--muted); font-size:13px;">
-                  <span>❤️ 89</span><span>💬 23</span><span>🔄 5</span>
+                <strong>ProGamer99</strong> <span class="post-meta">• 5 часов назад</span>
+                <p style="margin-top:8px; font-size:14px;">Кто хочет поиграть в Valorant сегодня вечером? Нужен саппорт на ранг Diamond+ <span style="color:var(--red);">#LookingForTeam</span></p>
+                <div class="post-actions">
+                  <span><i class="fa-solid fa-heart"></i>89</span>
+                  <span><i class="fa-solid fa-comment"></i>23</span>
+                  <span><i class="fa-solid fa-share"></i>5</span>
                 </div>
               </div>
             </div>
@@ -749,28 +753,28 @@
 
         <div>
           <div class="card" style="margin-bottom:16px;">
-            <h3>🔥 Тренды</h3>
+            <h3><i class="fa-solid fa-arrow-trend-up" style="color:var(--red); margin-right:8px;"></i>Тренды</h3>
             <div style="margin-top:10px;">
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#OrbitArenaCup</div>
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#GalaxyClash</div>
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#ZeroGravityMajor</div>
-              <div style="padding:8px 0;">#NebulaCup</div>
+              <div class="list-divider" style="color:var(--red); font-weight:600;">#SquadraCup</div>
+              <div class="list-divider" style="color:var(--red); font-weight:600;">#RedSeasonFinals</div>
+              <div class="list-divider" style="color:var(--red); font-weight:600;">#CrimsonMajor</div>
+              <div class="list-divider" style="color:var(--red); font-weight:600;">#LookingForTeam</div>
             </div>
           </div>
           <div class="card">
-            <h3>👥 Рекомендуемые группы</h3>
+            <h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
             <div style="margin-top:10px;">
-              <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+              <div class="list-divider friend-row">
                 <div><strong>CS2 Pros</strong><div style="font-size:12px; color:var(--muted);">12 450 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Вступить</button>
+                <button class="btn btn-ghost" style="padding:6px 12px; font-size:11px;">Вступить</button>
               </div>
-              <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+              <div class="list-divider friend-row">
                 <div><strong>Valorant EU</strong><div style="font-size:12px; color:var(--muted);">8 920 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Вступить</button>
+                <button class="btn btn-ghost" style="padding:6px 12px; font-size:11px;">Вступить</button>
               </div>
-              <div style="padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
+              <div class="list-divider friend-row">
                 <div><strong>Dota 2 CIS</strong><div style="font-size:12px; color:var(--muted);">15 300 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Вступить</button>
+                <button class="btn btn-ghost" style="padding:6px 12px; font-size:11px;">Вступить</button>
               </div>
             </div>
           </div>
@@ -780,27 +784,28 @@
 
     <!-- RANKING -->
     <section id="ranking" class="section">
-      <h1>Таблица лидеров</h1>
-      <div class="card" style="margin-bottom:20px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-color:rgba(168,85,247,.4);">
-        <div><strong style="color:var(--accent-3);">⭐ Сезон 7: «Туманность Ориона»</strong> <span style="color:var(--muted); font-size:13px;">• до 30 ноября • сброс рейтинга в начале сезона</span></div>
+      <h1><i class="fa-solid fa-ranking-star"></i>Таблица лидеров</h1>
+      <div class="card season-banner">
+        <i class="fa-solid fa-layer-group" style="font-size:24px; color:var(--red); filter:drop-shadow(0 0 8px var(--red-glow));"></i>
+        <div><span class="s-title">СЕЗОН 7: «CRIMSON RISE»</span> <span style="color:var(--muted); font-size:13px;">• до 30 ноября • сброс рейтинга в начале сезона</span></div>
         <div class="progress" style="width:220px;"><div class="progress-bar" style="width:72%;"></div></div>
         <span style="font-size:12px; color:var(--muted);">Прошло 72% сезона</span>
       </div>
-      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <button class="btn btn-primary rank-tab active" data-tab="players" onclick="switchRankTab('players')">👤 Игроки</button>
-        <button class="btn btn-ghost rank-tab" data-tab="teams" onclick="switchRankTab('teams')">🛡️ Команды</button>
-        <button class="btn btn-ghost rank-tab" data-tab="games" onclick="switchRankTab('games')">🎮 По играм</button>
+      <div class="rank-tabs">
+        <button class="btn btn-primary rank-tab active" data-tab="players" onclick="switchRankTab('players')"><i class="fa-solid fa-user"></i> Игроки</button>
+        <button class="btn btn-ghost rank-tab" data-tab="teams" onclick="switchRankTab('teams')"><i class="fa-solid fa-shield-halved"></i> Команды</button>
+        <button class="btn btn-ghost rank-tab" data-tab="games" onclick="switchRankTab('games')"><i class="fa-solid fa-gamepad"></i> По играм</button>
       </div>
       <div id="rankPlayers">
       <table>
         <thead><tr><th>#</th><th>Игрок</th><th>Ранг</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Тренд</th></tr></thead>
         <tbody>
-          <tr><td>🥇</td><td><strong>ThunderBolt</strong></td><td><span class="badge badge-danger">Grandmaster</span></td><td><strong>4 560</strong></td><td>892</td><td>78%</td><td style="color:var(--success);">▲ +42</td></tr>
-          <tr><td>🥈</td><td><strong>ProGamer99</strong></td><td><span class="badge badge-warning">Master</span></td><td><strong>3 890</strong></td><td>756</td><td>68%</td><td style="color:var(--success);">▲ +28</td></tr>
-          <tr><td>🥉</td><td><strong>ShadowKiller</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong>3 240</strong></td><td>645</td><td>72%</td><td style="color:var(--danger);">▼ -12</td></tr>
-          <tr><td>4</td><td><strong>IceQueen</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong>3 120</strong></td><td>589</td><td>74%</td><td style="color:var(--success);">▲ +15</td></tr>
-          <tr><td>5</td><td><strong>NightX_Pro</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong>2 847</strong></td><td>1 247</td><td>68%</td><td style="color:var(--success);">▲ +34</td></tr>
-          <tr><td>6</td><td><strong>PhoenixRise</strong></td><td><span class="badge badge-success">Gold</span></td><td><strong>2 150</strong></td><td>423</td><td>61%</td><td style="color:var(--muted);">— 0</td></tr>
+          <tr><td class="rank-pos" style="color:var(--red);">01</td><td><strong>ThunderBolt</strong></td><td><span class="badge badge-danger">Grandmaster</span></td><td><strong style="font-family:Oswald;">4 560</strong></td><td>892</td><td>78%</td><td class="trend-up"><i class="fa-solid fa-caret-up"></i> +42</td></tr>
+          <tr><td class="rank-pos" style="color:var(--red);">02</td><td><strong>ProGamer99</strong></td><td><span class="badge badge-warning">Master</span></td><td><strong style="font-family:Oswald;">3 890</strong></td><td>756</td><td>68%</td><td class="trend-up"><i class="fa-solid fa-caret-up"></i> +28</td></tr>
+          <tr><td class="rank-pos" style="color:var(--red);">03</td><td><strong>ShadowKiller</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong style="font-family:Oswald;">3 240</strong></td><td>645</td><td>72%</td><td class="trend-down"><i class="fa-solid fa-caret-down"></i> -12</td></tr>
+          <tr><td class="rank-pos">04</td><td><strong>IceQueen</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong style="font-family:Oswald;">3 120</strong></td><td>589</td><td>74%</td><td class="trend-up"><i class="fa-solid fa-caret-up"></i> +15</td></tr>
+          <tr><td class="rank-pos">05</td><td><strong>NightX_Pro</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong style="font-family:Oswald;">2 847</strong></td><td>1 247</td><td>68%</td><td class="trend-up"><i class="fa-solid fa-caret-up"></i> +34</td></tr>
+          <tr><td class="rank-pos">06</td><td><strong>PhoenixRise</strong></td><td><span class="badge badge-success">Gold</span></td><td><strong style="font-family:Oswald;">2 150</strong></td><td>423</td><td>61%</td><td class="trend-flat"><i class="fa-solid fa-minus"></i> 0</td></tr>
         </tbody>
       </table>
       </div>
@@ -808,24 +813,24 @@
         <table>
           <thead><tr><th>#</th><th>Команда</th><th>Игра</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Статус</th></tr></thead>
           <tbody>
-            <tr><td>🥇</td><td><strong>Cyber Ninjas</strong></td><td>CS2</td><td><strong>4 920</strong></td><td>312</td><td>81%</td><td><span class="badge badge-success">LIVE турнир</span></td></tr>
-            <tr><td>🥈</td><td><strong>Phoenix Squad</strong></td><td>CS2</td><td><strong>4 310</strong></td><td>287</td><td>74%</td><td><span class="badge badge-info">Активна</span></td></tr>
-            <tr><td>🥉</td><td><strong>Ice Wolves</strong></td><td>Dota 2</td><td><strong>4 050</strong></td><td>401</td><td>69%</td><td><span class="badge badge-info">Активна</span></td></tr>
-            <tr><td>4</td><td><strong>Storm Riders</strong></td><td>Valorant</td><td><strong>3 780</strong></td><td>198</td><td>72%</td><td><span class="badge badge-warning">Поиск состава</span></td></tr>
+            <tr><td class="rank-pos" style="color:var(--red);">01</td><td><strong>Crimson Ninjas</strong></td><td>CS2</td><td><strong style="font-family:Oswald;">4 920</strong></td><td>312</td><td>81%</td><td><span class="badge badge-danger badge-live">LIVE турнир</span></td></tr>
+            <tr><td class="rank-pos" style="color:var(--red);">02</td><td><strong>Phoenix Squad</strong></td><td>CS2</td><td><strong style="font-family:Oswald;">4 310</strong></td><td>287</td><td>74%</td><td><span class="badge badge-info">Активна</span></td></tr>
+            <tr><td class="rank-pos" style="color:var(--red);">03</td><td><strong>Ice Wolves</strong></td><td>Dota 2</td><td><strong style="font-family:Oswald;">4 050</strong></td><td>401</td><td>69%</td><td><span class="badge badge-info">Активна</span></td></tr>
+            <tr><td class="rank-pos">04</td><td><strong>Storm Riders</strong></td><td>Valorant</td><td><strong style="font-family:Oswald;">3 780</strong></td><td>198</td><td>72%</td><td><span class="badge badge-warning">Поиск состава</span></td></tr>
           </tbody>
         </table>
       </div>
       <div id="rankGames" style="display:none;">
         <div class="grid grid-2">
-          <div class="card"><h3>🔫 CS2 — Топ-5 сезона</h3><table><tbody>
-            <tr><td>1</td><td>ThunderBolt</td><td><strong>4 560</strong></td></tr>
-            <tr><td>2</td><td>ShadowKiller</td><td><strong>3 240</strong></td></tr>
-            <tr><td>3</td><td>NightX_Pro</td><td><strong>2 847</strong></td></tr>
+          <div class="card"><h3><i class="fa-solid fa-gun" style="color:var(--red); margin-right:8px;"></i>CS2 — Топ-5 сезона</h3><table style="margin-top:10px;"><tbody>
+            <tr><td>1</td><td>ThunderBolt</td><td><strong style="font-family:Oswald;">4 560</strong></td></tr>
+            <tr><td>2</td><td>ShadowKiller</td><td><strong style="font-family:Oswald;">3 240</strong></td></tr>
+            <tr><td>3</td><td>NightX_Pro</td><td><strong style="font-family:Oswald;">2 847</strong></td></tr>
           </tbody></table></div>
-          <div class="card"><h3>⚔️ Dota 2 — Топ-5 сезона</h3><table><tbody>
-            <tr><td>1</td><td>PhoenixRise</td><td><strong>3 950</strong></td></tr>
-            <tr><td>2</td><td>VoidWalker</td><td><strong>3 410</strong></td></tr>
-            <tr><td>3</td><td>AuroraFan</td><td><strong>2 980</strong></td></tr>
+          <div class="card"><h3><i class="fa-solid fa-dragon" style="color:var(--red); margin-right:8px;"></i>Dota 2 — Топ-5 сезона</h3><table style="margin-top:10px;"><tbody>
+            <tr><td>1</td><td>PhoenixRise</td><td><strong style="font-family:Oswald;">3 950</strong></td></tr>
+            <tr><td>2</td><td>VoidWalker</td><td><strong style="font-family:Oswald;">3 410</strong></td></tr>
+            <tr><td>3</td><td>AshReaper</td><td><strong style="font-family:Oswald;">2 980</strong></td></tr>
           </tbody></table></div>
         </div>
       </div>
@@ -833,34 +838,34 @@
 
     <!-- MESSAGES / CHAT -->
     <section id="messages" class="section">
-      <h1>Сообщения</h1>
+      <h1><i class="fa-solid fa-comment-dots"></i>Сообщения</h1>
       <div class="chat-container">
         <div class="chat-header">
-          <div class="avatar" style="width:40px; height:40px; font-size:16px;">SK</div>
-          <div><strong>ShadowKiller</strong><div style="font-size:12px; color:var(--success);">● В сети</div></div>
+          <img class="mini-avatar" style="width:40px;height:40px;font-size:13px;" src="https://picsum.photos/seed/squadra-shadow/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'SK'}))">
+          <div><strong>ShadowKiller</strong><div class="presence-online"><span class="dot on"></span>В сети</div></div>
         </div>
         <div class="chat-messages" id="chatMessages">
           <div class="message"><div class="author">ShadowKiller</div>Привет! Как дела?</div>
           <div class="message own"><div class="author">Вы</div>Отлично! Готов к турниру?</div>
-          <div class="message"><div class="author">ShadowKiller</div>Да, тренировался весь день 🔥</div>
+          <div class="message"><div class="author">ShadowKiller</div>Да, тренировался весь день</div>
           <div class="message own"><div class="author">Вы</div>Круто! Во сколько встречаемся?</div>
-          <div class="message"><div class="author">ShadowKiller</div>В 20:00 по МСК, не опаздывай 😉</div>
+          <div class="message"><div class="author">ShadowKiller</div>В 20:00 по МСК, не опаздывай</div>
         </div>
         <div class="chat-input">
           <input id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter')sendMessage()">
-          <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+          <button class="btn btn-primary" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
       </div>
     </section>
 
     <!-- FRIENDS -->
     <section id="friends" class="section">
-      <h1>Друзья</h1>
+      <h1><i class="fa-solid fa-users"></i>Друзья</h1>
       <div class="grid grid-3">
         <div class="card">
           <div style="display:flex; align-items:center; gap:12px;">
-            <div class="avatar" style="width:50px; height:50px; font-size:18px;">SK</div>
-            <div><strong>ShadowKiller</strong><div style="font-size:12px; color:var(--success);">● В игре</div></div>
+            <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/squadra-shadow/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'SK'}))">
+            <div><strong>ShadowKiller</strong><div class="presence-online"><span class="dot on"></span>В игре</div></div>
           </div>
           <div style="margin-top:12px; display:flex; gap:8px;">
             <button class="btn btn-ghost" style="flex:1;">Профиль</button>
@@ -869,8 +874,8 @@
         </div>
         <div class="card">
           <div style="display:flex; align-items:center; gap:12px;">
-            <div class="avatar" style="width:50px; height:50px; font-size:18px; background:linear-gradient(135deg,#ff6b6b,#feca57);">PG</div>
-            <div><strong>ProGamer99</strong><div style="font-size:12px; color:var(--success);">● В сети</div></div>
+            <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/squadra-progamer/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'PG'}))">
+            <div><strong>ProGamer99</strong><div class="presence-online"><span class="dot on"></span>В сети</div></div>
           </div>
           <div style="margin-top:12px; display:flex; gap:8px;">
             <button class="btn btn-ghost" style="flex:1;">Профиль</button>
@@ -879,8 +884,8 @@
         </div>
         <div class="card">
           <div style="display:flex; align-items:center; gap:12px;">
-            <div class="avatar" style="width:50px; height:50px; font-size:18px; background:linear-gradient(135deg,#48dbfb,#0abde3);">IQ</div>
-            <div><strong>IceQueen</strong><div style="font-size:12px; color:var(--muted);">○ Оффлайн</div></div>
+            <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/squadra-icequeen/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'IQ'}))">
+            <div><strong>IceQueen</strong><div class="presence-offline"><span class="dot off"></span>Оффлайн</div></div>
           </div>
           <div style="margin-top:12px; display:flex; gap:8px;">
             <button class="btn btn-ghost" style="flex:1;">Профиль</button>
@@ -892,7 +897,7 @@
 
     <!-- MATCHMAKING -->
     <section id="matchmaking" class="section">
-      <h1>🎯 Подбор игроков</h1>
+      <h1><i class="fa-solid fa-crosshairs"></i>Подбор игроков</h1>
       <p class="subtitle">Автоматический поиск тиммейтов по вашим параметрам</p>
 
       <div class="card" style="margin-bottom:24px;">
@@ -905,14 +910,13 @@
           <div class="form-group"><label>Время игры</label><select><option>Сейчас</option><option>Вечер</option><option>Выходные</option></select></div>
           <div class="form-group"><label>Язык</label><select><option>Русский</option><option>English</option></select></div>
         </div>
-        <button class="btn btn-primary" onclick="startMatchmaking()">🚀 Начать подбор</button>
+        <button class="btn btn-primary" onclick="startMatchmaking()"><i class="fa-solid fa-magnifying-glass-location"></i> Начать подбор</button>
       </div>
 
-      <div class="card" style="text-align:center; padding:34px; position:relative; overflow:hidden;">
-        <div style="position:absolute; inset:0; background:radial-gradient(circle at center, rgba(0,240,255,.06), transparent 70%); pointer-events:none;"></div>
-        <div style="font-size:64px; line-height:1;" id="mmIcon">📡</div>
-        <h3 style="margin-top:12px; color:var(--accent);" id="mmTitle">Радар матчмейкинга в режиме ожидания</h3>
-        <p style="color:var(--muted); font-size:13px; max-width:420px; margin:8px auto 0;">Алгоритм подбирает игроков по рейтингу (±допуск), роли, региону и времени онлайн. Расчёт совпадения — взвешенная сумма параметров.</p>
+      <div class="card mm-panel">
+        <div class="mm-icon" id="mmIcon"><i class="fa-solid fa-satellite-dish"></i></div>
+        <h3 style="margin-top:12px; color:var(--red); font-family:Oswald;" id="mmTitle">СКАНЕР МАТЧМЕЙКИНГА В РЕЖИМЕ ОЖИДАНИЯ</h3>
+        <p style="color:var(--muted); font-size:13px; max-width:440px; margin:8px auto 0;">Алгоритм подбирает игроков по рейтингу (±допуск), роли, региону и времени онлайн. Расчёт совпадения — взвешенная сумма параметров.</p>
         <div class="progress" style="max-width:420px; margin:18px auto 0; display:none;" id="mmBarWrap"><div class="progress-bar" id="mmBar" style="width:0%;"></div></div>
       </div>
 
@@ -921,79 +925,74 @@
 
     <!-- ACHIEVEMENTS -->
     <section id="achievements" class="section">
-      <h1>🏆 Мои достижения</h1>
+      <h1><i class="fa-solid fa-trophy"></i>Мои достижения</h1>
       <div class="grid grid-2">
-        <div class="achievement"><div class="achievement-icon">🏆</div><div><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px;">Победите в сезонном турнире</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">🎯</div><div><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px;">1000 точных попаданий</p><div class="progress"><div class="progress-bar" style="width:87%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">⚡</div><div><h4>Молния</h4><p style="color:var(--muted); font-size:13px;">Победа за 5 минут</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">👑</div><div><h4>Легенда</h4><p style="color:var(--muted); font-size:13px;">Войти в Топ-100</p><div class="progress"><div class="progress-bar" style="width:65%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">🔥</div><div><h4>На огне</h4><p style="color:var(--muted); font-size:13px;">10 побед подряд</p><div class="progress"><div class="progress-bar" style="width:70%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">💎</div><div><h4>Коллекционер</h4><p style="color:var(--muted); font-size:13px;">Собрать 50 скинов</p><div class="progress"><div class="progress-bar" style="width:42%"></div></div></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-trophy"></i></div><div style="flex:1;"><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Победите в сезонном турнире</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bullseye"></i></div><div style="flex:1;"><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">1000 точных попаданий</p><div class="progress"><div class="progress-bar" style="width:87%"></div></div></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bolt"></i></div><div style="flex:1;"><h4>Молния</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Победа за 5 минут</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-crown"></i></div><div style="flex:1;"><h4>Легенда</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Войти в Топ-100</p><div class="progress"><div class="progress-bar" style="width:65%"></div></div></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-fire-flame-curved"></i></div><div style="flex:1;"><h4>На огне</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">10 побед подряд</p><div class="progress"><div class="progress-bar" style="width:70%"></div></div></div></div>
+        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-gem"></i></div><div style="flex:1;"><h4>Коллекционер</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Собрать 50 скинов</p><div class="progress"><div class="progress-bar" style="width:42%"></div></div></div></div>
       </div>
     </section>
 
     <!-- HISTORY -->
     <section id="history" class="section">
-      <h1>📊 История активности</h1>
+      <h1><i class="fa-solid fa-clock-rotate-left"></i>История активности</h1>
       <table>
         <thead><tr><th>Дата</th><th>Действие</th><th>Игра</th><th>Результат</th><th>Рейтинг</th></tr></thead>
         <tbody>
-          <tr><td>Сегодня, 18:42</td><td>Матч</td><td>CS2</td><td><span class="badge badge-success">Победа</span></td><td style="color:var(--success);">+24</td></tr>
-          <tr><td>Сегодня, 17:15</td><td>Матч</td><td>CS2</td><td><span class="badge badge-danger">Поражение</span></td><td style="color:var(--danger);">-18</td></tr>
-          <tr><td>Вчера, 22:30</td><td>Турнир</td><td>CS2</td><td><span class="badge badge-success">1 место</span></td><td style="color:var(--success);">+150</td></tr>
-          <tr><td>Вчера, 20:10</td><td>Матч</td><td>Valorant</td><td><span class="badge badge-success">Победа</span></td><td style="color:var(--success);">+22</td></tr>
-          <tr><td>2 дня назад</td><td>Достижение</td><td>—</td><td><span class="badge badge-info">Снайпер</span></td><td>—</td></tr>
+          <tr><td>Сегодня, 18:42</td><td><i class="fa-solid fa-gamepad" style="color:var(--red); margin-right:8px;"></i>Матч</td><td>CS2</td><td><span class="badge badge-success">Победа</span></td><td class="trend-up">+24</td></tr>
+          <tr><td>Сегодня, 17:15</td><td><i class="fa-solid fa-gamepad" style="color:var(--red); margin-right:8px;"></i>Матч</td><td>CS2</td><td><span class="badge badge-danger">Поражение</span></td><td class="trend-down">-18</td></tr>
+          <tr><td>Вчера, 22:30</td><td><i class="fa-solid fa-flag-checkered" style="color:var(--red); margin-right:8px;"></i>Турнир</td><td>CS2</td><td><span class="badge badge-success">1 место</span></td><td class="trend-up">+150</td></tr>
+          <tr><td>Вчера, 20:10</td><td><i class="fa-solid fa-gamepad" style="color:var(--red); margin-right:8px;"></i>Матч</td><td>Valorant</td><td><span class="badge badge-success">Победа</span></td><td class="trend-up">+22</td></tr>
+          <tr><td>2 дня назад</td><td><i class="fa-solid fa-medal" style="color:var(--red); margin-right:8px;"></i>Достижение</td><td>—</td><td><span class="badge badge-info">Снайпер</span></td><td class="trend-flat">—</td></tr>
         </tbody>
       </table>
     </section>
 
     <!-- EVENTS -->
     <section id="events" class="section">
-      <h1>📅 Игровые события</h1>
+      <h1><i class="fa-solid fa-calendar-days"></i>Игровые события</h1>
       <div class="grid grid-2">
-        <div class="card"><span class="badge badge-success">LIVE</span><h3 style="margin-top:10px;">CyberArena Championship</h3><p>15 декабря • CS2 • Онлайн</p></div>
-        <div class="card"><span class="badge badge-warning">Скоро</span><h3 style="margin-top:10px;">Winter Dota League</h3><p>1 декабря • Dota 2 • Онлайн</p></div>
-        <div class="card"><span class="badge badge-info">Регистрация</span><h3 style="margin-top:10px;">Valorant Masters</h3><p>20 декабря • Valorant • Москва</p></div>
-        <div class="card"><span class="badge badge-info">Регистрация</span><h3 style="margin-top:10px;">LoL Regional Cup</h3><p>5 января • LoL • Санкт-Петербург</p></div>
+        <div class="card"><span class="badge badge-danger badge-live">LIVE</span><h3 style="margin-top:10px;">Squadra Championship</h3><p style="color:var(--muted); font-size:14px;">15 декабря • CS2 • Онлайн</p></div>
+        <div class="card"><span class="badge badge-warning">Скоро</span><h3 style="margin-top:10px;">Winter Dota League</h3><p style="color:var(--muted); font-size:14px;">1 декабря • Dota 2 • Онлайн</p></div>
+        <div class="card"><span class="badge badge-info">Регистрация</span><h3 style="margin-top:10px;">Valorant Masters</h3><p style="color:var(--muted); font-size:14px;">20 декабря • Valorant • Москва</p></div>
+        <div class="card"><span class="badge badge-info">Регистрация</span><h3 style="margin-top:10px;">LoL Regional Cup</h3><p style="color:var(--muted); font-size:14px;">5 января • LoL • Санкт-Петербург</p></div>
       </div>
     </section>
 
     <!-- LIBRARY -->
     <section id="library" class="section">
-      <h1>📚 Моя библиотека</h1>
-      <div class="grid grid-4">
-        <div class="game-card"><div class="game-img">👾</div><div class="game-info"><h4>CS2</h4><div class="genre">452 часа</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div><div class="game-info"><h4>Dota 2</h4><div class="genre">287 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#48dbfb,#0abde3);">🎯</div><div class="game-info"><h4>Valorant</h4><div class="genre">156 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#1dd1a1,#10ac84);">🏆</div><div class="game-info"><h4>LoL</h4><div class="genre">89 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-      </div>
+      <h1><i class="fa-solid fa-gamepad"></i>Моя библиотека</h1>
+      <div class="grid grid-4" id="libraryGrid"></div>
     </section>
 
     <!-- SETTINGS -->
     <section id="settings" class="section">
-      <h1>⚙️ Настройки</h1>
+      <h1><i class="fa-solid fa-gear"></i>Настройки</h1>
       <div class="card">
         <h3>Основные</h3>
         <div class="grid grid-2" style="margin-top:16px;">
           <div class="form-group"><label>Никнейм</label><input value="NightX_Pro"></div>
-          <div class="form-group"><label>Email</label><input value="player@orbitarena.gg"></div>
+          <div class="form-group"><label>Email</label><input value="player@squadra.gg"></div>
           <div class="form-group"><label>Язык</label><select><option>Русский</option><option>English</option></select></div>
           <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
         </div>
         <h3 style="margin-top:20px;">Уведомления</h3>
         <div style="margin-top:10px;">
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" checked style="width:auto;"> Сообщения от друзей</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" checked style="width:auto;"> Приглашения в команды</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" checked style="width:auto;"> Начало турниров</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" style="width:auto;"> Маркетинговые рассылки</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" checked style="width:auto; accent-color:var(--red);"> Сообщения от друзей</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" checked style="width:auto; accent-color:var(--red);"> Приглашения в команды</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" checked style="width:auto; accent-color:var(--red);"> Начало турниров</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" style="width:auto; accent-color:var(--red);"> Маркетинговые рассылки</label>
         </div>
-        <button class="btn btn-primary" style="margin-top:20px;">Сохранить</button>
+        <button class="btn btn-primary" style="margin-top:20px;"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
       </div>
     </section>
 
     <!-- ADMIN -->
     <section id="admin" class="section">
-      <h1>🛡️ Панель администратора</h1>
+      <h1><i class="fa-solid fa-shield-halved"></i>Панель администратора</h1>
       <div class="stats-grid">
         <div class="stat-box"><div class="value">15 420</div><div class="label">Пользователей</div></div>
         <div class="stat-box"><div class="value">847</div><div class="label">Команд</div></div>
@@ -1003,26 +1002,26 @@
 
       <div class="grid grid-2" style="margin-top:24px;">
         <div class="card">
-          <h3>📊 Статистика платформы</h3>
-          <canvas id="adminChart" height="150"></canvas>
+          <h3><i class="fa-solid fa-chart-column" style="color:var(--red); margin-right:8px;"></i>Статистика платформы</h3>
+          <canvas id="adminChart" height="170"></canvas>
         </div>
         <div class="card">
-          <h3>⚠️ Последние жалобы</h3>
+          <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--red); margin-right:8px;"></i>Последние жалобы</h3>
           <div style="margin-top:10px;">
-            <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;"><span>Читерство • user_123</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
-            <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;"><span>Оскорбления • user_456</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
-            <div style="padding:10px 0; display:flex; justify-content:space-between;"><span>Спам • user_789</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
+            <div class="list-divider friend-row"><span><i class="fa-solid fa-skull" style="color:var(--red); margin-right:8px;"></i>Читерство • user_123</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
+            <div class="list-divider friend-row"><span><i class="fa-solid fa-face-frown" style="color:var(--red); margin-right:8px;"></i>Оскорбления • user_456</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
+            <div class="list-divider friend-row"><span><i class="fa-solid fa-envelope-open-text" style="color:var(--red); margin-right:8px;"></i>Спам • user_789</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
           </div>
         </div>
       </div>
 
-      <h2 style="margin-top:24px;">👥 Управление пользователями</h2>
+      <h2 style="margin-top:24px;"><i class="fa-solid fa-user-gear"></i>Управление пользователями</h2>
       <table>
         <thead><tr><th>ID</th><th>Никнейм</th><th>Email</th><th>Роль</th><th>Статус</th><th>Действия</th></tr></thead>
         <tbody>
-          <tr><td>1</td><td>NightX_Pro</td><td>player@cyber.com</td><td><span class="badge badge-info">Admin</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost">⋯</button></td></tr>
-          <tr><td>2</td><td>ShadowKiller</td><td>shadow@mail.com</td><td><span class="badge badge-warning">User</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost">⋯</button></td></tr>
-          <tr><td>3</td><td>ToxicPlayer</td><td>toxic@mail.com</td><td><span class="badge badge-warning">User</span></td><td><span class="badge badge-danger">Забанен</span></td><td><button class="btn btn-ghost">⋯</button></td></tr>
+          <tr><td>1</td><td>NightX_Pro</td><td>nightx@squadra.gg</td><td><span class="badge badge-danger">Admin</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost"><i class="fa-solid fa-ellipsis"></i></button></td></tr>
+          <tr><td>2</td><td>ShadowKiller</td><td>shadow@mail.com</td><td><span class="badge badge-info">User</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost"><i class="fa-solid fa-ellipsis"></i></button></td></tr>
+          <tr><td>3</td><td>ToxicPlayer</td><td>toxic@mail.com</td><td><span class="badge badge-info">User</span></td><td><span class="badge badge-danger">Забанен</span></td><td><button class="btn btn-ghost"><i class="fa-solid fa-ellipsis"></i></button></td></tr>
         </tbody>
       </table>
     </section>
@@ -1030,76 +1029,148 @@
   </main>
 </div>
 
+<!-- FOOTER -->
+<footer>
+  <div class="logo"><i class="fa-solid fa-shield-halved"></i><span class="sq-a">SQUAD</span><span class="sq-b">RA</span></div>
+  Киберспортивная платформа • Команды • Турниры • Рейтинги<br>
+  &copy; 2026 Squadra. Все права защищены.
+</footer>
+
 <!-- MODALS -->
 <div id="loginModal" class="modal">
   <div class="modal-content">
-    <button class="modal-close" onclick="closeModal('loginModal')">×</button>
-    <h2>Вход в аккаунт</h2>
-    <p class="subtitle">С возвращением на орбиту!</p>
-    <div class="form-group"><label>Email или никнейм</label><input placeholder="player@orbitarena.gg"></div>
+    <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
+    <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
+    <p class="subtitle">С возвращением на арену Squadra</p>
+    <div class="form-group"><label>Email или никнейм</label><input placeholder="player@squadra.gg"></div>
     <div class="form-group"><label>Пароль</label><input type="password" placeholder="••••••••"></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('✅ Успешный вход!'); closeModal('loginModal')">Войти</button>
-    <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--accent); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
+    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('Успешный вход'); closeModal('loginModal')"><i class="fa-solid fa-right-to-bracket"></i> Войти</button>
+    <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
 
 <div id="registerModal" class="modal">
   <div class="modal-content">
-    <button class="modal-close" onclick="closeModal('registerModal')">×</button>
-    <h2>Регистрация</h2>
-    <p class="subtitle">Присоединяйся к галактике киберспорта!</p>
+    <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
+    <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
+    <p class="subtitle">Присоединяйся к аренам Squadra</p>
     <div class="form-group"><label>Никнейм</label><input placeholder="Ваш игровой ник"></div>
     <div class="form-group"><label>Email</label><input type="email" placeholder="email@example.com"></div>
     <div class="form-group"><label>Пароль</label><input type="password" placeholder="Минимум 8 символов"></div>
     <div class="form-group"><label>Любимая игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('🎉 Аккаунт создан!'); closeModal('registerModal')">Создать аккаунт</button>
+    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('Аккаунт создан'); closeModal('registerModal')"><i class="fa-solid fa-user-plus"></i> Создать аккаунт</button>
   </div>
 </div>
 
 <div id="createTeamModal" class="modal">
   <div class="modal-content">
-    <button class="modal-close" onclick="closeModal('createTeamModal')">×</button>
-    <h2>Создать команду</h2>
+    <button class="modal-close" onclick="closeModal('createTeamModal')"><i class="fa-solid fa-xmark"></i></button>
+    <h2 style="font-family:Oswald; text-transform:uppercase;">Создать команду</h2>
     <div class="form-group"><label>Название команды</label><input placeholder="Например: Phoenix Squad"></div>
     <div class="form-group"><label>Тег</label><input placeholder="[PS]"></div>
     <div class="form-group"><label>Игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option></select></div>
     <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
     <div class="form-group"><label>Описание</label><textarea rows="3" placeholder="Расскажите о команде..."></textarea></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('🏆 Команда создана!'); closeModal('createTeamModal')">Создать</button>
+    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('Команда создана'); closeModal('createTeamModal')"><i class="fa-solid fa-shield-halved"></i> Создать</button>
   </div>
 </div>
 
 <script>
-  // ===== STARFIELD (canvas) =====
+  // ===== PARTICLE FX (canvas): красные искры + тёмные dust-частицы =====
   (function() {
-    const cvs = document.getElementById('space-canvas');
+    const cvs = document.getElementById('fx-canvas');
     const ctx = cvs.getContext('2d');
-    let stars = [], W, H;
+    let parts = [], W, H;
     function resize() {
       W = cvs.width = innerWidth; H = cvs.height = innerHeight;
-      const count = Math.min(260, Math.floor(W * H / 7000));
-      stars = Array.from({length: count}, () => ({
+      const count = Math.min(140, Math.floor(W * H / 12000));
+      parts = Array.from({length: count}, () => ({
         x: Math.random() * W, y: Math.random() * H,
-        r: Math.random() * 1.4 + .3,
-        p: Math.random() * Math.PI * 2,          // twinkle phase
-        s: Math.random() * .02 + .005,           // twinkle speed
-        v: Math.random() * .06 + .015            // drift speed
+        r: Math.random() * 1.6 + .3,
+        p: Math.random() * Math.PI * 2,
+        s: Math.random() * .02 + .004,
+        v: Math.random() * .05 + .01,
+        red: Math.random() < .35
       }));
     }
     addEventListener('resize', resize); resize();
     (function loop() {
       ctx.clearRect(0, 0, W, H);
-      for (const st of stars) {
-        st.p += st.s; st.y -= st.v; if (st.y < -2) st.y = H + 2;
-        const a = .35 + Math.sin(st.p) * .35;
+      for (const pt of parts) {
+        pt.p += pt.s; pt.y -= pt.v; if (pt.y < -2) pt.y = H + 2;
+        const a = .25 + Math.sin(pt.p) * .25;
         ctx.beginPath();
-        ctx.arc(st.x, st.y, st.r, 0, 7);
-        ctx.fillStyle = `rgba(${st.r > 1.1 ? '180,240,255' : '255,255,255'}, ${a})`;
+        ctx.arc(pt.x, pt.y, pt.r, 0, 7);
+        ctx.fillStyle = pt.red ? `rgba(255,43,53,${a})` : `rgba(160,160,175,${a * .5})`;
         ctx.fill();
       }
       requestAnimationFrame(loop);
     })();
   })();
+
+  // ===== DATA =====
+  const games = [
+    { name:'CS2',               genre:'FPS',           online:45230, pop:90, seed:'csgo-red-neon' },
+    { name:'Dota 2',            genre:'MOBA',          online:38120, pop:75, seed:'dota2-dark' },
+    { name:'Valorant',          genre:'FPS',           online:29870, pop:65, seed:'valorant-tactical' },
+    { name:'League of Legends', genre:'MOBA',          online:52410, pop:95, seed:'lol-arena' },
+    { name:'Apex Legends',      genre:'Battle Royale', online:18650, pop:45, seed:'apex-survival' },
+    { name:'Fortnite',          genre:'Battle Royale', online:34200, pop:70, seed:'fortnite-storm' },
+    { name:'Rocket League',     genre:'Спорт',         online:12400, pop:35, seed:'rocket-car' },
+    { name:'PUBG',              genre:'Battle Royale', online:21800, pop:55, seed:'pubg-battleground' }
+  ];
+  const library = [
+    { name:'CS2',      hours:452, seed:'csgo-red-neon' },
+    { name:'Dota 2',   hours:287, seed:'dota2-dark' },
+    { name:'Valorant', hours:156, seed:'valorant-tactical' },
+    { name:'LoL',      hours:89,  seed:'lol-arena' }
+  ];
+  const players = [
+    { n:'ShadowKiller',  r:'Diamond',    lv:52, g:'CS2',      reg:'EU',  wr:72, rt:3240 },
+    { n:'ProGamer99',    r:'Master',     lv:68, g:'Valorant', reg:'NA',  wr:68, rt:3890 },
+    { n:'PhoenixRise',   r:'Gold',       lv:34, g:'Dota 2',   reg:'CIS', wr:61, rt:2150 },
+    { n:'IceQueen',      r:'Diamond',    lv:45, g:'LoL',      reg:'EU',  wr:74, rt:3120 },
+    { n:'ThunderBolt',   r:'Grandmaster',lv:89, g:'CS2',      reg:'CIS', wr:78, rt:4560 },
+    { n:'VoidWalker',    r:'Silver',     lv:18, g:'Dota 2',   reg:'Asia',wr:49, rt:1480 }
+  ];
+
+  const fmt = n => n.toLocaleString('ru-RU');
+
+  function gameCard(g) {
+    return `<div class="card game-card" onclick="showSection('games')">
+      <div class="game-img">
+        <span class="fallback-icon"><i class="fa-solid fa-gamepad"></i></span>
+        <img src="https://picsum.photos/seed/${g.seed}/400/240" alt="${g.name}" loading="lazy" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">
+      </div>
+      <div class="game-info">
+        <h4>${g.name}</h4>
+        <div class="genre">${g.genre}</div>
+        <div class="online">${fmt(g.online)} онлайн</div>
+        <div class="progress"><div class="progress-bar" style="width:${g.pop}%"></div></div>
+      </div>
+    </div>`;
+  }
+
+  function renderGames() {
+    const q = (document.getElementById('gameSearch').value || '').toLowerCase();
+    const gen = document.getElementById('gameGenre').value;
+    const sort = document.getElementById('gameSort').value;
+    let list = games.filter(g => (!q || g.name.toLowerCase().includes(q)) && (!gen || g.genre === gen));
+    list.sort((a,b) => sort === 'online' ? b.online - a.online : b.pop - a.pop);
+    document.getElementById('gamesGrid').innerHTML = list.map(gameCard).join('') || '<p class="subtitle">Ничего не найдено</p>';
+  }
+
+  function filterPlayers() {
+    const q = (document.getElementById('plName').value || '').toLowerCase();
+    const g = document.getElementById('plGame').value;
+    const r = document.getElementById('plRank').value;
+    const reg = document.getElementById('plRegion').value;
+    const badge = { Bronze:'badge-info', Silver:'badge-info', Gold:'badge-success', Diamond:'badge-info', Master:'badge-warning', Grandmaster:'badge-danger' };
+    const list = players.filter(p => (!q || p.n.toLowerCase().includes(q)) && (!g || p.g === g) && (!r || p.r === r) && (!reg || p.reg === reg));
+    document.getElementById('playersBody').innerHTML = list.map(p =>
+      `<tr><td><strong>${p.n}</strong></td><td><span class="badge ${badge[p.r]}">${p.r}</span></td><td>${p.lv}</td><td>${p.g}</td><td>${p.reg}</td><td>${p.wr}%</td><td><strong style="font-family:Oswald;">${fmt(p.rt)}</strong></td><td><button class="btn btn-ghost" onclick="showNotification('Заявка в друзья отправлена: ${p.n}')"><i class="fa-solid fa-user-plus"></i> Друг</button></td></tr>`
+    ).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Игроки не найдены</td></tr>';
+  }
 
   // NAVIGATION
   function showSection(id) {
@@ -1125,7 +1196,7 @@
   function showNotification(text) {
     const n = document.createElement('div');
     n.className = 'notification';
-    n.textContent = text;
+    n.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--red); margin-right:8px;"></i>' + text;
     document.body.appendChild(n);
     setTimeout(() => n.remove(), 3000);
   }
@@ -1141,28 +1212,27 @@
     messages.appendChild(msg);
     input.value = '';
     messages.scrollTop = messages.scrollHeight;
-    // Имитация ответа
     setTimeout(() => {
       const reply = document.createElement('div');
       reply.className = 'message';
-      reply.innerHTML = `<div class="author">ShadowKiller</div>Принято! 👍`;
+      reply.innerHTML = `<div class="author">ShadowKiller</div>Принято! Подключаюсь`;
       messages.appendChild(reply);
       messages.scrollTop = messages.scrollHeight;
     }, 1200);
   }
 
-  // MATCHMAKING (алгоритм подбора + радар)
+  // MATCHMAKING (алгоритм подбора + сканер)
   const mmCandidates = [
-    { n: 'AceX',        i: 'AX', g: 'linear-gradient(135deg,#7b2ff7,#00d4ff)', r: 2890, role: 'Снайпер',  region: 'EU',   time: 'Вечер' },
-    { n: 'Vortex',      i: 'VX', g: 'linear-gradient(135deg,#ff6b6b,#feca57)', r: 2760, role: 'Саппорт', region: 'EU',   time: 'Вечер' },
-    { n: 'ZeroGravity', i: 'ZR', g: 'linear-gradient(135deg,#48dbfb,#0abde3)', r: 2410, role: 'Капитан', region: 'EU',   time: 'Выходные' },
-    { n: 'NightKnight', i: 'NK', g: 'linear-gradient(135deg,#1dd1a1,#10ac84)', r: 3050, role: 'Снайпер',  region: 'NA',   time: 'Утро' },
-    { n: 'Pulsar',      i: 'PL', g: 'linear-gradient(135deg,#f368e0,#ff9ff3)', r: 2905, role: 'Саппорт', region: 'EU',   time: 'Сейчас' },
-    { n: 'CometTail',   i: 'CT', g: 'linear-gradient(135deg,#ffd700,#ff8c00)', r: 2688, role: 'Капитан', region: 'Asia', time: 'Вечер' }
+    { n: 'AceHunter',    i: 'AH', seed:'mm-ace',    r: 2890, role: 'Снайпер',  region: 'EU',   time: 'Вечер' },
+    { n: 'RedViper',     i: 'RV', seed:'mm-viper',  r: 2760, role: 'Саппорт', region: 'EU',   time: 'Вечер' },
+    { n: 'IronCaptain',  i: 'IC', seed:'mm-iron',   r: 2410, role: 'Капитан', region: 'EU',   time: 'Выходные' },
+    { n: 'NightRanger',  i: 'NR', seed:'mm-ranger', r: 3050, role: 'Снайпер',  region: 'NA',   time: 'Утро' },
+    { n: 'CrimsonSupport', i:'CS', seed:'mm-crimson',r:2905, role: 'Саппорт', region: 'EU',   time: 'Сейчас' },
+    { n: 'AshReaper',    i: 'AR', seed:'mm-ash',    r: 2688, role: 'Капитан', region: 'Asia', time: 'Вечер' }
   ];
   function matchScore(p, ratingTol, role, region, time) {
-    let s = 40;                                            // база
-    s += Math.max(0, 30 - Math.abs(p.r - 2847) / ratingTol * 30); // близость рейтинга
+    let s = 40;
+    s += Math.max(0, 30 - Math.abs(p.r - 2847) / ratingTol * 30);
     if (role !== 'Любая' && p.role === role) s += 15; else if (role !== 'Любая') s -= 10;
     if (p.region === region) s += 10;
     if (p.time === time || time === 'Сейчас' && p.time === 'Вечер') s += 8;
@@ -1175,29 +1245,30 @@
     const icon = document.getElementById('mmIcon'), title = document.getElementById('mmTitle');
     const barWrap = document.getElementById('mmBarWrap'), bar = document.getElementById('mmBar');
     const results = document.getElementById('matchmakingResults');
-    icon.textContent = '🛰️'; icon.style.animation = 'spin 1.2s linear infinite';
-    title.textContent = 'Сканируем сектор… Подбираем игроков по рейтингу, роли, региону и времени';
+    icon.classList.add('scanning');
+    title.textContent = 'СКАНИРУЕМ СЕКТОР… ПОДБИРАЕМ ИГРОКОВ ПО РЕЙТИНГУ, РОЛИ, РЕГИОНУ';
     barWrap.style.display = 'block'; bar.style.width = '0%';
     results.innerHTML = '';
     let w = 0;
     const t = setInterval(() => { w = Math.min(100, w + 7); bar.style.width = w + '%'; if (w >= 100) clearInterval(t); }, 90);
     setTimeout(() => {
-      icon.textContent = '✅'; icon.style.animation = '';
-      title.textContent = 'Сигнал получен! Найдены подходящие игроки:';
+      icon.classList.remove('scanning');
+      icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+      title.textContent = 'СИГНАЛ ПОЛУЧЕН! НАЙДЕНЫ ПОДХОДЯЩИЕ ИГРОКИ:';
       const list = mmCandidates
         .map(p => ({ ...p, score: matchScore(p, tol, sel[1].value, sel[3].value, sel[4].value) }))
         .sort((a, b) => b.score - a.score).slice(0, 4);
       results.innerHTML = `<div class="grid grid-2" style="margin-top:20px;">` + list.map(p => `
         <div class="card"><div style="display:flex; gap:12px; align-items:center;">
-          <div class="avatar" style="width:50px; height:50px; font-size:16px; background:${p.g}; animation:none;">${p.i}</div>
+          <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/${p.seed}/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'${p.i}'}))">
           <div style="flex:1;"><strong>${p.n}</strong>
             <div style="font-size:12px; color:var(--muted);">Рейтинг: ${p.r} • Роль: ${p.role} • ${p.region}</div>
             <div class="progress" style="margin-top:6px;"><div class="progress-bar" style="width:${p.score}%"></div></div>
           </div>
-          <div style="text-align:right;"><div style="font-weight:900; color:var(--success); font-size:18px;">${p.score}%</div><div style="font-size:11px; color:var(--muted);">совпадение</div></div>
+          <div style="text-align:right;"><div style="font-weight:700; color:var(--red); font-size:18px; font-family:Oswald; text-shadow:var(--neon-soft);">${p.score}%</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">совпадение</div></div>
         </div>
-        <button class="btn btn-primary" style="margin-top:12px; width:100%;" onclick="showNotification('📨 Приглашение отправлено игроку ${p.n}!')">Пригласить</button></div>`).join('') + `</div>`;
-      showNotification('🎯 Матчмейкинг завершён: найдено ' + list.length + ' кандидатов');
+        <button class="btn btn-primary" style="margin-top:12px; width:100%;" onclick="showNotification('Приглашение отправлено игроку ${p.n}')"><i class="fa-solid fa-paper-plane"></i> Пригласить</button></div>`).join('') + `</div>`;
+      showNotification('Матчмейкинг завершён: найдено ' + list.length + ' кандидатов');
     }, 1700);
   }
 
@@ -1212,60 +1283,78 @@
     });
   }
 
+  // RENDER ON LOAD
+  document.getElementById('homeGames').innerHTML = games.slice(0,4).map(gameCard).join('');
+  document.getElementById('libraryGrid').innerHTML = library.map(l => `
+    <div class="card game-card">
+      <div class="game-img" style="height:100px;">
+        <span class="fallback-icon"><i class="fa-solid fa-gamepad"></i></span>
+        <img src="https://picsum.photos/seed/${l.seed}/400/200" alt="${l.name}" loading="lazy" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">
+      </div>
+      <div class="game-info"><h4>${l.name}</h4><div class="genre">${l.hours} часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;"><i class="fa-solid fa-play"></i> Играть</button></div>
+    </div>`).join('');
+  renderGames();
+  filterPlayers();
+
   // CHARTS
   window.addEventListener('load', () => {
-    // Stats chart
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#8b8b96';
+
+    const gridColor = 'rgba(255,43,53,.07)';
     const ctx1 = document.getElementById('statsChart');
     if (ctx1) {
       new Chart(ctx1, {
         type: 'line',
         data: {
-          labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+          labels: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
           datasets: [{
             label: 'Рейтинг',
             data: [2650, 2720, 2680, 2790, 2810, 2830, 2847],
-            borderColor: '#00f0ff',
-            backgroundColor: 'rgba(0, 240, 255, 0.1)',
-            tension: 0.4, fill: true
+            borderColor: '#ff2b35',
+            backgroundColor: 'rgba(255,43,53,.12)',
+            pointBackgroundColor: '#ff2b35',
+            tension: .4, fill: true
           }, {
             label: 'K/D',
             data: [3.8, 4.1, 3.9, 4.3, 4.2, 4.4, 4.2],
-            borderColor: '#ff00aa',
-            backgroundColor: 'rgba(255, 0, 170, 0.1)',
-            tension: 0.4, fill: true
+            borderColor: '#ffffff',
+            backgroundColor: 'rgba(255,255,255,.05)',
+            pointBackgroundColor: '#ffffff',
+            tension: .4, fill: true
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { color: '#e6edf3' } } },
+          plugins: { legend: { labels: { color: '#ececef' } } },
           scales: {
-            x: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } },
-            y: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } }
+            x: { ticks: { color: '#8b8b96' }, grid: { color: gridColor } },
+            y: { ticks: { color: '#8b8b96' }, grid: { color: gridColor } }
           }
         }
       });
     }
 
-    // Admin chart
     const ctx2 = document.getElementById('adminChart');
     if (ctx2) {
       new Chart(ctx2, {
         type: 'bar',
         data: {
-          labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+          labels: ['Янв','Фев','Мар','Апр','Май','Июн'],
           datasets: [{
             label: 'Новые пользователи',
             data: [1200, 1900, 2400, 2800, 3200, 3800],
-            backgroundColor: 'rgba(0, 240, 255, 0.6)',
-            borderColor: '#00f0ff', borderWidth: 1
+            backgroundColor: 'rgba(255,43,53,.55)',
+            hoverBackgroundColor: '#ff2b35',
+            borderColor: '#ff2b35', borderWidth: 1
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { color: '#e6edf3' } } },
+          plugins: { legend: { labels: { color: '#ececef' } } },
           scales: {
-            x: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } },
-            y: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } }
+            x: { ticks: { color: '#8b8b96' }, grid: { color: gridColor } },
+            y: { ticks: { color: '#8b8b96' }, grid: { color: gridColor } }
           }
         }
       });
