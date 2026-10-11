@@ -481,3 +481,12 @@ create trigger achievements_touch_updated_at before update on public.user_achiev
 
 -- The Google sign-in code only needs the public publishable key in index.html.
 -- Never expose Supabase secret/service_role keys in the browser.
+
+-- Index foreign keys used by ownership and participant queries.
+create index if not exists community_post_comments_user_id_idx on public.community_post_comments(user_id);
+create index if not exists community_post_likes_user_id_idx on public.community_post_likes(user_id);
+create index if not exists community_posts_user_id_idx on public.community_posts(user_id);
+create index if not exists team_invites_inviter_id_idx on public.team_invites(inviter_id);
+create index if not exists tournament_registrations_team_id_idx on public.tournament_registrations(team_id);
+create index if not exists tournament_registrations_user_id_idx on public.tournament_registrations(user_id);
+create index if not exists user_achievements_achievement_id_idx on public.user_achievements(achievement_id);
