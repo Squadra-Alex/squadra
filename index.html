@@ -997,6 +997,10 @@
           </div>
           <div class="card">
             <h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
+            <div class="form-group" style="margin-top:12px;"><label for="communityGroupName">Создать группу</label><input id="communityGroupName" maxlength="80" placeholder="Название группы"></div>
+            <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
+            <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="О чём группа"></div>
+            <button class="btn btn-primary" onclick="createCommunityGroup()">Создать группу</button>
             <div id="communityGroups" style="margin-top:10px;"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
           </div>
         </div>
@@ -2078,17 +2082,45 @@
   }
   async function loadCommunityGroups() {
     const el=document.getElementById('communityGroups');if(!el||!supabaseClient||!currentUser)return;
-    const [groupsResult,membersResult]=await Promise.all([
-      supabaseClient.from('community_groups').select('id,name,game_name,description').order('name'),
-      supabaseClient.from('community_group_members').select('group_id,user_id')
+    const [groupsResult,membersResult,gamesResult]=await Promise.all([
+      supabaseClient.from('community_groups').select('id,name,game_name,description,owner_id').order('name'),
+      supabaseClient.from('community_group_members').select('group_id,user_id'),
+      supabaseClient.from('games').select('name').eq('is_active',true).order('name')
     ]);
     if(groupsResult.error||membersResult.error){console.error('Could not load groups:',groupsResult.error||membersResult.error);el.innerHTML='<p class="subtitle">Не удалось загрузить группы.</p>';return;}
+    const gameSelect=document.getElementById('communityGroupGame');
+    if(gameSelect){const selected=gameSelect.value;gameSelect.innerHTML='<option value="">Выбери игру</option>'+(gamesResult.data||[]).map(g=>'<option>'+escapeHtml(g.name)+'</option>').join('');if(selected)gameSelect.value=selected;}
     const members=membersResult.data||[];
     el.innerHTML=(groupsResult.data||[]).map(g=>{
-      const joined=members.some(m=>m.group_id===g.id&&m.user_id===currentUser.id),count=members.filter(m=>m.group_id===g.id).length;
-      return '<div class="list-divider friend-row"><div><strong>'+escapeHtml(g.name)+'</strong><div style="font-size:12px;color:var(--muted)">'+escapeHtml(g.game_name)+' • '+count+' участников</div></div><div><button class="btn '+(joined?'btn-primary':'btn-ghost')+'" style="padding:6px 12px;font-size:11px" onclick="toggleCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;,'+joined+')">'+(joined?'В группе':'Вступить')+'</button>'+(joined?'<button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="openGroupChat(&quot;'+escapeHtml(g.id)+'&quot;)">Чат</button>':'')+'</div><div id="group-chat-'+escapeHtml(g.id)+'"></div></div>';
-    }).join('')||'<p class="subtitle">Групп пока нет.</p>';
+      const joined=members.some(m=>m.group_id===g.id&&m.user_id===currentUser.id),count=members.filter(m=>m.group_id===g.id).length,owner=g.owner_id===currentUser.id;
+      return '<div class="list-divider friend-row"><div><strong>'+escapeHtml(g.name)+'</strong><div style="font-size:12px;color:var(--muted)">'+escapeHtml(g.game_name)+' • '+count+' участников</div><small class="subtitle">'+escapeHtml(g.description||'')+'</small></div><div><button class="btn '+(joined?'btn-primary':'btn-ghost')+'" style="padding:6px 12px;font-size:11px" onclick="toggleCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;,'+joined+')">'+(joined?'В группе':'Вступить')+'</button>'+(joined?'<button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="openGroupChat(&quot;'+escapeHtml(g.id)+'&quot;)">Чат</button>':'')+(owner?'<button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="editCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)">Изменить</button><button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="deleteCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)">Удалить</button>':'')+'</div><div id="group-chat-'+escapeHtml(g.id)+'"></div></div>';
+    }).join('')||'<p class="subtitle">Групп пока нет. Создай первую.</p>';
   }
+  async function createCommunityGroup() {
+    if(!currentUser)return requireAccount();
+    const name=document.getElementById('communityGroupName').value.trim(),game=document.getElementById('communityGroupGame').value;
+    if(name.length<3||!game)return showNotification('Укажи название и игру.');
+    const id='group-'+crypto.randomUUID();
+    const {error}=await supabaseClient.from('community_groups').insert({id,name,game_name:game,description:document.getElementById('communityGroupDescription').value.trim(),owner_id:currentUser.id});
+    if(error){console.error(error);return showNotification('Не удалось создать группу.');}
+    document.getElementById('communityGroupName').value='';document.getElementById('communityGroupDescription').value='';
+    showNotification('Группа создана.');await loadCommunityGroups();
+  }
+  async function editCommunityGroup(id) {
+    const name=prompt('Новое название группы:');if(name===null)return;
+    if(name.trim().length<3)return showNotification('Название должно содержать минимум 3 символа.');
+    const description=prompt('Новое описание группы:')||'';
+    const {error}=await supabaseClient.from('community_groups').update({name:name.trim().slice(0,80),description:description.slice(0,300)}).eq('id',id).eq('owner_id',currentUser.id);
+    if(error){console.error(error);return showNotification('Не удалось изменить группу.');}
+    await loadCommunityGroups();showNotification('Группа обновлена.');
+  }
+  async function deleteCommunityGroup(id) {
+    if(!currentUser||!confirm('Удалить группу и её историю сообщений?'))return;
+    const {error}=await supabaseClient.from('community_groups').delete().eq('id',id).eq('owner_id',currentUser.id);
+    if(error){console.error(error);return showNotification('Не удалось удалить группу.');}
+    await loadCommunityGroups();showNotification('Группа удалена.');
+  }
+
   async function toggleCommunityGroup(groupId,joined) {
     if(!currentUser)return requireAccount();
     const request=joined
