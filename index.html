@@ -1834,7 +1834,7 @@
     const search=(document.getElementById('teamDirectorySearch')?.value||'').trim();
     let query=supabaseClient.from('teams').select('id,owner_id,name,tag,game_name,region,description,rating,matches_played,wins').order('rating',{ascending:false}).limit(100);
     const game=gameSelect?.value,region=document.getElementById('teamDirectoryRegion')?.value;
-    if(game)query=query.eq('game_name',game);if(region)query=query.eq('region',region);if(search)query=query.or('name.ilike.%'+search.replace(/[%_,]/g,'').replace(/\./g,'')+'%,tag.ilike.%'+search.replace(/[%_,]/g,'').replace(/\./g,'')+'%');
+    if(game)query=query.eq('game_name',game);if(region)query=query.eq('region',region);if(search)query=query.or('name.ilike.%'+search.replace(/[^a-zA-Z0-9а-яА-ЯёЁ -]/g,'').replace(/\./g,'')+'%,tag.ilike.%'+search.replace(/[^a-zA-Z0-9а-яА-ЯёЁ -]/g,'').replace(/\./g,'')+'%');
     const [teamResult,memberResult,myMemberResult,requestResult]=await Promise.all([
       query,
       supabaseClient.from('team_members').select('team_id,user_id'),
