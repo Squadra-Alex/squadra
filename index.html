@@ -1134,6 +1134,8 @@
         <div class="stat-box"><div class="value" id="adminTournamentsCount">—</div><div class="label">Турниров</div></div>
         <div class="stat-box"><div class="value" id="adminPostsCount">—</div><div class="label">Публикаций</div></div>
       </div>
+      <div class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-users-gear"></i>Команды платформы</h2></div><div id="adminTeamsList"><p class="subtitle">Загрузка команд…</p></div></div>
+      <div class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-trophy"></i>Турниры платформы</h2></div><div id="adminTournamentsList"><p class="subtitle">Загрузка турниров…</p></div></div>
       <div class="card" style="margin-top:24px;">
         <div class="section-heading"><h2><i class="fa-solid fa-gamepad"></i>Каталог игр</h2></div>
         <div class="grid grid-3" style="align-items:end;">
@@ -1832,7 +1834,7 @@
       gameSelect.innerHTML='<option value="">Все игры</option>'+(games||[]).map(g=>'<option value="'+escapeHtml(g.name)+'">'+escapeHtml(g.name)+'</option>').join('');
     }
     const search=(document.getElementById('teamDirectorySearch')?.value||'').trim();
-    let query=supabaseClient.from('teams').select('id,owner_id,name,tag,game_name,region,description,rating,matches_played,wins').order('rating',{ascending:false}).limit(100);
+    let query=supabaseClient.from('teams').select('id,owner_id,name,tag,game_name,region,description,rating,matches_played,wins,is_active').eq('is_active',true).order('rating',{ascending:false}).limit(100);
     const game=gameSelect?.value,region=document.getElementById('teamDirectoryRegion')?.value;
     if(game)query=query.eq('game_name',game);if(region)query=query.eq('region',region);if(search)query=query.or('name.ilike.%'+search.replace(/[^a-zA-Z0-9а-яА-ЯёЁ -]/g,'').replace(/\./g,'')+'%,tag.ilike.%'+search.replace(/[^a-zA-Z0-9а-яА-ЯёЁ -]/g,'').replace(/\./g,'')+'%');
     const [teamResult,memberResult,myMemberResult,requestResult]=await Promise.all([
@@ -2383,7 +2385,7 @@
     const reportsEl=document.getElementById('adminReportsList');
     if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="list-divider" style="padding:12px 0"><strong>'+escapeHtml(r.reason)+'</strong><span class="subtitle"> • '+escapeHtml(r.status)+' • '+new Date(r.created_at).toLocaleString('ru-RU')+'</span><p>'+escapeHtml(r.details||'Без описания')+'</p><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работе</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
     if(status) status.textContent='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';
-    await loadAdminGames();
+    await loadAdminGames();await loadAdminTeamsAndTournaments();
   }
 
   async function adminUserAction(targetUserId,action,role) {
@@ -2398,6 +2400,31 @@
     if(error||data?.error){console.error('Admin user action failed:',error||data);showNotification(data?.error||'Не удалось изменить аккаунт.');return;}
     showNotification(action==='ban'?'Аккаунт заблокирован.':action==='unban'?'Аккаунт разблокирован.':action==='grant_role'?'Роль назначена.':'Роль снята.');
     await loadAdminPanel();
+  }
+
+  async function loadAdminTeamsAndTournaments() {
+    if(!isAdmin||!supabaseClient)return;
+    const [teams,tournaments]=await Promise.all([
+      supabaseClient.from('teams').select('id,name,tag,game_name,region,is_active,owner_id').order('created_at',{ascending:false}).limit(100),
+      supabaseClient.from('tournaments').select('id,name,game_name,status,starts_at,owner_id').order('created_at',{ascending:false}).limit(100)
+    ]);
+    const teamEl=document.getElementById('adminTeamsList');
+    if(teamEl)teamEl.innerHTML=(teams.data||[]).map(t=>'<article class="list-divider" style="padding:12px 0;display:flex;justify-content:space-between;gap:12px;align-items:center"><div><strong>'+escapeHtml(t.name)+(t.tag?' ['+escapeHtml(t.tag)+']':'')+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+' • '+escapeHtml(t.region)+' • '+(t.is_active?'Опубликована':'Скрыта')+'</div></div><button class="btn '+(t.is_active?'btn-ghost':'btn-primary')+'" onclick="adminToggleTeam(&quot;'+t.id+'&quot;,'+(!t.is_active)+')">'+(t.is_active?'Скрыть':'Показать')+'</button></article>').join('')||'<p class="subtitle">Команд пока нет.</p>';
+    const statusOptions=['upcoming','registration','live','completed','cancelled'];
+    const tournamentEl=document.getElementById('adminTournamentsList');
+    if(tournamentEl)tournamentEl.innerHTML=(tournaments.data||[]).map(t=>'<article class="list-divider" style="padding:12px 0;display:flex;justify-content:space-between;gap:12px;align-items:center"><div><strong>'+escapeHtml(t.name)+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</div></div><select aria-label="Статус турнира" onchange="adminUpdateTournamentStatus(&quot;'+t.id+'&quot;,this.value)">'+statusOptions.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+s+'</option>').join('')+'</select></article>').join('')||'<p class="subtitle">Турниров пока нет.</p>';
+  }
+  async function adminToggleTeam(id,isActive) {
+    if(!isAdmin||!confirm(isActive?'Опубликовать команду?':'Скрыть команду из каталога?'))return;
+    const {error}=await supabaseClient.from('teams').update({is_active:isActive}).eq('id',id);
+    if(error){console.error(error);return showNotification('Не удалось изменить команду.');}
+    await loadAdminTeamsAndTournaments();await loadTeamDirectory();showNotification(isActive?'Команда опубликована.':'Команда скрыта.');
+  }
+  async function adminUpdateTournamentStatus(id,status) {
+    if(!isAdmin||!['upcoming','registration','live','completed','cancelled'].includes(status))return;
+    const {error}=await supabaseClient.from('tournaments').update({status}).eq('id',id);
+    if(error){console.error(error);return showNotification('Не удалось обновить статус турнира.');}
+    showNotification('Статус турнира обновлён.');await Promise.all([loadAdminTeamsAndTournaments(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
   }
 
   async function loadAdminGames() {
