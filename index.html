@@ -1956,22 +1956,33 @@
       showNotification('Не удалось загрузить авторизацию. Обнови страницу и попробуй ещё раз.');
       return;
     }
-    let { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-    if (sessionError) console.error('Could not read Supabase session:', sessionError);
+    let session = null;
+    try {
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) console.error('Could not read Supabase session:', error);
+      session = data?.session || null;
+    } catch (error) {
+      console.error('Could not read Supabase session:', error);
+    }
 
     const authParams = new URLSearchParams(window.location.hash.slice(1));
     const accessToken = authParams.get('access_token');
     const refreshToken = authParams.get('refresh_token');
     if (!session && accessToken && refreshToken) {
-      const { data, error } = await supabaseClient.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
-      if (error) {
+      try {
+        const { data, error } = await supabaseClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        if (error) {
+          console.error('Could not create Supabase session from OAuth callback:', error);
+          showNotification('Google вернул вход, но Supabase не принял сессию. Попробуй ещё раз.');
+        } else {
+          session = data?.session || null;
+        }
+      } catch (error) {
         console.error('Could not create Supabase session from OAuth callback:', error);
-        showNotification('Google вернул вход, но Supabase не принял сессию. Попробуй ещё раз.');
-      } else {
-        session = data.session;
+        showNotification('Не удалось завершить вход Google. Попробуй ещё раз.');
       }
     }
     if (accessToken || refreshToken) {
@@ -1994,7 +2005,10 @@
     });
   }
 
-  initSupabaseAuth();
+  initSupabaseAuth().catch(error => {
+    console.error('Supabase Auth initialization failed:', error);
+    showNotification('Авторизация не загрузилась. Обнови страницу и попробуй ещё раз.');
+  });
 </script>
 
 </body>
