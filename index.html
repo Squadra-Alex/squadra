@@ -753,7 +753,7 @@
   .google-auth-button { min-height:48px; }
   .google-auth-button.is-fallback .google-fallback { display:flex; }
   .google-fallback {
-    display:none; align-items:center; justify-content:center; gap:11px; width:min(100%,320px); min-height:46px;
+    display:flex; align-items:center; justify-content:center; gap:11px; width:min(100%,320px); min-height:46px;
     margin:8px auto 2px; padding:0 18px; color:#202124; background:#fff;
     border:1px solid #dadce0; border-radius:6px; font:600 14px Arial,sans-serif; cursor:pointer;
     transition:background .18s,box-shadow .18s;
@@ -1646,16 +1646,40 @@
     }
   }
 
-  async function startGoogleOAuth() {
-    if (!supabaseClient) {
-      showNotification('Авторизация пока недоступна. Обновите страницу и попробуйте ещё раз.');
-      return;
+  let supabaseLibraryLoader = null;
+
+  async function ensureSupabaseClient() {
+    if (!authIsConfigured()) throw new Error('Supabase Auth is not configured.');
+    if (!window.supabase?.createClient) {
+      if (!supabaseLibraryLoader) {
+        supabaseLibraryLoader = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+          script.async = true;
+          script.onload = () => window.supabase?.createClient
+            ? resolve()
+            : reject(new Error('Supabase client library is unavailable.'));
+          script.onerror = () => reject(new Error('Could not load Supabase client library.'));
+          document.head.appendChild(script);
+        });
+      }
+      await supabaseLibraryLoader;
     }
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + window.location.pathname }
-    });
-    if (error) {
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    }
+    return supabaseClient;
+  }
+
+  async function startGoogleOAuth() {
+    try {
+      const client = await ensureSupabaseClient();
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + window.location.pathname }
+      });
+      if (error) throw error;
+    } catch (error) {
       console.error('Google OAuth fallback failed:', error);
       showNotification('Не удалось открыть вход Google. Попробуйте ещё раз.');
     }
@@ -1663,13 +1687,14 @@
 
   async function handleGoogleCredential(response) {
     if (googleSignInPending) return;
-    if (!response?.credential || !googleAuthNonce || !supabaseClient) {
+    if (!response?.credential || !googleAuthNonce) {
       showNotification('Не удалось получить ответ Google. Попробуйте ещё раз.');
       return;
     }
     googleSignInPending = true;
     try {
-      const { error } = await supabaseClient.auth.signInWithIdToken({
+      const client = await ensureSupabaseClient();
+      const { error } = await client.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
         nonce: googleAuthNonce
@@ -1933,13 +1958,13 @@
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
+    initGoogleIdentity();
     if (!authIsConfigured() || !window.supabase?.createClient) return;
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser=session?.user||null;
     renderAuthState(currentUser);
     if(currentUser) await loadAccountData();
-    initGoogleIdentity();
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
       if(currentUser) loadAccountData(); else {accountProfile=null;accountFriends=[];}
