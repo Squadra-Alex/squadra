@@ -104,9 +104,9 @@ create table if not exists public.team_members (
 create index if not exists team_members_user_idx on public.team_members(user_id);
 
 create or replace function public.add_team_owner_membership()
-returns trigger language plpgsql security definer
-set search_path = public
-as $$
+returns trigger language plpgsql
+set search_path = ''
+as $
 begin
   insert into public.team_members(team_id,user_id,role)
   values(new.id,new.owner_id,'owner')
@@ -114,6 +114,7 @@ begin
   return new;
 end;
 $$;
+revoke execute on function public.add_team_owner_membership() from public, anon, authenticated;
 drop trigger if exists teams_add_owner on public.teams;
 create trigger teams_add_owner after insert on public.teams
 for each row execute function public.add_team_owner_membership();
@@ -131,9 +132,9 @@ create table if not exists public.team_invites (
 create index if not exists team_invites_invitee_idx on public.team_invites(invitee_id,status);
 
 create or replace function public.accept_team_invite_add_member()
-returns trigger language plpgsql security definer
-set search_path = public
-as $$
+returns trigger language plpgsql
+set search_path = ''
+as $
 begin
   if new.status='accepted' and old.status<>'accepted' then
     insert into public.team_members(team_id,user_id,role)
@@ -143,6 +144,7 @@ begin
   return new;
 end;
 $$;
+revoke execute on function public.accept_team_invite_add_member() from public, anon, authenticated;
 drop trigger if exists team_invite_add_member on public.team_invites;
 create trigger team_invite_add_member after update of status on public.team_invites
 for each row execute function public.accept_team_invite_add_member();
@@ -240,7 +242,7 @@ create index if not exists notifications_user_date_idx on public.notifications(u
 
 create or replace function public.create_squadra_account()
 returns trigger language plpgsql security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   base_name text;
@@ -270,6 +272,7 @@ begin
   return new;
 end;
 $$;
+revoke execute on function public.create_squadra_account() from public, anon, authenticated;
 drop trigger if exists on_auth_user_created_squadra on auth.users;
 create trigger on_auth_user_created_squadra after insert on auth.users
 for each row execute function public.create_squadra_account();
@@ -327,7 +330,7 @@ alter table public.tournament_registrations enable row level security;
 alter table public.notifications enable row level security;
 
 grant usage on schema public to authenticated;
-grant select on public.profiles,public.teams,public.team_members,public.community_posts,public.community_post_likes,public.community_post_comments,public.achievements,public.tournaments to authenticated;
+grant select on public.profiles,public.teams,public.team_members,public.community_posts,public.community_post_likes,public.community_post_comments,public.achievements,public.user_achievements,public.tournaments to authenticated;
 grant select,insert,update,delete on public.user_settings,public.user_library,public.friendships,public.direct_messages,public.teams,public.team_members,public.team_invites,public.matchmaking_preferences,public.activity_history,public.community_posts,public.community_post_likes,public.community_post_comments,public.tournament_registrations,public.notifications to authenticated;
 revoke update on public.profiles from authenticated;
 grant update(username,display_name,avatar_url,bio,game_name,region,language) on public.profiles to authenticated;
@@ -341,118 +344,125 @@ grant update(status) on public.team_invites to authenticated;
 drop policy if exists "profiles visible to authenticated users" on public.profiles;
 create policy "profiles visible to authenticated users" on public.profiles for select to authenticated using (true);
 drop policy if exists "users update own profile" on public.profiles;
-create policy "users update own profile" on public.profiles for update to authenticated using (id=auth.uid()) with check (id=auth.uid());
+create policy "users update own profile" on public.profiles for update to authenticated using (id=(select auth.uid())) with check (id=(select auth.uid()));
 
 drop policy if exists "users manage own settings" on public.user_settings;
-create policy "users manage own settings" on public.user_settings for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy "users manage own settings" on public.user_settings for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
 drop policy if exists "users manage own library" on public.user_library;
-create policy "users manage own library" on public.user_library for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy "users manage own library" on public.user_library for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
 
 drop policy if exists "friend participants read requests" on public.friendships;
-create policy "friend participants read requests" on public.friendships for select to authenticated using (requester_id=auth.uid() or addressee_id=auth.uid());
+create policy "friend participants read requests" on public.friendships for select to authenticated using (requester_id=(select auth.uid()) or addressee_id=(select auth.uid()));
 drop policy if exists "users send friend requests" on public.friendships;
-create policy "users send friend requests" on public.friendships for insert to authenticated with check (requester_id=auth.uid() and status='pending' and requester_id<>addressee_id);
+create policy "users send friend requests" on public.friendships for insert to authenticated with check (requester_id=(select auth.uid()) and status='pending' and requester_id<>addressee_id);
 drop policy if exists "participants update friend requests" on public.friendships;
-create policy "participants update friend requests" on public.friendships for update to authenticated using (requester_id=auth.uid() or addressee_id=auth.uid()) with check (requester_id=auth.uid() or addressee_id=auth.uid());
+create policy "participants update friend requests" on public.friendships for update to authenticated using (requester_id=(select auth.uid()) or addressee_id=(select auth.uid())) with check (requester_id=(select auth.uid()) or addressee_id=(select auth.uid()));
 drop policy if exists "participants delete friend requests" on public.friendships;
-create policy "participants delete friend requests" on public.friendships for delete to authenticated using (requester_id=auth.uid() or addressee_id=auth.uid());
+create policy "participants delete friend requests" on public.friendships for delete to authenticated using (requester_id=(select auth.uid()) or addressee_id=(select auth.uid()));
 
 drop policy if exists "message participants read messages" on public.direct_messages;
-create policy "message participants read messages" on public.direct_messages for select to authenticated using (sender_id=auth.uid() or receiver_id=auth.uid());
+create policy "message participants read messages" on public.direct_messages for select to authenticated using (sender_id=(select auth.uid()) or receiver_id=(select auth.uid()));
 drop policy if exists "users send messages as self" on public.direct_messages;
 create policy "users send messages to friends" on public.direct_messages for insert to authenticated with check (
-  sender_id=auth.uid()
-  and receiver_id<>auth.uid()
+  sender_id=(select auth.uid())
+  and receiver_id<>(select auth.uid())
   and exists (
     select 1 from public.friendships f
     where f.status='accepted'
-      and ((f.requester_id=auth.uid() and f.addressee_id=receiver_id)
-        or (f.addressee_id=auth.uid() and f.requester_id=receiver_id))
+      and ((f.requester_id=(select auth.uid()) and f.addressee_id=receiver_id)
+        or (f.addressee_id=(select auth.uid()) and f.requester_id=receiver_id))
   )
 );
 drop policy if exists "receivers mark messages read" on public.direct_messages;
-create policy "receivers mark messages read" on public.direct_messages for update to authenticated using (receiver_id=auth.uid()) with check (receiver_id=auth.uid());
+create policy "receivers mark messages read" on public.direct_messages for update to authenticated using (receiver_id=(select auth.uid())) with check (receiver_id=(select auth.uid()));
 
 drop policy if exists "authenticated users read teams" on public.teams;
 create policy "authenticated users read teams" on public.teams for select to authenticated using (true);
 drop policy if exists "users create own teams" on public.teams;
-create policy "users create own teams" on public.teams for insert to authenticated with check (owner_id=auth.uid());
+create policy "users create own teams" on public.teams for insert to authenticated with check (owner_id=(select auth.uid()));
 drop policy if exists "owners update own teams" on public.teams;
-create policy "owners update own teams" on public.teams for update to authenticated using (owner_id=auth.uid()) with check (owner_id=auth.uid());
+create policy "owners update own teams" on public.teams for update to authenticated using (owner_id=(select auth.uid())) with check (owner_id=(select auth.uid()));
 drop policy if exists "owners delete own teams" on public.teams;
-create policy "owners delete own teams" on public.teams for delete to authenticated using (owner_id=auth.uid());
+create policy "owners delete own teams" on public.teams for delete to authenticated using (owner_id=(select auth.uid()));
 
 drop policy if exists "authenticated users read team membership" on public.team_members;
 create policy "authenticated users read team membership" on public.team_members for select to authenticated using (true);
 drop policy if exists "team owners create owner membership" on public.team_members;
-create policy "team owners create owner membership" on public.team_members for insert to authenticated
-with check (user_id=auth.uid() and role='owner' and exists(select 1 from public.teams t where t.id=team_id and t.owner_id=auth.uid()));
+drop policy if exists "owners and accepted invitees join teams" on public.team_members;
+create policy "owners and accepted invitees join teams" on public.team_members for insert to authenticated
+with check (
+  user_id=(select auth.uid()) and (
+    (role='owner' and exists(select 1 from public.teams t where t.id=team_id and t.owner_id=(select auth.uid())))
+    or
+    (role='member' and exists(select 1 from public.team_invites i where i.team_id=team_id and i.invitee_id=(select auth.uid()) and i.status='accepted'))
+  )
+);
 drop policy if exists "team owners remove members" on public.team_members;
 create policy "team owners remove members" on public.team_members for delete to authenticated
-using (exists(select 1 from public.teams t where t.id=team_id and t.owner_id=auth.uid()));
+using (exists(select 1 from public.teams t where t.id=team_id and t.owner_id=(select auth.uid())));
 
 drop policy if exists "team invite participants read invites" on public.team_invites;
-create policy "team invite participants read invites" on public.team_invites for select to authenticated using (inviter_id=auth.uid() or invitee_id=auth.uid());
+create policy "team invite participants read invites" on public.team_invites for select to authenticated using (inviter_id=(select auth.uid()) or invitee_id=(select auth.uid()));
 drop policy if exists "team owners invite users" on public.team_invites;
 create policy "team owners invite users" on public.team_invites for insert to authenticated
-with check (inviter_id=auth.uid() and exists(select 1 from public.teams t where t.id=team_id and t.owner_id=auth.uid()));
+with check (inviter_id=(select auth.uid()) and exists(select 1 from public.teams t where t.id=team_id and t.owner_id=(select auth.uid())));
 drop policy if exists "invitee updates team invite" on public.team_invites;
-create policy "invitee updates team invite" on public.team_invites for update to authenticated using (invitee_id=auth.uid()) with check (invitee_id=auth.uid());
+create policy "invitee updates team invite" on public.team_invites for update to authenticated using (invitee_id=(select auth.uid())) with check (invitee_id=(select auth.uid()));
 drop policy if exists "invite participants delete invites" on public.team_invites;
-create policy "invite participants delete invites" on public.team_invites for delete to authenticated using (inviter_id=auth.uid() or invitee_id=auth.uid());
+create policy "invite participants delete invites" on public.team_invites for delete to authenticated using (inviter_id=(select auth.uid()) or invitee_id=(select auth.uid()));
 
 drop policy if exists "users manage own matchmaking preferences" on public.matchmaking_preferences;
-create policy "users manage own matchmaking preferences" on public.matchmaking_preferences for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy "users manage own matchmaking preferences" on public.matchmaking_preferences for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
 
 drop policy if exists "users read own activity" on public.activity_history;
-create policy "users read own activity" on public.activity_history for select to authenticated using (user_id=auth.uid());
+create policy "users read own activity" on public.activity_history for select to authenticated using (user_id=(select auth.uid()));
 drop policy if exists "users add own activity" on public.activity_history;
-create policy "users add own activity" on public.activity_history for insert to authenticated with check (user_id=auth.uid());
+create policy "users add own activity" on public.activity_history for insert to authenticated with check (user_id=(select auth.uid()));
 drop policy if exists "users delete own activity" on public.activity_history;
-create policy "users delete own activity" on public.activity_history for delete to authenticated using (user_id=auth.uid());
+create policy "users delete own activity" on public.activity_history for delete to authenticated using (user_id=(select auth.uid()));
 
 drop policy if exists "achievements are readable" on public.achievements;
 create policy "achievements are readable" on public.achievements for select to authenticated using (true);
 drop policy if exists "users manage own achievement progress" on public.user_achievements;
-create policy "users manage own achievement progress" on public.user_achievements for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy "users manage own achievement progress" on public.user_achievements for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
 
 drop policy if exists "authenticated users read posts" on public.community_posts;
 create policy "authenticated users read posts" on public.community_posts for select to authenticated using (true);
 drop policy if exists "users create own posts" on public.community_posts;
-create policy "users create own posts" on public.community_posts for insert to authenticated with check (user_id=auth.uid());
+create policy "users create own posts" on public.community_posts for insert to authenticated with check (user_id=(select auth.uid()));
 drop policy if exists "authors update own posts" on public.community_posts;
-create policy "authors update own posts" on public.community_posts for update to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy "authors update own posts" on public.community_posts for update to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
 drop policy if exists "authors delete own posts" on public.community_posts;
-create policy "authors delete own posts" on public.community_posts for delete to authenticated using (user_id=auth.uid());
+create policy "authors delete own posts" on public.community_posts for delete to authenticated using (user_id=(select auth.uid()));
 
 drop policy if exists "authenticated users read post likes" on public.community_post_likes;
 create policy "authenticated users read post likes" on public.community_post_likes for select to authenticated using (true);
 drop policy if exists "users like as self" on public.community_post_likes;
-create policy "users like as self" on public.community_post_likes for insert to authenticated with check (user_id=auth.uid());
+create policy "users like as self" on public.community_post_likes for insert to authenticated with check (user_id=(select auth.uid()));
 drop policy if exists "users remove own likes" on public.community_post_likes;
-create policy "users remove own likes" on public.community_post_likes for delete to authenticated using (user_id=auth.uid());
+create policy "users remove own likes" on public.community_post_likes for delete to authenticated using (user_id=(select auth.uid()));
 
 drop policy if exists "authenticated users read comments" on public.community_post_comments;
 create policy "authenticated users read comments" on public.community_post_comments for select to authenticated using (true);
 drop policy if exists "users add own comments" on public.community_post_comments;
-create policy "users add own comments" on public.community_post_comments for insert to authenticated with check (user_id=auth.uid());
+create policy "users add own comments" on public.community_post_comments for insert to authenticated with check (user_id=(select auth.uid()));
 drop policy if exists "authors delete own comments" on public.community_post_comments;
-create policy "authors delete own comments" on public.community_post_comments for delete to authenticated using (user_id=auth.uid());
+create policy "authors delete own comments" on public.community_post_comments for delete to authenticated using (user_id=(select auth.uid()));
 
 drop policy if exists "tournaments are readable" on public.tournaments;
 create policy "tournaments are readable" on public.tournaments for select to authenticated using (true);
 drop policy if exists "users manage own tournament registrations" on public.tournament_registrations;
 create policy "users manage own tournament registrations" on public.tournament_registrations for all to authenticated
-using (user_id=auth.uid())
+using (user_id=(select auth.uid()))
 with check (
-  user_id=auth.uid()
+  user_id=(select auth.uid())
   and (team_id is null or exists(
-    select 1 from public.team_members tm where tm.team_id=tournament_registrations.team_id and tm.user_id=auth.uid()
+    select 1 from public.team_members tm where tm.team_id=tournament_registrations.team_id and tm.user_id=(select auth.uid())
   ))
 );
 
 drop policy if exists "users manage own notifications" on public.notifications;
-create policy "users manage own notifications" on public.notifications for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy "users manage own notifications" on public.notifications for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
 
 drop trigger if exists profiles_touch_updated_at on public.profiles;
 create trigger profiles_touch_updated_at before update on public.profiles for each row execute function public.set_updated_at();
