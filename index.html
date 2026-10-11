@@ -1132,8 +1132,9 @@
         <div class="stat-box"><div class="value" id="adminUsersCount">—</div><div class="label">Игроков</div></div>
         <div class="stat-box"><div class="value" id="adminTeamsCount">—</div><div class="label">Команд</div></div>
         <div class="stat-box"><div class="value" id="adminTournamentsCount">—</div><div class="label">Турниров</div></div>
-        <div class="stat-box"><div class="value" id="adminPostsCount">—</div><div class="label">Публикаций</div></div>
+        <div class="stat-box"><div class="value" id="adminPostsCount">—</div><div class="label">Публикаций</div></div><div class="stat-box"><div class="value" id="adminMatchesCount">—</div><div class="label">Матчей</div></div>
       </div>
+      <div class="card" style="margin-top:24px;"><h2><i class="fa-solid fa-chart-column"></i>Регистрации игроков за 7 дней</h2><div id="adminRegistrationChart" class="grid" style="grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:160px;"><p class="subtitle">Загружаем график…</p></div></div>
       <div class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-users-gear"></i>Команды платформы</h2></div><div id="adminTeamsList"><p class="subtitle">Загрузка команд…</p></div></div>
       <div class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-trophy"></i>Турниры платформы</h2></div><div id="adminTournamentsList"><p class="subtitle">Загрузка турниров…</p></div></div>
       <div class="card" style="margin-top:24px;">
@@ -2359,7 +2360,7 @@
     if(!isAdmin||!supabaseClient) return;
     const status=document.getElementById('adminStatus');
     if(status) status.textContent='Загружаю данные…';
-    const [users,teams,tournaments,posts,profiles,feed,reports,userDirectory]=await Promise.all([
+    const [users,teams,tournaments,posts,profiles,feed,reports,userDirectory,matchesCount]=await Promise.all([
       supabaseClient.from('profiles').select('id',{count:'exact',head:true}),
       supabaseClient.from('teams').select('id',{count:'exact',head:true}),
       supabaseClient.from('tournaments').select('id',{count:'exact',head:true}),
@@ -2367,7 +2368,8 @@
       supabaseClient.from('profiles').select('id,username,display_name,game_name,region,rank_name,level,rating,created_at').order('created_at',{ascending:false}).limit(100),
       supabaseClient.from('community_posts').select('id,user_id,body,created_at,media_type').order('created_at',{ascending:false}).limit(30),
       supabaseClient.from('community_reports').select('id,reporter_id,post_id,reported_user_id,reason,details,status,created_at').order('created_at',{ascending:false}).limit(100),
-      supabaseClient.functions.invoke('admin-users',{body:{action:'users'}})
+      supabaseClient.functions.invoke('admin-users',{body:{action:'users'}}),
+      supabaseClient.from('matches').select('id',{count:'exact',head:true})
     ]);
     const errors=[users,teams,tournaments,posts,profiles,feed,reports].filter(r=>r.error);
     if(userDirectory.error) errors.push(userDirectory);
@@ -2377,6 +2379,7 @@
     document.getElementById('adminTeamsCount').textContent=count(teams);
     document.getElementById('adminTournamentsCount').textContent=count(tournaments);
     document.getElementById('adminPostsCount').textContent=count(posts);
+    document.getElementById('adminMatchesCount').textContent=count(matchesCount);
     const directory=new Map((userDirectory.data?.users||[]).map(u=>[u.id,u]));
     const userIds=(profiles.data||[]).map(p=>p.id);
     const rolesResult=userIds.length?await supabaseClient.from('user_roles').select('user_id,role').in('user_id',userIds):{data:[]};
@@ -2399,7 +2402,7 @@
     const reportsEl=document.getElementById('adminReportsList');
     if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="list-divider" style="padding:12px 0"><strong>'+escapeHtml(r.reason)+'</strong><span class="subtitle"> • '+escapeHtml(r.status)+' • '+new Date(r.created_at).toLocaleString('ru-RU')+'</span><p>'+escapeHtml(r.details||'Без описания')+'</p><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работе</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
     if(status) status.textContent='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';
-    await loadAdminGames();await loadAdminTeamsAndTournaments();
+    await loadAdminGames();await loadAdminTeamsAndTournaments();await loadAdminRegistrationChart();
   }
 
   async function adminUserAction(targetUserId,action,role) {
@@ -2414,6 +2417,18 @@
     if(error||data?.error){console.error('Admin user action failed:',error||data);showNotification(data?.error||'Не удалось изменить аккаунт.');return;}
     showNotification(action==='ban'?'Аккаунт заблокирован.':action==='unban'?'Аккаунт разблокирован.':action==='grant_role'?'Роль назначена.':'Роль снята.');
     await loadAdminPanel();
+  }
+
+  async function loadAdminRegistrationChart() {
+    const el=document.getElementById('adminRegistrationChart');if(!el||!isAdmin||!supabaseClient)return;
+    const since=new Date();since.setDate(since.getDate()-6);since.setHours(0,0,0,0);
+    const {data,error}=await supabaseClient.from('profiles').select('created_at').gte('created_at',since.toISOString());
+    if(error){console.error(error);el.innerHTML='<p class="subtitle">Не удалось загрузить график.</p>';return;}
+    const counts=new Map(),dates=[];
+    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const key=d.toLocaleDateString('sv-SE');dates.push(key);counts.set(key,0);}
+    (data||[]).forEach(p=>{const key=new Date(p.created_at).toLocaleDateString('sv-SE');if(counts.has(key))counts.set(key,counts.get(key)+1);});
+    const max=Math.max(1,...counts.values());
+    el.innerHTML=dates.map(key=>'<div style="display:flex;flex-direction:column;justify-content:end;align-items:center;min-height:140px;gap:6px;"><strong>'+counts.get(key)+'</strong><div title="'+key+': '+counts.get(key)+'" style="width:min(100%,34px);height:'+Math.max(6,Math.round(96*counts.get(key)/max))+'px;background:linear-gradient(180deg,var(--red),#7c1721);border-radius:6px 6px 0 0;"></div><small class="subtitle">'+key.slice(5)+'</small></div>').join('');
   }
 
   async function loadAdminTeamsAndTournaments() {
