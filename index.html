@@ -1584,7 +1584,7 @@
     if(!currentUser)return requireAccount();
     const username=document.getElementById('settingsUsername').value.trim();
     if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))return showNotification('Ник: 3–24 символа, латиница, цифры или _.');
-    const p={id:currentUser.id,username,display_name:document.getElementById('settingsDisplayName').value.trim(),bio:document.getElementById('settingsBio').value.trim(),language:document.getElementById('settingsLanguage').value,region:document.getElementById('settingsRegion').value,game_name:document.getElementById('settingsGame').value};
+    const p={username,display_name:document.getElementById('settingsDisplayName').value.trim(),bio:document.getElementById('settingsBio').value.trim(),language:document.getElementById('settingsLanguage').value,region:document.getElementById('settingsRegion').value,game_name:document.getElementById('settingsGame').value};
     const st={user_id:currentUser.id,notify_messages:document.getElementById('notifyMessages').checked,notify_team_invites:document.getElementById('notifyTeamInvites').checked,notify_tournaments:document.getElementById('notifyTournaments').checked,notify_marketing:document.getElementById('notifyMarketing').checked};
     const [a,b]=await Promise.all([supabaseClient.from('profiles').update(p).eq('id',currentUser.id),supabaseClient.from('user_settings').upsert(st)]);
     if(a.error||b.error){console.error(a.error,b.error);return showNotification('Настройки не сохранены. Возможно, ник уже занят.');}
