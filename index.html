@@ -1114,6 +1114,7 @@
           <div class="form-group"><label>Язык</label><select id="settingsLanguage"><option value="ru">Русский</option><option value="en">English</option></select></div>
           <div class="form-group"><label>Регион</label><select id="settingsRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
           <div class="form-group"><label>Основная игра</label><select id="settingsGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
+          <div class="form-group" style="grid-column:1/-1;"><label for="settingsAvatarFile">Аватар профиля</label><input id="settingsAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><small class="subtitle">JPG, PNG, WEBP или GIF, до 5 МБ</small></div>
           <div class="form-group" style="grid-column:1/-1;"><label>О себе</label><textarea id="settingsBio" rows="3" maxlength="500" placeholder="Расскажи о себе"></textarea></div>
         </div>
         <h3 style="margin-top:20px;">Уведомления</h3>
@@ -1836,10 +1837,21 @@
     if(!currentUser)return requireAccount();
     const username=document.getElementById('settingsUsername').value.trim();
     if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))return showNotification('Ник: 3–24 символа, латиница, цифры или _.');
-    const p={username,display_name:document.getElementById('settingsDisplayName').value.trim(),bio:document.getElementById('settingsBio').value.trim(),language:document.getElementById('settingsLanguage').value,region:document.getElementById('settingsRegion').value,game_name:document.getElementById('settingsGame').value};
+    let avatar_url=profileData?.avatar_url||null;
+    const avatarInput=document.getElementById('settingsAvatarFile'),avatarFile=avatarInput?.files?.[0];
+    if(avatarFile){
+      if(!['image/jpeg','image/png','image/webp','image/gif'].includes(avatarFile.type)||avatarFile.size>5*1024*1024)return showNotification('Аватар: JPG, PNG, WEBP или GIF до 5 МБ.');
+      const ext=avatarFile.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g,'')||'img';
+      const path=currentUser.id+'/avatar-'+crypto.randomUUID()+'.'+ext;
+      const {error:uploadError}=await supabaseClient.storage.from('squadra-community').upload(path,avatarFile,{cacheControl:'3600',upsert:false,contentType:avatarFile.type});
+      if(uploadError){console.error('Avatar upload failed:',uploadError);return showNotification('Не удалось загрузить аватар.');}
+      avatar_url=supabaseClient.storage.from('squadra-community').getPublicUrl(path).data.publicUrl;
+    }
+    const p={username,display_name:document.getElementById('settingsDisplayName').value.trim(),bio:document.getElementById('settingsBio').value.trim(),language:document.getElementById('settingsLanguage').value,region:document.getElementById('settingsRegion').value,game_name:document.getElementById('settingsGame').value,avatar_url};
     const st={user_id:currentUser.id,notify_messages:document.getElementById('notifyMessages').checked,notify_team_invites:document.getElementById('notifyTeamInvites').checked,notify_tournaments:document.getElementById('notifyTournaments').checked,notify_marketing:document.getElementById('notifyMarketing').checked};
     const [a,b]=await Promise.all([supabaseClient.from('profiles').update(p).eq('id',currentUser.id),supabaseClient.from('user_settings').upsert(st)]);
     if(a.error||b.error){console.error(a.error,b.error);return showNotification('Настройки не сохранены. Возможно, ник уже занят.');}
+    if(avatarInput)avatarInput.value='';
     await loadAccountData();showNotification('Профиль и настройки сохранены.');
   }
   function selectCommunityMedia(type) {
