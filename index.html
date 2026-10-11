@@ -2283,14 +2283,14 @@
     const {error}=await supabaseClient.from('games').insert({id,name,genre,is_active:true});
     if(error){console.error(error);return showNotification('Не удалось добавить игру. Возможно, она уже есть.');}
     document.getElementById('adminGameName').value='';document.getElementById('adminGameGenre').value='';
-    showNotification('Игра добавлена.');await loadAdminGames();await loadGames();
+    showNotification('Игра добавлена.');await loadAdminGames();await loadGameCatalog();
   }
 
   async function adminToggleGame(id,isActive) {
     if(!isAdmin||!supabaseClient)return;
     const {error}=await supabaseClient.from('games').update({is_active:isActive}).eq('id',id);
     if(error){console.error(error);return showNotification('Не удалось изменить игру.');}
-    await loadAdminGames();await loadGames();await loadLeaderboards();
+    await loadAdminGames();await loadGameCatalog();await loadLeaderboards();
   }
 
   async function adminDeletePost(postId) {
