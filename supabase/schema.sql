@@ -32,6 +32,7 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+create unique index if not exists profiles_username_unique_idx on public.profiles (lower(username));
 create index if not exists profiles_username_search_idx on public.profiles (lower(username));
 create index if not exists profiles_game_region_idx on public.profiles (game_name, region);
 
@@ -132,7 +133,7 @@ create index if not exists team_invites_invitee_idx on public.team_invites(invit
 create or replace function public.accept_team_invite_add_member()
 returns trigger language plpgsql security definer
 set search_path = public
-as $
+as $$
 begin
   if new.status='accepted' and old.status<>'accepted' then
     insert into public.team_members(team_id,user_id,role)
@@ -141,7 +142,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 drop trigger if exists team_invite_add_member on public.team_invites;
 create trigger team_invite_add_member after update of status on public.team_invites
 for each row execute function public.accept_team_invite_add_member();
@@ -327,8 +328,9 @@ alter table public.notifications enable row level security;
 
 grant usage on schema public to authenticated;
 grant select on public.profiles,public.teams,public.team_members,public.community_posts,public.community_post_likes,public.community_post_comments,public.achievements,public.tournaments to authenticated;
-grant select,insert,update,delete on public.user_settings,public.user_library,public.friendships,public.direct_messages,public.teams,public.team_members,public.team_invites,public.matchmaking_preferences,public.activity_history,public.user_achievements,public.community_posts,public.community_post_likes,public.community_post_comments,public.tournament_registrations,public.notifications to authenticated;
-grant update on public.profiles to authenticated;
+grant select,insert,update,delete on public.user_settings,public.user_library,public.friendships,public.direct_messages,public.teams,public.team_members,public.team_invites,public.matchmaking_preferences,public.activity_history,public.community_posts,public.community_post_likes,public.community_post_comments,public.tournament_registrations,public.notifications to authenticated;
+revoke update on public.profiles from authenticated;
+grant update(username,display_name,avatar_url,bio,game_name,region,language) on public.profiles to authenticated;
 revoke update on public.friendships from authenticated;
 grant update(status) on public.friendships to authenticated;
 revoke update on public.direct_messages from authenticated;
