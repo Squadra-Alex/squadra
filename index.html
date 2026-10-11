@@ -2028,8 +2028,19 @@
     const rounds=new Map();matches.forEach(m=>{const list=rounds.get(m.round_number)||[];list.push(m);rounds.set(m.round_number,list);});
     el.innerHTML=[...rounds.entries()].sort((a,b)=>a[0]-b[0]).map(([round,list])=>'<div class="bracket-round"><h3>Раунд '+round+'</h3>'+list.map(m=>{
       const a=m.team_a_id?names.get(m.team_a_id)||'Команда':'Ожидает команду',b=m.team_b_id?names.get(m.team_b_id)||'Команда':'Ожидает команду';
-      return '<div class="bracket-match"><div class="team '+(m.winner_id===m.team_a_id?'winner':'')+'">'+escapeHtml(a)+' <span>'+(m.score_a??'')+'</span></div><div class="team '+(m.winner_id===m.team_b_id?'winner':'')+'">'+escapeHtml(b)+' <span>'+(m.score_b??'')+'</span></div>'+(canManage&&m.team_a_id&&m.team_b_id&&m.status!=='completed'?'<button class="btn btn-ghost" onclick="recordTournamentResult(\''+m.id+'\',\''+tournamentId+'\',\''+m.team_a_id+'\',\''+m.team_b_id+'\',\''+round+'\',\''+m.match_number+'\')">Внести результат</button>':'')+'</div>';
+      return '<div class="bracket-match"><div class="team '+(m.winner_id===m.team_a_id?'winner':'')+'">'+escapeHtml(a)+' <span>'+(m.score_a??'')+'</span></div><div class="team '+(m.winner_id===m.team_b_id?'winner':'')+'">'+escapeHtml(b)+' <span>'+(m.score_b??'')+'</span></div>'+(m.starts_at?'<small class="subtitle">Матч: '+new Date(m.starts_at).toLocaleString('ru-RU')+'</small>':'')+(canManage?'<button class="btn btn-ghost" onclick="scheduleTournamentMatch(&quot;'+m.id+'&quot;,&quot;'+tournamentId+'&quot;)">'+(m.starts_at?'Изменить время':'Назначить время')+'</button>':'')+(canManage&&m.team_a_id&&m.team_b_id&&m.status!=='completed'?'<button class="btn btn-ghost" onclick="recordTournamentResult(\''+m.id+'\',\''+tournamentId+'\',\''+m.team_a_id+'\',\''+m.team_b_id+'\',\''+round+'\',\''+m.match_number+'\')">Внести результат</button>':'')+'</div>';
     }).join('')+'</div>').join('');
+  }
+
+  async function scheduleTournamentMatch(matchId,tournamentId) {
+    if(!currentUser)return requireAccount();
+    const value=prompt('Дата и время матча (например, 2026-11-20T19:30):');
+    if(!value)return;
+    const date=new Date(value);
+    if(Number.isNaN(date.getTime())||date.getTime()<Date.now())return showNotification('Укажи корректную дату в будущем.');
+    const {error}=await supabaseClient.from('tournament_matches').update({starts_at:date.toISOString()}).eq('id',matchId);
+    if(error){console.error(error);return showNotification('Не удалось назначить время матча.');}
+    await loadTournamentBracket(tournamentId);showNotification('Время матча сохранено.');
   }
 
   async function recordTournamentResult(matchId,tournamentId,teamA,teamB,round,matchNumber) {
