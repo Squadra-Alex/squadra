@@ -1969,6 +1969,7 @@
       });
       if (error) {
         console.error('Could not create Supabase session from OAuth callback:', error);
+        showNotification('Google вернул вход, но Supabase не принял сессию. Попробуй ещё раз.');
       } else {
         session = data.session;
       }
