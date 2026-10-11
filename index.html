@@ -868,14 +868,14 @@
           <h3 style="margin-top:10px;">Squadra Championship 2026</h3>
           <p style="color:var(--muted); font-size:14px;">CS2 • Призовой фонд: ₽ 500 000</p>
           <p style="margin-top:10px; font-size:14px;"><i class="fa-solid fa-trophy" style="color:var(--red); margin-right:8px;"></i>32 команды &nbsp;&nbsp;<i class="fa-solid fa-calendar" style="color:var(--red); margin-right:8px;"></i>Финал: 15 декабря</p>
-          <button class="btn btn-primary" style="margin-top:14px;">Смотреть</button>
+          <button class="btn btn-primary" style="margin-top:14px;" onclick="showSection('tournaments')">Смотреть</button>
         </div>
         <div class="card">
           <span class="badge badge-warning">Скоро</span>
           <h3 style="margin-top:10px;">Winter Crimson League Dota 2</h3>
           <p style="color:var(--muted); font-size:14px;">Dota 2 • Призовой фонд: ₽ 250 000</p>
           <p style="margin-top:10px; font-size:14px;"><i class="fa-solid fa-trophy" style="color:var(--red); margin-right:8px;"></i>16 команд &nbsp;&nbsp;<i class="fa-solid fa-calendar" style="color:var(--red); margin-right:8px;"></i>Старт: 1 декабря</p>
-          <button class="btn btn-ghost" style="margin-top:14px;">Регистрация</button>
+          <button class="btn btn-ghost" style="margin-top:14px;" onclick="registerForTournament('winter-league')">Регистрация</button>
         </div>
       </div>
     </section>
@@ -1221,9 +1221,9 @@
         <div class="card">
           <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--red); margin-right:8px;"></i>Последние жалобы</h3>
           <div style="margin-top:10px;">
-            <div class="list-divider friend-row"><span><i class="fa-solid fa-skull" style="color:var(--red); margin-right:8px;"></i>Читерство • user_123</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
-            <div class="list-divider friend-row"><span><i class="fa-solid fa-face-frown" style="color:var(--red); margin-right:8px;"></i>Оскорбления • user_456</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
-            <div class="list-divider friend-row"><span><i class="fa-solid fa-envelope-open-text" style="color:var(--red); margin-right:8px;"></i>Спам • user_789</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
+            <div class="list-divider friend-row"><span><i class="fa-solid fa-skull" style="color:var(--red); margin-right:8px;"></i>Читерство • user_123</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;" onclick="showNotification('Для разбора жалоб требуется назначенная роль администратора.')">Рассмотреть</button></div>
+            <div class="list-divider friend-row"><span><i class="fa-solid fa-face-frown" style="color:var(--red); margin-right:8px;"></i>Оскорбления • user_456</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;" onclick="showNotification('Для разбора жалоб требуется назначенная роль администратора.')">Рассмотреть</button></div>
+            <div class="list-divider friend-row"><span><i class="fa-solid fa-envelope-open-text" style="color:var(--red); margin-right:8px;"></i>Спам • user_789</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;" onclick="showNotification('Для разбора жалоб требуется назначенная роль администратора.')">Рассмотреть</button></div>
           </div>
         </div>
       </div>
