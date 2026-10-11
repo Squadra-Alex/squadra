@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -1160,10 +1161,8 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
-    <p class="subtitle">С возвращением на арену Squadra</p>
-    <div class="form-group"><label>Email или никнейм</label><input placeholder="player@squadra.gg"></div>
-    <div class="form-group"><label>Пароль</label><input type="password" placeholder="••••••••"></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('Успешный вход'); closeModal('loginModal')"><i class="fa-solid fa-right-to-bracket"></i> Войти</button>
+    <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
+    <button class="btn btn-primary" style="width:100%;" onclick="startGoogleAuth('login')"><i class="fa-brands fa-google"></i> Продолжить с Google</button>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
@@ -1172,12 +1171,8 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
-    <p class="subtitle">Присоединяйся к аренам Squadra</p>
-    <div class="form-group"><label>Никнейм</label><input placeholder="Ваш игровой ник"></div>
-    <div class="form-group"><label>Email</label><input type="email" placeholder="email@example.com"></div>
-    <div class="form-group"><label>Пароль</label><input type="password" placeholder="Минимум 8 символов"></div>
-    <div class="form-group"><label>Любимая игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('Аккаунт создан'); closeModal('registerModal')"><i class="fa-solid fa-user-plus"></i> Создать аккаунт</button>
+    <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
+    <button class="btn btn-primary" style="width:100%;" onclick="startGoogleAuth('signup')"><i class="fa-brands fa-google"></i> Создать аккаунт через Google</button>
   </div>
 </div>
 
@@ -1479,6 +1474,92 @@
       });
     }
   });
+
+  // ===== SUPABASE AUTH =====
+  // Public client configuration only. Never put a Supabase secret/service-role key here.
+  const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
+  let supabaseClient = null;
+
+  function authIsConfigured() {
+    return !SUPABASE_URL.includes('YOUR_PROJECT_REF') &&
+      !SUPABASE_PUBLISHABLE_KEY.includes('YOUR_SUPABASE_PUBLISHABLE_KEY');
+  }
+
+  async function startGoogleAuth() {
+    if (!authIsConfigured()) {
+      showNotification('Сначала укажите URL проекта Supabase и publishable key.');
+      return;
+    }
+    if (!supabaseClient) {
+      showNotification('Не удалось загрузить Supabase. Обновите страницу и попробуйте снова.');
+      return;
+    }
+    if (location.protocol === 'file:') {
+      showNotification('Откройте Squadra через сайт или локальный веб-сервер для входа.');
+      return;
+    }
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + location.pathname }
+    });
+    if (error) {
+      console.error('Google OAuth error:', error);
+      showNotification('Не удалось начать вход через Google. Проверьте настройки OAuth.');
+    }
+  }
+
+  function renderAuthState(user) {
+    const actions = document.querySelector('.auth-buttons');
+    if (!actions) return;
+    actions.replaceChildren();
+    if (!user) {
+      const login = document.createElement('button');
+      login.className = 'btn btn-ghost';
+      login.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Войти';
+      login.onclick = () => openModal('loginModal');
+      const register = document.createElement('button');
+      register.className = 'btn btn-primary';
+      register.innerHTML = '<i class="fa-solid fa-user-plus"></i> Регистрация';
+      register.onclick = () => openModal('registerModal');
+      actions.append(login, register);
+      return;
+    }
+    const identity = document.createElement('span');
+    identity.className = 'badge badge-success';
+    identity.textContent = user.email || user.user_metadata?.name || 'В аккаунте';
+    const signOut = document.createElement('button');
+    signOut.className = 'btn btn-ghost';
+    signOut.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Выйти';
+    signOut.onclick = async () => {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) showNotification('Не удалось выйти. Попробуйте ещё раз.');
+    };
+    actions.append(identity, signOut);
+  }
+
+  async function initSupabaseAuth() {
+    const oauthError = new URLSearchParams(location.search).get('error_description');
+    if (oauthError) {
+      showNotification('Вход через Google не завершился. Проверьте настройки провайдера.');
+      const cleanUrl = location.pathname + location.hash;
+      history.replaceState({}, document.title, cleanUrl);
+    }
+    if (!authIsConfigured() || !window.supabase?.createClient) return;
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    renderAuthState(session?.user || null);
+    supabaseClient.auth.onAuthStateChange((event, nextSession) => {
+      renderAuthState(nextSession?.user || null);
+      if (event === 'SIGNED_IN') {
+        closeModal('loginModal');
+        closeModal('registerModal');
+        showNotification('Вход выполнен: ' + (nextSession?.user?.email || 'аккаунт Google'));
+      }
+    });
+  }
+
+  initSupabaseAuth();
 </script>
 
 </body>
