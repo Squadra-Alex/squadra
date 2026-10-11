@@ -1089,7 +1089,8 @@
     <!-- EVENTS -->
     <section id="events" class="section">
       <h1><i class="fa-solid fa-calendar-days"></i>Игровые события</h1>
-      <p class="subtitle">Расписание турниров и событий платформы.</p>
+      <p class="subtitle">Расписание чемпионатов, лиг и игровых событий.</p>
+      <button class="btn btn-primary" style="margin-bottom:16px;" onclick="openModal('createEventModal')"><i class="fa-solid fa-plus"></i> Создать событие</button>
       <div id="eventsGrid" class="grid grid-2"><p class="subtitle">Войди, чтобы загрузить события.</p></div>
     </section>
 
@@ -1220,6 +1221,7 @@
   </div>
 </div>
 
+<div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script>
   // ===== PARTICLE FX (canvas): красные искры + тёмные dust-частицы =====
@@ -2123,9 +2125,48 @@
 
   async function loadPlatformEvents() {
     const el=document.getElementById('eventsGrid');if(!el||!supabaseClient)return;
-    const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,starts_at,prize,description,participant_limit').order('starts_at',{ascending:true,nullsFirst:false});
-    if(error){console.error(error);el.innerHTML='<p class="subtitle">Не удалось загрузить события.</p>';return;}
-    el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='live'?'badge-danger':t.status==='registration'?'badge-warning':'badge-info')+'">'+escapeHtml(t.status)+'</span><h3>'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):' • дата не задана')+'</p>'+(t.description?'<p>'+escapeHtml(t.description)+'</p>':'')+(t.prize?'<strong>'+escapeHtml(t.prize)+'</strong>':'')+(t.status==='registration'?'<button class="btn btn-primary" onclick="registerForTournament(\''+escapeHtml(t.id)+'\')">Записаться</button>':'')+'</article>').join('')||'<p class="subtitle">Событий пока нет.</p>';
+    const [ev,tr]=await Promise.all([
+      supabaseClient.from('platform_events').select('id,owner_id,title,event_type,game_id,starts_at,description,registration_limit').order('starts_at'),
+      supabaseClient.from('tournaments').select('id,name,game_name,status,starts_at,prize,description').order('starts_at',{ascending:true,nullsFirst:false})
+    ]);
+    if(ev.error)console.error(ev.error);
+    const games=await supabaseClient.from('games').select('id,name').eq('is_active',true).order('name');
+    const names=new Map((games.data||[]).map(g=>[g.id,g.name]));
+    const select=document.getElementById('platformEventGame');
+    if(select){const old=select.value;select.innerHTML='<option value="">Без привязки к игре</option>'+(games.data||[]).map(g=>'<option value="'+escapeHtml(g.id)+'">'+escapeHtml(g.name)+'</option>').join('');select.value=old;}
+    const rows=ev.data||[],ids=rows.map(e=>e.id);
+    const regs=ids.length?await supabaseClient.from('platform_event_registrations').select('event_id,user_id').in('event_id',ids):{data:[]};
+    const counts=new Map(),mine=new Set();(regs.data||[]).forEach(x=>{counts.set(x.event_id,(counts.get(x.event_id)||0)+1);if(x.user_id===currentUser?.id)mine.add(x.event_id);});
+    const list=[...rows.map(e=>({...e,_event:true})),...(tr.data||[]).map(t=>({...t,_tournament:true}))].sort((x,y)=>new Date(x.starts_at||0)-new Date(y.starts_at||0));
+    el.innerHTML=list.map(e=>{
+      if(e._event){
+        const count=counts.get(e.id)||0,full=e.registration_limit&&count>=e.registration_limit,joined=mine.has(e.id);
+        return '<article class="card"><span class="badge badge-info">'+escapeHtml(({event:'Событие',championship:'Чемпионат',league:'Лига',meetup:'Встреча'})[e.event_type]||'Событие')+'</span><h3>'+escapeHtml(e.title)+'</h3><p class="subtitle">'+escapeHtml(names.get(e.game_id)||'Все игры')+' • '+new Date(e.starts_at).toLocaleString('ru-RU')+' • '+count+(e.registration_limit?'/'+e.registration_limit:'')+' участников</p><p>'+escapeHtml(e.description||'')+'</p>'+(currentUser?(joined?'<button class="btn btn-ghost" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,true)">Отменить участие</button>':!full?'<button class="btn btn-primary" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,false)">Участвовать</button>':'<span class="badge badge-warning">Мест нет</span>'):'<button class="btn btn-primary" onclick="requireAccount()">Войти для участия</button>')+((e.owner_id===currentUser?.id||isAdmin)?'<button class="btn btn-ghost" onclick="deletePlatformEvent(&quot;'+e.id+'&quot;)">Удалить</button>':'')+'</article>';
+      }
+      return '<article class="card"><span class="badge badge-warning">'+escapeHtml(e.status)+'</span><h3>'+escapeHtml(e.name)+'</h3><p class="subtitle">'+escapeHtml(e.game_name)+' • '+(e.starts_at?new Date(e.starts_at).toLocaleString('ru-RU'):'дата не задана')+'</p>'+(e.description?'<p>'+escapeHtml(e.description)+'</p>':'')+(e.prize?'<strong>'+escapeHtml(e.prize)+'</strong>':'')+(e.status==='registration'?'<button class="btn btn-primary" onclick="registerForTournament(&quot;'+escapeHtml(e.id)+'&quot;)">Записаться в турнир</button>':'')+'</article>';
+    }).join('')||'<p class="subtitle">Событий пока нет. Создай первое.</p>';
+  }
+  async function createPlatformEvent() {
+    if(!currentUser)return requireAccount();
+    const title=document.getElementById('platformEventTitle').value.trim(),starts=document.getElementById('platformEventStarts').value;
+    if(title.length<3||!starts)return showNotification('Укажи название и дату события.');
+    const raw=document.getElementById('platformEventLimit').value.trim(),limit=raw?Number(raw):null;
+    if(limit!==null&&(!Number.isInteger(limit)||limit<2||limit>10000))return showNotification('Лимит должен быть от 2 до 10 000.');
+    const {error}=await supabaseClient.from('platform_events').insert({owner_id:currentUser.id,title,event_type:document.getElementById('platformEventType').value,game_id:document.getElementById('platformEventGame').value||null,starts_at:new Date(starts).toISOString(),registration_limit:limit,description:document.getElementById('platformEventDescription').value.trim()});
+    if(error){console.error(error);return showNotification('Не удалось создать событие.');}
+    closeModal('createEventModal');showNotification('Событие опубликовано.');await loadPlatformEvents();
+  }
+  async function togglePlatformEventRegistration(eventId,isRegistered) {
+    if(!currentUser)return requireAccount();
+    const request=isRegistered?supabaseClient.from('platform_event_registrations').delete().eq('event_id',eventId).eq('user_id',currentUser.id):supabaseClient.from('platform_event_registrations').insert({event_id:eventId,user_id:currentUser.id});
+    const {error}=await request;if(error){console.error(error);return showNotification(error.message?.includes('full')?'Все места заняты.':'Не удалось изменить регистрацию.');}
+    showNotification(isRegistered?'Участие отменено.':'Ты зарегистрирован.');await loadPlatformEvents();
+  }
+  async function deletePlatformEvent(eventId) {
+    if(!currentUser||!confirm('Удалить событие?'))return;
+    const {error}=await supabaseClient.from('platform_events').delete().eq('id',eventId);
+    if(error){console.error(error);return showNotification('Не удалось удалить событие.');}
+    await loadPlatformEvents();showNotification('Событие удалено.');
   }
 
   async function loadPendingMatches() {
