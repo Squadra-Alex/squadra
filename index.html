@@ -1593,15 +1593,41 @@
     });
   }
 
+  let supabaseAuthLoader = null;
+
+  async function ensureSupabaseClient() {
+    if (!authIsConfigured()) throw new Error('Supabase Auth is not configured.');
+    if (!window.supabase?.createClient) {
+      if (!supabaseAuthLoader) {
+        supabaseAuthLoader = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+          script.async = true;
+          script.onload = () => window.supabase?.createClient
+            ? resolve()
+            : reject(new Error('Supabase client failed to initialize.'));
+          script.onerror = () => reject(new Error('Supabase client could not be loaded.'));
+          document.head.appendChild(script);
+        });
+      }
+      await supabaseAuthLoader;
+    }
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    }
+    return supabaseClient;
+  }
+
   async function handleGoogleCredential(response) {
     if (googleSignInPending) return;
-    if (!response?.credential || !googleAuthNonce || !supabaseClient) {
-      showNotification('Не удалось получить ответ Google. Попробуйте ещё раз.');
+    if (!response?.credential || !googleAuthNonce) {
+      showNotification('Google не вернул данные авторизации. Попробуйте ещё раз.');
       return;
     }
     googleSignInPending = true;
     try {
-      const { error } = await supabaseClient.auth.signInWithIdToken({
+      const client = await ensureSupabaseClient();
+      const { error } = await client.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
         nonce: googleAuthNonce
@@ -1865,13 +1891,13 @@
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
+    initGoogleIdentity();
     if (!authIsConfigured() || !window.supabase?.createClient) return;
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser=session?.user||null;
     renderAuthState(currentUser);
     if(currentUser) await loadAccountData();
-    initGoogleIdentity();
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
       if(currentUser) loadAccountData(); else {accountProfile=null;accountFriends=[];}
