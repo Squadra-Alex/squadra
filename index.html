@@ -1265,7 +1265,7 @@
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
     <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
-    <div id="googleLoginButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleIdentityPrompt()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleLoginButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleIdentityPrompt('googleLoginButton')"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
@@ -1275,7 +1275,7 @@
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
     <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
-    <div id="googleSignupButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleIdentityPrompt()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleSignupButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleIdentityPrompt('googleSignupButton')"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
   </div>
 </div>
 
@@ -1413,7 +1413,13 @@
   }
 
   // MODALS
-  function openModal(id) { document.getElementById(id).classList.add('active'); }
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('active');
+    const googleButtonId = id === 'loginModal' ? 'googleLoginButton' : id === 'registerModal' ? 'googleSignupButton' : null;
+    if (googleButtonId) requestAnimationFrame(() => initGoogleIdentity(googleButtonId));
+  }
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
   document.querySelectorAll('.modal').forEach(m => {
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
@@ -1592,44 +1598,52 @@
     return googleIdentityLoader;
   }
 
-  async function initGoogleIdentity() {
-    if (googleIdentityInitialized) return;
+  function renderGoogleIdentityButton(id) {
+    const container = document.getElementById(id);
+    if (!container || !googleIdentityInitialized || container.querySelector('iframe')) return;
+    const fallback = container.querySelector('.google-fallback');
+    if (fallback) fallback.hidden = true;
+    Array.from(container.children).forEach(child => {
+      if (child !== fallback) child.remove();
+    });
     try {
-      await loadGoogleIdentityScript();
-      const { nonce, hashedNonce } = await createGoogleNonce();
-      googleAuthNonce = nonce;
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        nonce: hashedNonce,
-        use_fedcm_for_button: true,
-        callback: handleGoogleCredential
+      window.google.accounts.id.renderButton(container, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: 320,
+        locale: 'ru'
       });
-      googleIdentityInitialized = true;
-      ['googleLoginButton', 'googleSignupButton'].forEach(id => {
-        const container = document.getElementById(id);
-        if (!container) return;
-        const fallback = container.querySelector('.google-fallback');
-        if (fallback) fallback.hidden = true;
-        try {
-          window.google.accounts.id.renderButton(container, {
-            type: 'standard',
-            theme: 'filled_black',
-            size: 'large',
-            text: 'continue_with',
-            shape: 'rectangular',
-            logo_alignment: 'left',
-            width: 320,
-            locale: 'ru'
-          });
-          window.setTimeout(() => {
-            if (!container.querySelector('iframe') && fallback) fallback.hidden = false;
-          }, 1500);
-        } catch (error) {
-          console.error('Could not render Google Identity button:', error);
-          if (fallback) fallback.hidden = false;
-        }
-      });
+      window.setTimeout(() => {
+        if (!container.querySelector('iframe') && fallback) fallback.hidden = false;
+      }, 1500);
     } catch (error) {
+      console.error('Could not render Google Identity button:', error);
+      if (fallback) fallback.hidden = false;
+    }
+  }
+
+  async function initGoogleIdentity(buttonId) {
+    try {
+      if (!googleIdentityInitialized) {
+        await loadGoogleIdentityScript();
+        const { nonce, hashedNonce } = await createGoogleNonce();
+        googleAuthNonce = nonce;
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          nonce: hashedNonce,
+          use_fedcm_for_button: true,
+          callback: handleGoogleCredential
+        });
+        googleIdentityInitialized = true;
+      }
+      if (buttonId) renderGoogleIdentityButton(buttonId);
+    } catch (error) {
+      googleIdentityLoader = null;
+      googleIdentityInitialized = false;
       console.error('Google Identity Services did not initialize:', error);
       ['googleLoginButton', 'googleSignupButton'].forEach(id => {
         const fallback = document.querySelector('#' + id + ' .google-fallback');
@@ -1638,17 +1652,11 @@
     }
   }
 
-  async function startGoogleIdentityPrompt() {
-    try {
-      await initGoogleIdentity();
-      if (!window.google?.accounts?.id || !googleIdentityInitialized) {
-        showNotification('Google-вход не загрузился. Обнови страницу и попробуй ещё раз.');
-        return;
-      }
-      window.google.accounts.id.prompt();
-    } catch (error) {
-      console.error('Could not start Google sign-in:', error);
-      showNotification('Не удалось открыть вход Google. Попробуй ещё раз.');
+  async function startGoogleIdentityPrompt(buttonId) {
+    await initGoogleIdentity(buttonId);
+    const container = document.getElementById(buttonId);
+    if (!container?.querySelector('iframe')) {
+      showNotification('Google-кнопка не загрузилась. Попробуй нажать ещё раз.');
     }
   }
 
