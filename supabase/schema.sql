@@ -106,7 +106,7 @@ create index if not exists team_members_user_idx on public.team_members(user_id)
 create or replace function public.add_team_owner_membership()
 returns trigger language plpgsql
 set search_path = ''
-as $
+as $$
 begin
   insert into public.team_members(team_id,user_id,role)
   values(new.id,new.owner_id,'owner')
@@ -134,7 +134,7 @@ create index if not exists team_invites_invitee_idx on public.team_invites(invit
 create or replace function public.accept_team_invite_add_member()
 returns trigger language plpgsql
 set search_path = ''
-as $
+as $$
 begin
   if new.status='accepted' and old.status<>'accepted' then
     insert into public.team_members(team_id,user_id,role)
