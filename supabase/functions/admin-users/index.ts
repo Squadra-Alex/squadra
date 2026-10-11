@@ -17,7 +17,9 @@ Deno.serve(async (req: Request) => {
   const authorization = req.headers.get("Authorization");
   const token = authorization?.replace(/^Bearer\s+/i, "");
   const url = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  let secretKey = "";
+  try { secretKey = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}").default || ""; } catch { /* ignore malformed optional key set */ }
+  const serviceRoleKey = secretKey || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!token || !url || !serviceRoleKey) return response({ error: "Unauthorized" }, 401);
 
   const admin = createClient(url, serviceRoleKey, {
