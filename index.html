@@ -1652,18 +1652,16 @@
 
   let supabaseAuthLoader = null;
 
-  async function startGoogleOAuth() {
-    try {
-      const client = await ensureSupabaseClient();
-      const { error } = await client.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin + window.location.pathname }
-      });
-      if (error) throw error;
-    } catch (error) {
-      console.error('Google OAuth could not be started:', error);
-      showNotification('Не удалось открыть вход Google. Попробуй ещё раз.');
+  function startGoogleOAuth() {
+    if (!authIsConfigured()) {
+      showNotification('Вход Google пока не настроен.');
+      return;
     }
+    const redirectTo = window.location.origin + window.location.pathname;
+    const authorizeUrl = new URL('/auth/v1/authorize', SUPABASE_URL);
+    authorizeUrl.searchParams.set('provider', 'google');
+    authorizeUrl.searchParams.set('redirect_to', redirectTo);
+    window.location.assign(authorizeUrl.toString());
   }
 
   async function ensureSupabaseClient() {
