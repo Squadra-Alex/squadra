@@ -3,394 +3,572 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OrbitArena — Космическая игровая платформа 🚀</title>
+<title>SQUADRA — Киберспортивная Платформа</title>
+<!-- Font Awesome 6 Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts: Orbitron & Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
   :root {
-    --bg: #0a0e1a;
-    --bg-2: #121826;
-    --bg-3: #1a2236;
-    --accent: #00f0ff;
-    --accent-2: #ff00aa;
-    --accent-3: #a855f7;
-    --text: #e6edf3;
-    --muted: #8b95a7;
-    --success: #00ff88;
-    --danger: #ff3860;
-    --border: #2a3348;
+    --bg-main: #0a0a0c;
+    --bg-card: rgba(18, 18, 22, 0.85);
+    --bg-card-hover: rgba(26, 26, 32, 0.95);
+    --border-color: rgba(255, 30, 39, 0.2);
+    --border-color-hover: rgba(255, 30, 39, 0.6);
+    
+    /* Neon Red Theme */
+    --accent-red: #ff1e27;
+    --accent-red-glow: rgba(255, 30, 39, 0.4);
+    --accent-red-subtle: rgba(255, 30, 39, 0.1);
+    
+    --text-main: #f1f1f3;
+    --text-muted: #8a8a9e;
+    
+    --success: #00e676;
+    --warning: #ffb300;
   }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+  }
+
   body {
-    background: radial-gradient(ellipse 120% 80% at 20% -10%, #1b1440 0%, transparent 55%),
-                radial-gradient(ellipse 100% 70% at 85% 15%, #0b2a4a 0%, transparent 50%),
-                radial-gradient(ellipse 90% 60% at 50% 110%, #2a0b3d 0%, transparent 55%),
-                linear-gradient(180deg, #05070f 0%, #030409 100%);
+    background-color: var(--bg-main);
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(255, 30, 39, 0.12) 0%, transparent 60%),
+      linear-gradient(to bottom, rgba(10, 10, 12, 0.8), #0a0a0c),
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px);
     background-attachment: fixed;
-    color: var(--text);
+    color: var(--text-main);
     min-height: 100vh;
     overflow-x: hidden;
   }
 
-  /* ===== SPACE BACKGROUND ===== */
-  #space-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-  .nebula {
-    position: fixed; border-radius: 50%; filter: blur(90px);
-    z-index: 0; pointer-events: none; opacity: .35;
+  /* HEADINGS & FONTS */
+  h1, h2, h3, .logo-text, .btn, th {
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
-  .nebula-1 { width: 600px; height: 600px; top: -180px; left: -140px;
-    background: radial-gradient(circle, rgba(168,85,247,.5), transparent 70%);
-    animation: drift 26s ease-in-out infinite alternate; }
-  .nebula-2 { width: 520px; height: 520px; bottom: -160px; right: -120px;
-    background: radial-gradient(circle, rgba(0,240,255,.35), transparent 70%);
-    animation: drift 32s ease-in-out infinite alternate-reverse; }
-  .nebula-3 { width: 420px; height: 420px; top: 35%; right: 20%;
-    background: radial-gradient(circle, rgba(255,0,170,.22), transparent 70%);
-    animation: drift 40s ease-in-out infinite alternate; }
-  @keyframes drift {
-    from { transform: translate(0,0) scale(1); }
-    to   { transform: translate(60px, -40px) scale(1.15); }
-  }
-  header, .container, .modal, .notification { position: relative; z-index: 1; }
-  header { z-index: 100; }
+
   /* HEADER */
   header {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(10, 14, 26, 0.85);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(10, 10, 12, 0.9);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 30px;
-    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
   }
+
   .logo {
-    font-size: 24px; font-weight: 900;
-    background: linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
-    background-size: 300% 100%;
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    letter-spacing: 2px;
-    animation: holo 6s linear infinite;
-    text-shadow: 0 0 30px rgba(0,240,255,.35);
-    display: flex; align-items: center; gap: 8px;
-  }
-  @keyframes holo { to { background-position: 300% 0; } }
-  nav ul { display: flex; gap: 8px; list-style: none; flex-wrap: wrap; }
-  nav a {
-    color: var(--muted); text-decoration: none; padding: 8px 14px;
-    border-radius: 8px; font-size: 14px; transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     cursor: pointer;
   }
-  nav a:hover, nav a.active {
-    color: var(--accent); background: rgba(0, 240, 255, 0.1);
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+
+  .logo-icon {
+    color: var(--accent-red);
+    font-size: 26px;
+    filter: drop-shadow(0 0 8px var(--accent-red-glow));
   }
-  .auth-buttons { display: flex; gap: 10px; }
-  .btn {
-    padding: 10px 20px; border: none; border-radius: 8px;
-    font-weight: 600; cursor: pointer; transition: all .2s;
+
+  .logo-text {
+    font-size: 26px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 3px;
+  }
+
+  .logo-text span {
+    color: var(--accent-red);
+    text-shadow: 0 0 10px var(--accent-red-glow);
+  }
+
+  nav ul {
+    display: flex;
+    gap: 6px;
+    list-style: none;
+  }
+
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  nav a i {
     font-size: 14px;
   }
-  .btn-primary {
-    background: linear-gradient(90deg, var(--accent), var(--accent-3));
-    color: #05070d;
-    box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 26px rgba(0, 240, 255, 0.55); }
-  .btn-ghost { background: rgba(18,24,38,.4); color: var(--text); border: 1px solid var(--border); }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 14px rgba(0,240,255,.25); }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-success { background: var(--success); color: #05070d; }
 
-  /* HOLO HEADINGS */
-  h1 { font-size: 34px; margin-bottom: 8px; letter-spacing: .5px; }
-  h1, h2.grad {
-    background: linear-gradient(90deg, #fff 0%, var(--accent) 45%, var(--accent-3) 75%, var(--accent-2) 100%);
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  nav a:hover, nav a.active {
+    color: #fff;
+    background: var(--accent-red-subtle);
+    border-bottom: 2px solid var(--accent-red);
+    box-shadow: 0 0 15px rgba(255, 30, 39, 0.15);
+  }
+
+  .auth-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  /* BUTTONS */
+  .btn {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+
+  .btn-primary {
+    background: var(--accent-red);
+    color: #fff;
+    box-shadow: 0 0 12px var(--accent-red-glow);
+  }
+
+  .btn-primary:hover {
+    background: #ff353d;
+    box-shadow: 0 0 20px rgba(255, 30, 39, 0.7);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent-red);
+    color: #fff;
+    box-shadow: 0 0 12px var(--accent-red-glow);
+    background: var(--accent-red-subtle);
+  }
+
+  .btn-danger {
+    background: #dc2626;
+    color: #fff;
   }
 
   /* LAYOUT */
-  .container { display: flex; min-height: calc(100vh - 70px); }
+  .container {
+    display: flex;
+    min-height: calc(100vh - 73px);
+  }
+
   aside {
-    width: 240px; background: var(--bg-2);
-    padding: 20px 0; border-right: 1px solid var(--border);
-    position: sticky; top: 70px; height: calc(100vh - 70px);
+    width: 260px;
+    background: rgba(12, 12, 15, 0.95);
+    border-right: 1px solid var(--border-color);
+    padding: 24px 0;
+    position: sticky;
+    top: 73px;
+    height: calc(100vh - 73px);
     overflow-y: auto;
   }
-  aside h3 {
-    padding: 0 20px; color: var(--muted); font-size: 12px;
-    text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;
-  }
-  aside ul { list-style: none; margin-bottom: 20px; }
-  aside li {
-    padding: 10px 20px; cursor: pointer; transition: all .2s;
-    font-size: 14px; border-left: 3px solid transparent;
-  }
-  aside li:hover { background: var(--bg-3); color: var(--accent); }
-  aside li.active {
-    background: linear-gradient(90deg, rgba(0, 240, 255, 0.1), transparent);
-    color: var(--accent); border-left-color: var(--accent);
-  }
-  main { flex: 1; padding: 30px; }
 
-  /* GLASSMORPHISM PANELS */
-  aside, .card, .stat-box, .game-card, table, .chat-container, .modal-content,
-  .achievement, .bracket-match, .profile-header, input, select, textarea {
-    background: rgba(18, 24, 38, 0.55);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+  aside h3 {
+    padding: 0 24px;
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-bottom: 12px;
+    letter-spacing: 1.5px;
   }
-  aside { border-right: 1px solid rgba(0, 240, 255, 0.12); }
+
+  aside ul {
+    list-style: none;
+    margin-bottom: 28px;
+  }
+
+  aside li {
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-left: 3px solid transparent;
+  }
+
+  aside li i {
+    width: 18px;
+    text-align: center;
+  }
+
+  aside li:hover {
+    background: rgba(255, 255, 255, 0.02);
+    color: #fff;
+  }
+
+  aside li.active {
+    background: linear-gradient(90deg, var(--accent-red-subtle), transparent);
+    color: #fff;
+    border-left-color: var(--accent-red);
+  }
+
+  main {
+    flex: 1;
+    padding: 32px;
+    max-width: 1400px;
+  }
 
   /* SECTIONS */
-  .section { display: none; animation: fadeIn .4s; }
-  .section.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .section {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+  }
 
-  h1 { font-size: 34px; margin-bottom: 8px; letter-spacing: .5px; }
-  h2 { font-size: 24px; margin-bottom: 16px; }
-  h3 { font-size: 18px; margin-bottom: 12px; }
-  .subtitle { color: var(--muted); margin-bottom: 24px; }
+  .section.active {
+    display: block;
+  }
 
-  /* CARDS */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  /* CARDS & PANELS */
   .grid { display: grid; gap: 20px; }
-  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
   .card {
-    background: var(--bg-2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px; transition: all .3s;
-    position: relative; overflow: hidden;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 24px;
+    transition: all 0.25s ease;
+    position: relative;
+    backdrop-filter: blur(8px);
   }
-  .card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    transform: scaleX(0); transition: transform .3s;
+
+  .card:hover {
+    border-color: var(--border-color-hover);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 30, 39, 0.1);
+    transform: translateY(-2px);
   }
-  .card:hover::before { transform: scaleX(1); }
-  .card:hover { transform: translateY(-4px); border-color: var(--accent); }
-  .card h3 { color: var(--accent); }
-  .card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  .card h3 {
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .card p {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
 
   /* GAME CARDS */
   .game-card {
-    border-radius: 14px; overflow: hidden;
-    border: 1px solid rgba(0, 240, 255, 0.15); cursor: pointer; transition: all .3s;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s ease;
   }
+
   .game-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 240, 255, 0.25), 0 0 0 1px rgba(0,240,255,.3);
+    border-color: var(--accent-red);
+    box-shadow: 0 0 20px var(--accent-red-glow);
+    transform: translateY(-3px);
   }
+
   .game-img {
     height: 140px;
-    background: linear-gradient(135deg, #2b1a6b, #7b2ff7 45%, #00d4ff);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 48px; position: relative;
+    background: linear-gradient(135deg, #181820, #0d0d12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    color: var(--accent-red);
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
   }
-  .game-img::after {
-    content: ''; position: absolute; inset: 0;
-    background-image: radial-gradient(rgba(255,255,255,.7) 1px, transparent 1px);
-    background-size: 26px 26px; opacity: .12; pointer-events: none;
-  }
+
   .game-info { padding: 16px; }
-  .game-info h4 { margin-bottom: 6px; }
-  .game-info .genre { color: var(--muted); font-size: 12px; }
-  .game-info .online { color: var(--success); font-size: 13px; margin-top: 8px; }
+  .game-info h4 { font-family: 'Orbitron', sans-serif; font-size: 16px; margin-bottom: 4px; }
+  .game-info .genre { color: var(--text-muted); font-size: 12px; }
+  .game-info .online { color: var(--success); font-size: 12px; margin-top: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 
-  /* PROFILE */
-  .profile-header {
-    background: linear-gradient(135deg, rgba(43,26,107,.6), rgba(0,212,255,.12) 60%, rgba(18,24,38,.5));
-    border-radius: 16px; padding: 30px; display: flex;
-    align-items: center; gap: 24px; margin-bottom: 24px;
-    border: 1px solid rgba(0, 240, 255, 0.2);
-    box-shadow: 0 0 40px rgba(0, 240, 255, 0.08) inset;
-    position: relative; overflow: hidden;
+  /* STAT BOXES */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
   }
-  .profile-header::after {
-    content: ''; position: absolute; top: -60%; left: -20%;
-    width: 140px; height: 220%; transform: rotate(25deg);
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
-    animation: shine 5s ease-in-out infinite;
-  }
-  @keyframes shine { 0%,60% { left: -20%; } 100% { left: 120%; } }
-  .avatar {
-    width: 100px; height: 100px; border-radius: 50%;
-    background: conic-gradient(from 180deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 40px; font-weight: 900; color: #05070d;
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.45), 0 0 60px rgba(168, 85, 247, 0.25);
-    border: 3px solid rgba(5, 7, 13, .9);
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 25px rgba(0,240,255,.4), 0 0 50px rgba(168,85,247,.2); }
-    50%      { box-shadow: 0 0 40px rgba(0,240,255,.65), 0 0 80px rgba(168,85,247,.35); }
-  }
-  .profile-info h2 { margin-bottom: 4px; }
-  .profile-info .level { color: var(--accent); font-size: 14px; }
-  .profile-info .status { color: var(--muted); font-size: 13px; margin-top: 6px; }
 
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .stat-box {
-    background: var(--bg-2); padding: 20px; border-radius: 12px;
-    border: 1px solid var(--border); text-align: center;
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    text-align: center;
   }
+
   .stat-box .value {
-    font-size: 28px; font-weight: 900;
-    background: linear-gradient(90deg, var(--accent), var(--accent-3));
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px rgba(0,240,255,.35));
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 10px var(--accent-red-glow);
   }
-  .stat-box .label { color: var(--muted); font-size: 12px; text-transform: uppercase; margin-top: 4px; letter-spacing: 1px; }
 
-  /* TABLE */
-  table { width: 100%; border-collapse: collapse; background: var(--bg-2); border-radius: 12px; overflow: hidden; }
-  th, td { padding: 14px; text-align: left; border-bottom: 1px solid var(--border); }
-  th { background: rgba(26, 34, 54, 0.8); color: var(--accent); font-size: 13px; text-transform: uppercase; }
-  tr:hover { background: rgba(0, 240, 255, 0.05); }
+  .stat-box .label {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
 
-  /* FORMS */
+  /* PROFILE HEADER */
+  .profile-header {
+    background: linear-gradient(135deg, rgba(255, 30, 39, 0.15), rgba(18, 18, 22, 0.9));
+    border: 1px solid var(--border-color-hover);
+    border-radius: 8px;
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 0 30px rgba(255, 30, 39, 0.08);
+  }
+
+  .avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: #15151c;
+    border: 2px solid var(--accent-red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: #fff;
+    box-shadow: 0 0 20px var(--accent-red-glow);
+  }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+  }
+
+  th, td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 14px;
+  }
+
+  th {
+    background: rgba(255, 30, 39, 0.08);
+    color: #fff;
+    font-size: 12px;
+  }
+
+  tr:hover { background: rgba(255, 30, 39, 0.03); }
+
+  /* FORMS & INPUTS */
   .form-group { margin-bottom: 16px; }
-  label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted); }
+  label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
   input, select, textarea {
-    width: 100%; padding: 10px 14px; background: var(--bg-3);
-    border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-size: 14px; transition: all .2s;
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(10, 10, 12, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-main);
+    font-size: 14px;
+    transition: all 0.2s;
   }
   input:focus, select:focus, textarea:focus {
-    outline: none; border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
+    outline: none;
+    border-color: var(--accent-red);
+    box-shadow: 0 0 10px var(--accent-red-glow);
   }
-
-  /* MODAL */
-  .modal {
-    display: none; position: fixed; inset: 0; z-index: 1000;
-    background: rgba(3, 4, 9, 0.75); backdrop-filter: blur(6px);
-    align-items: center; justify-content: center;
-  }
-  .modal.active { display: flex; }
-  .modal-content {
-    border-radius: 18px; padding: 30px;
-    width: 90%; max-width: 450px;
-    border: 1px solid rgba(0, 240, 255, 0.3);
-    box-shadow: 0 0 60px rgba(0, 240, 255, 0.15), 0 20px 60px rgba(0,0,0,.6);
-    position: relative;
-    animation: modalIn .3s cubic-bezier(.2,.9,.3,1.2);
-  }
-  @keyframes modalIn { from { transform: scale(.9) translateY(20px); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .modal-close {
-    position: absolute; top: 14px; right: 14px;
-    background: none; border: none; color: var(--muted);
-    font-size: 24px; cursor: pointer;
-  }
-
-  /* CHAT */
-  .chat-container {
-    background: var(--bg-2); border-radius: 12px;
-    border: 1px solid var(--border); height: 500px;
-    display: flex; flex-direction: column;
-  }
-  .chat-header {
-    padding: 16px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 12px;
-  }
-  .chat-messages {
-    flex: 1; overflow-y: auto; padding: 16px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  .message {
-    max-width: 70%; padding: 10px 14px; border-radius: 12px;
-    background: var(--bg-3); font-size: 14px;
-  }
-  .message.own { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-3)); color: #05070d; box-shadow: 0 0 18px rgba(0,240,255,.25); }
-  .message .author { font-size: 11px; color: var(--accent); margin-bottom: 4px; font-weight: 600; }
-  .message.own .author { color: rgba(5,7,13,0.65); }
-  .chat-input {
-    padding: 12px; border-top: 1px solid var(--border);
-    display: flex; gap: 10px;
-  }
-  .chat-input input { flex: 1; }
 
   /* BADGES */
   .badge {
-    display: inline-block; padding: 4px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-family: 'Orbitron', sans-serif;
   }
-  .badge-success { background: rgba(0, 255, 136, 0.15); color: var(--success); }
-  .badge-danger { background: rgba(255, 56, 96, 0.15); color: var(--danger); }
-  .badge-info { background: rgba(0, 240, 255, 0.15); color: var(--accent); }
-  .badge-warning { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+  .badge-danger { background: rgba(255, 30, 39, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+  .badge-success { background: rgba(0, 230, 118, 0.15); color: var(--success); border: 1px solid var(--success); }
+  .badge-warning { background: rgba(255, 179, 0, 0.15); color: var(--warning); border: 1px solid var(--warning); }
 
-  /* PROGRESS */
-  .progress {
-    height: 8px; background: var(--bg-3); border-radius: 4px; overflow: hidden;
-    margin-top: 8px;
+  /* MODAL */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
   }
-  .progress-bar {
-    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    border-radius: 4px; transition: width .6s;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+  .modal.active { display: flex; }
+  .modal-content {
+    background: #121216;
+    border-radius: 8px;
+    padding: 32px;
+    width: 90%;
+    max-width: 460px;
+    border: 1px solid var(--border-color-hover);
+    box-shadow: 0 0 40px rgba(255, 30, 39, 0.2);
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .modal-close:hover { color: var(--accent-red); }
+
+  /* CHAT */
+  .chat-container {
+    background: var(--bg-card);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    height: 520px;
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .message {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .message.own {
+    align-self: flex-end;
+    background: var(--accent-red-subtle);
+    border-color: var(--border-color);
+  }
+  .message .author {
+    font-size: 11px;
+    color: var(--accent-red);
+    margin-bottom: 4px;
+    font-weight: 700;
   }
 
-  /* ACHIEVEMENTS */
-  .achievement {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px; border-radius: 12px;
-    border: 1px solid rgba(255, 215, 0, 0.18);
-    transition: all .3s;
-  }
-  .achievement:hover { border-color: rgba(255,215,0,.5); box-shadow: 0 0 20px rgba(255,215,0,.12); transform: translateY(-2px); }
-  .achievement-icon {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #ffe9a8, #ffd700 45%, #ff8c00);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+  .chat-input {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
   }
 
   /* NOTIFICATIONS */
   .notification {
-    position: fixed; top: 90px; right: 30px; z-index: 999;
-    background: var(--bg-2); border: 1px solid var(--accent);
-    border-radius: 10px; padding: 14px 20px;
-    box-shadow: 0 10px 30px rgba(0, 240, 255, 0.3);
-    animation: slideIn .4s;
+    position: fixed;
+    top: 90px;
+    right: 32px;
+    z-index: 3000;
+    background: #121216;
+    border: 1px solid var(--accent-red);
+    border-radius: 4px;
+    padding: 14px 24px;
+    box-shadow: 0 0 20px var(--accent-red-glow);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
-  @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
 
-  /* TOURNAMENT BRACKET */
-  .bracket {
-    display: flex; gap: 40px; overflow-x: auto; padding: 20px 0;
-  }
-  .bracket-round { display: flex; flex-direction: column; justify-content: space-around; gap: 16px; min-width: 200px; }
+  /* BRACKET */
+  .bracket { display: flex; gap: 32px; overflow-x: auto; padding: 12px 0; }
+  .bracket-round { display: flex; flex-direction: column; justify-content: space-around; gap: 16px; min-width: 220px; }
   .bracket-match {
-    background: var(--bg-2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px; font-size: 13px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px;
   }
-  .bracket-match .team { padding: 6px 8px; border-radius: 4px; margin: 2px 0; }
-  .bracket-match .team.winner { background: rgba(0, 255, 136, 0.15); color: var(--success); font-weight: 600; }
+  .bracket-match .team { padding: 6px 10px; font-size: 13px; display: flex; justify-content: space-between; }
+  .bracket-match .team.winner { color: var(--accent-red); font-weight: 700; }
 
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent), var(--accent-3)); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
-  /* SHOOTING STAR */
-  .shooting-star {
-    position: fixed; top: 12%; left: -160px; width: 150px; height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.95));
-    border-radius: 2px; z-index: 0; pointer-events: none; opacity: 0;
-    transform: rotate(18deg);
-    animation: shoot 11s ease-in infinite;
-    box-shadow: 0 0 12px rgba(0,240,255,.7);
-  }
-  @keyframes shoot {
-    0%   { transform: translateX(0) translateY(0) rotate(18deg); opacity: 0; }
-    4%   { opacity: 1; }
-    14%  { transform: translateX(115vw) translateY(38vh) rotate(18deg); opacity: 0; }
-    100% { transform: translateX(115vw) translateY(38vh) rotate(18deg); opacity: 0; }
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     aside { display: none; }
     nav ul { display: none; }
     main { padding: 16px; }
@@ -399,51 +577,47 @@
 </head>
 <body>
 
-<!-- SPACE BACKGROUND -->
-<canvas id="space-canvas"></canvas>
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div>
-<div class="shooting-star"></div>
-
 <!-- HEADER -->
 <header>
-  <div class="logo">🚀 ORBIT<span style="-webkit-text-fill-color:currentColor; opacity:.9;">ARENA</span></div>
+  <div class="logo" onclick="showSection('home')">
+    <i class="fa-solid fa-shield-halved logo-icon"></i>
+    <div class="logo-text">SQUAD<span>RA</span></div>
+  </div>
   <nav>
     <ul>
-      <li><a onclick="showSection('home')" class="active">Главная</a></li>
-      <li><a onclick="showSection('games')">Игры</a></li>
-      <li><a onclick="showSection('players')">Игроки</a></li>
-      <li><a onclick="showSection('teams')">Команды</a></li>
-      <li><a onclick="showSection('tournaments')">Турниры</a></li>
-      <li><a onclick="showSection('community')">Сообщество</a></li>
-      <li><a onclick="showSection('ranking')">Рейтинг</a></li>
-      <li><a onclick="showSection('admin')">Админ</a></li>
+      <li><a onclick="showSection('home')" class="active"><i class="fa-solid fa-house"></i> Главная</a></li>
+      <li><a onclick="showSection('games')"><i class="fa-solid fa-gamepad"></i> Игры</a></li>
+      <li><a onclick="showSection('players')"><i class="fa-solid fa-users"></i> Игроки</a></li>
+      <li><a onclick="showSection('teams')"><i class="fa-solid fa-user-group"></i> Команды</a></li>
+      <li><a onclick="showSection('tournaments')"><i class="fa-solid fa-trophy"></i> Турниры</a></li>
+      <li><a onclick="showSection('community')"><i class="fa-solid fa-comments"></i> Сообщество</a></li>
+      <li><a onclick="showSection('ranking')"><i class="fa-solid fa-ranking-star"></i> Рейтинг</a></li>
+      <li><a onclick="showSection('admin')"><i class="fa-solid fa-lock"></i> Админ</a></li>
     </ul>
   </nav>
   <div class="auth-buttons">
-    <button class="btn btn-ghost" onclick="openModal('loginModal')">Войти</button>
-    <button class="btn btn-primary" onclick="openModal('registerModal')">Регистрация</button>
+    <button class="btn btn-ghost" onclick="openModal('loginModal')"><i class="fa-solid fa-right-to-bracket"></i> Войти</button>
+    <button class="btn btn-primary" onclick="openModal('registerModal')"><i class="fa-solid fa-user-plus"></i> Регистрация</button>
   </div>
 </header>
 
 <div class="container">
   <!-- SIDEBAR -->
   <aside>
-    <h3>Личный кабинет</h3>
+    <h3>Кабинет</h3>
     <ul>
-      <li class="active" onclick="showSection('profile')">👤 Профиль</li>
-      <li onclick="showSection('library')">📚 Библиотека</li>
-      <li onclick="showSection('friends')">👥 Друзья</li>
-      <li onclick="showSection('messages')">💬 Сообщения</li>
-      <li onclick="showSection('achievements')">🏆 Достижения</li>
-      <li onclick="showSection('history')">📊 История</li>
-      <li onclick="showSection('settings')">⚙️ Настройки</li>
+      <li class="active" onclick="showSection('profile')"><i class="fa-solid fa-user"></i> Профиль</li>
+      <li onclick="showSection('library')"><i class="fa-solid fa-layer-group"></i> Библиотека</li>
+      <li onclick="showSection('friends')"><i class="fa-solid fa-user-check"></i> Друзья</li>
+      <li onclick="showSection('messages')"><i class="fa-solid fa-envelope"></i> Сообщения</li>
+      <li onclick="showSection('achievements')"><i class="fa-solid fa-award"></i> Достижения</li>
+      <li onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left"></i> История</li>
+      <li onclick="showSection('settings')"><i class="fa-solid fa-gear"></i> Настройки</li>
     </ul>
     <h3>Матчмейкинг</h3>
     <ul>
-      <li onclick="showSection('matchmaking')">🎯 Поиск игры</li>
-      <li onclick="showSection('events')">📅 События</li>
+      <li onclick="showSection('matchmaking')"><i class="fa-solid fa-crosshairs"></i> Поиск игры</li>
+      <li onclick="showSection('events')"><i class="fa-solid fa-calendar-days"></i> События</li>
     </ul>
   </aside>
 
@@ -451,77 +625,77 @@
 
     <!-- HOME -->
     <section id="home" class="section active">
-      <h1>Добро пожаловать на орбиту! OrbitArena ждёт тебя 🚀</h1>
-      <p class="subtitle">Платформа для киберспорта, турниров и игрового сообщества</p>
+      <h1 style="font-size:32px; margin-bottom:8px;">ДОБРО ПОЖАЛОВАТЬ В SQUADRA</h1>
+      <p class="subtitle">Передовая киберспортивная платформа для соревнований и управления командами</p>
 
-      <div class="card" style="margin-bottom:30px; background:linear-gradient(135deg, rgba(43,26,107,.55), rgba(0,212,255,.1)); border-color:rgba(0,240,255,.25); display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-        <div style="font-size:56px; filter:drop-shadow(0 0 18px rgba(0,240,255,.6)); animation:pulse-glow 3s infinite;">🪐</div>
+      <div class="card" style="margin-bottom:30px; background:linear-gradient(135deg, rgba(255, 30, 39, 0.12), rgba(18, 18, 22, 0.95)); border-color:var(--border-color-hover); display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+        <div style="font-size:48px; color:var(--accent-red); filter:drop-shadow(0 0 15px var(--accent-red-glow));"><i class="fa-solid fa-fire-flame-curved"></i></div>
         <div style="flex:1; min-width:240px;">
-          <h2 style="margin-bottom:6px;">Твоя орбита. Твоя лига. Твоя эпоха.</h2>
-          <p>Собирай команду, покоряй турниры и поднимайся в галактическом рейтинге — 24/7, из любой точки Вселенной.</p>
+          <h2 style="font-size:20px; margin-bottom:6px;">Собери свой состав. Завоюй первенство.</h2>
+          <p>Принимай участие в турнирах, поднимайся по турнирной сетке и управляй своим ростером в режиме реального времени.</p>
         </div>
-        <button class="btn btn-primary" onclick="showSection('matchmaking')">🛰️ Найти тиммейтов</button>
-        <button class="btn btn-ghost" onclick="showSection('tournaments')">Смотреть турниры</button>
+        <button class="btn btn-primary" onclick="showSection('matchmaking')"><i class="fa-solid fa-crosshairs"></i> Найти состав</button>
+        <button class="btn btn-ghost" onclick="showSection('tournaments')">Все турниры</button>
       </div>
 
       <div class="grid grid-4" style="margin-bottom: 30px;">
-        <div class="stat-box"><div class="value">128 450</div><div class="label">Игроков онлайн</div></div>
-        <div class="stat-box"><div class="value">3 240</div><div class="label">Активных команд</div></div>
-        <div class="stat-box"><div class="value">87</div><div class="label">Турниров сейчас</div></div>
+        <div class="stat-box"><div class="value">128 450</div><div class="label">Игроков</div></div>
+        <div class="stat-box"><div class="value">3 240</div><div class="label">Команд</div></div>
+        <div class="stat-box"><div class="value">87</div><div class="label">Турниров</div></div>
         <div class="stat-box"><div class="value">₽ 2.4M</div><div class="label">Призовой фонд</div></div>
       </div>
 
-      <h2>🔥 Популярные игры</h2>
+      <h2 style="font-size:20px; margin-bottom:16px;"><i class="fa-solid fa-fire"></i> Популярные дисциплины</h2>
       <div class="grid grid-4" style="margin-bottom: 30px;">
         <div class="game-card" onclick="showSection('games')">
-          <div class="game-img">👾</div>
-          <div class="game-info"><h4>CS2</h4><div class="genre">FPS • Шутер</div><div class="online">● 45 230 онлайн</div></div>
+          <div class="game-img"><i class="fa-solid fa-gun"></i></div>
+          <div class="game-info"><h4>Counter-Strike 2</h4><div class="genre">FPS • Тактический шутер</div><div class="online"><i class="fa-solid fa-circle" style="font-size:8px;"></i> 45 230 онлайн</div></div>
         </div>
         <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div>
-          <div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA • Стратегия</div><div class="online">● 38 120 онлайн</div></div>
+          <div class="game-img"><i class="fa-solid fa-hat-wizard"></i></div>
+          <div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA • Стратегия</div><div class="online"><i class="fa-solid fa-circle" style="font-size:8px;"></i> 38 120 онлайн</div></div>
         </div>
         <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#00d4ff,#7b2ff7);">🌟</div>
-          <div class="game-info"><h4>Valorant</h4><div class="genre">FPS • Тактика</div><div class="online">● 29 870 онлайн</div></div>
+          <div class="game-img"><i class="fa-solid fa-bullseye"></i></div>
+          <div class="game-info"><h4>Valorant</h4><div class="genre">FPS • Шутер</div><div class="online"><i class="fa-solid fa-circle" style="font-size:8px;"></i> 29 870 онлайн</div></div>
         </div>
         <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#12d8a0,#00d4ff);">🛸</div>
-          <div class="game-info"><h4>League of Legends</h4><div class="genre">MOBA</div><div class="online">● 52 410 онлайн</div></div>
+          <div class="game-img"><i class="fa-solid fa-shield-cat"></i></div>
+          <div class="game-info"><h4>League of Legends</h4><div class="genre">MOBA</div><div class="online"><i class="fa-solid fa-circle" style="font-size:8px;"></i> 52 410 онлайн</div></div>
         </div>
       </div>
 
-      <h2>📢 Активные турниры</h2>
+      <h2 style="font-size:20px; margin-bottom:16px;"><i class="fa-solid fa-trophy"></i> Активные турниры</h2>
       <div class="grid grid-2">
         <div class="card">
-          <span class="badge badge-success">LIVE</span>
-          <h3 style="margin-top:10px;">OrbitArena Championship 2026</h3>
-          <p>CS2 • Призовой фонд: ₽ 500 000</p>
-          <p style="margin-top:10px;">🏆 32 команды • 📅 Финал: 15 декабря</p>
-          <button class="btn btn-primary" style="margin-top:14px;">Смотреть</button>
+          <span class="badge badge-danger"><i class="fa-solid fa-circle" style="font-size:8px;"></i> LIVE</span>
+          <h3 style="margin-top:12px;">SQUADRA Major Championship 2026</h3>
+          <p>CS2 • Призовой фонд: <strong>₽ 500 000</strong></p>
+          <p style="margin-top:8px; color:var(--text-muted); font-size:12px;"><i class="fa-solid fa-users"></i> 32 команды • <i class="fa-solid fa-calendar"></i> Финал: 15 декабря</p>
+          <button class="btn btn-primary" style="margin-top:16px;"><i class="fa-solid fa-tv"></i> Смотреть эфир</button>
         </div>
         <div class="card">
-          <span class="badge badge-warning">Скоро</span>
-          <h3 style="margin-top:10px;">Winter Galaxy League Dota 2</h3>
-          <p>Dota 2 • Призовой фонд: ₽ 250 000</p>
-          <p style="margin-top:10px;">🏆 16 команд • 📅 Старт: 1 декабря</p>
-          <button class="btn btn-ghost" style="margin-top:14px;">Регистрация</button>
+          <span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Скоро</span>
+          <h3 style="margin-top:12px;">Winter Series Dota 2</h3>
+          <p>Dota 2 • Призовой фонд: <strong>₽ 250 000</strong></p>
+          <p style="margin-top:8px; color:var(--text-muted); font-size:12px;"><i class="fa-solid fa-users"></i> 16 команд • <i class="fa-solid fa-calendar"></i> Старт: 1 декабря</p>
+          <button class="btn btn-ghost" style="margin-top:16px;">Регистрация</button>
         </div>
       </div>
     </section>
 
     <!-- PROFILE -->
     <section id="profile" class="section">
-      <h1>Мой профиль</h1>
+      <h1 style="font-size:28px; margin-bottom:16px;">Мой профиль</h1>
       <div class="profile-header">
-        <div class="avatar">NX</div>
+        <div class="avatar"><i class="fa-solid fa-user-ninja"></i></div>
         <div class="profile-info">
-          <h2>NightX_Pro</h2>
-          <div class="level">⭐ Уровень 47 • Ранг: Diamond II</div>
-          <div class="status">🟢 В сети • Последняя игра: 2 часа назад</div>
+          <h2 style="font-size:22px; font-family:'Orbitron', sans-serif;">NightX_Pro</h2>
+          <div style="color:var(--accent-red); font-size:14px; margin-top:4px; font-weight:600;"><i class="fa-solid fa-certificate"></i> Уровень 47 • Ранг: Diamond II</div>
+          <div style="color:var(--text-muted); font-size:13px; margin-top:6px;"><i class="fa-solid fa-circle-dot" style="color:var(--success);"></i> В сети • В игре CS2</div>
         </div>
         <div style="margin-left:auto;">
-          <button class="btn btn-primary">Редактировать</button>
+          <button class="btn btn-primary"><i class="fa-solid fa-pen-to-square"></i> Изменить</button>
         </div>
       </div>
 
@@ -530,127 +704,51 @@
         <div class="stat-box"><div class="value">68%</div><div class="label">Побед</div></div>
         <div class="stat-box"><div class="value">2 847</div><div class="label">Рейтинг</div></div>
         <div class="stat-box"><div class="value">4.2</div><div class="label">K/D</div></div>
-        <div class="stat-box"><div class="value">156</div><div class="label">Достижений</div></div>
       </div>
 
-      <h2>📈 Статистика по играм</h2>
-      <div style="background:var(--bg-2); padding:20px; border-radius:12px; margin-bottom:24px;">
-        <canvas id="statsChart" height="100"></canvas>
-      </div>
-
-      <h2>🏅 Последние достижения</h2>
-      <div class="grid grid-2">
-        <div class="achievement">
-          <div class="achievement-icon">🏆</div>
-          <div><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px;">Получено 2 дня назад</p></div>
-        </div>
-        <div class="achievement">
-          <div class="achievement-icon">🎯</div>
-          <div><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px;">1000 точных попаданий</p></div>
-        </div>
-        <div class="achievement">
-          <div class="achievement-icon">⚡</div>
-          <div><h4>Молния</h4><p style="color:var(--muted); font-size:13px;">Победа за 5 минут</p></div>
-        </div>
-        <div class="achievement">
-          <div class="achievement-icon">👑</div>
-          <div><h4>Легенда</h4><p style="color:var(--muted); font-size:13px;">Топ-100 рейтинга</p></div>
-        </div>
+      <h2 style="font-size:18px; margin-bottom:16px;">Статистика сезонов</h2>
+      <div style="background:var(--bg-card); padding:20px; border-radius:6px; border:1px solid var(--border-color); margin-bottom:24px;">
+        <canvas id="statsChart" height="90"></canvas>
       </div>
     </section>
 
     <!-- GAMES -->
     <section id="games" class="section">
-      <h1>Каталог игр</h1>
-      <p class="subtitle">Найди свою следующую любимую игру</p>
-
-      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <input placeholder="🔍 Поиск игры..." style="max-width:300px;">
-        <select style="max-width:200px;">
-          <option>Все жанры</option><option>FPS</option><option>MOBA</option><option>Стратегия</option><option>RPG</option>
-        </select>
-        <select style="max-width:200px;">
-          <option>По популярности</option><option>По рейтингу</option><option>По дате</option>
-        </select>
-      </div>
-
+      <h1 style="font-size:28px; margin-bottom:8px;">Дисциплины</h1>
+      <p class="subtitle">Выберите турнирную дисциплину</p>
       <div class="grid grid-4">
-        <div class="game-card"><div class="game-img">👾</div><div class="game-info"><h4>CS2</h4><div class="genre">FPS</div><div class="online">● 45 230</div><div class="progress"><div class="progress-bar" style="width:90%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div><div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA</div><div class="online">● 38 120</div><div class="progress"><div class="progress-bar" style="width:75%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#48dbfb,#0abde3);">🎯</div><div class="game-info"><h4>Valorant</h4><div class="genre">FPS</div><div class="online">● 29 870</div><div class="progress"><div class="progress-bar" style="width:65%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#1dd1a1,#10ac84);">🏆</div><div class="game-info"><h4>LoL</h4><div class="genre">MOBA</div><div class="online">● 52 410</div><div class="progress"><div class="progress-bar" style="width:95%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#5f27cd,#341f97);">🚀</div><div class="game-info"><h4>Apex Legends</h4><div class="genre">Battle Royale</div><div class="online">● 18 650</div><div class="progress"><div class="progress-bar" style="width:45%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ee5a6f,#f29263);">🏁</div><div class="game-info"><h4>Fortnite</h4><div class="genre">Battle Royale</div><div class="online">● 34 200</div><div class="progress"><div class="progress-bar" style="width:70%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#00d2d3,#54a0ff);">⚽</div><div class="game-info"><h4>Rocket League</h4><div class="genre">Спорт</div><div class="online">● 12 400</div><div class="progress"><div class="progress-bar" style="width:35%"></div></div></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff9ff3,#f368e0);">🗡️</div><div class="game-info"><h4>Genshin Impact</h4><div class="genre">RPG</div><div class="online">● 22 800</div><div class="progress"><div class="progress-bar" style="width:55%"></div></div></div></div>
+        <div class="game-card"><div class="game-img"><i class="fa-solid fa-gun"></i></div><div class="game-info"><h4>CS2</h4><div class="genre">FPS</div><div class="online">● 45 230</div></div></div>
+        <div class="game-card"><div class="game-img"><i class="fa-solid fa-hat-wizard"></i></div><div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA</div><div class="online">● 38 120</div></div></div>
+        <div class="game-card"><div class="game-img"><i class="fa-solid fa-bullseye"></i></div><div class="game-info"><h4>Valorant</h4><div class="genre">FPS</div><div class="online">● 29 870</div></div></div>
+        <div class="game-card"><div class="game-img"><i class="fa-solid fa-shield-cat"></i></div><div class="game-info"><h4>LoL</h4><div class="genre">MOBA</div><div class="online">● 52 410</div></div></div>
       </div>
     </section>
 
     <!-- PLAYERS -->
     <section id="players" class="section">
-      <h1>Поиск игроков</h1>
-      <p class="subtitle">Найди тиммейта по навыкам и предпочтениям</p>
-
-      <div class="card" style="margin-bottom:24px;">
-        <div class="grid grid-4">
-          <div class="form-group"><label>Никнейм</label><input placeholder="Введите ник..."></div>
-          <div class="form-group"><label>Игра</label><select><option>Любая</option><option>CS2</option><option>Dota 2</option><option>Valorant</option></select></div>
-          <div class="form-group"><label>Ранг</label><select><option>Любой</option><option>Bronze</option><option>Silver</option><option>Gold</option><option>Diamond</option></select></div>
-          <div class="form-group"><label>Регион</label><select><option>Любой</option><option>EU</option><option>NA</option><option>Asia</option></select></div>
-        </div>
-        <button class="btn btn-primary">🔍 Найти игроков</button>
-      </div>
-
+      <h1 style="font-size:28px; margin-bottom:16px;">Поиск игроков</h1>
       <table>
-        <thead><tr><th>Игрок</th><th>Ранг</th><th>Уровень</th><th>Игра</th><th>Винрейт</th><th>Рейтинг</th><th>Действия</th></tr></thead>
+        <thead><tr><th>Игрок</th><th>Ранг</th><th>Дисциплина</th><th>Винрейт</th><th>Рейтинг</th><th>Действие</th></tr></thead>
         <tbody>
-          <tr><td><strong>ShadowKiller</strong></td><td><span class="badge badge-info">Diamond</span></td><td>52</td><td>CS2</td><td>72%</td><td>3 240</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>ProGamer99</strong></td><td><span class="badge badge-warning">Master</span></td><td>68</td><td>Valorant</td><td>68%</td><td>3 890</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>PhoenixRise</strong></td><td><span class="badge badge-success">Gold</span></td><td>34</td><td>Dota 2</td><td>61%</td><td>2 150</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>IceQueen</strong></td><td><span class="badge badge-info">Diamond</span></td><td>45</td><td>LoL</td><td>74%</td><td>3 120</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
-          <tr><td><strong>ThunderBolt</strong></td><td><span class="badge badge-danger">Grandmaster</span></td><td>89</td><td>CS2</td><td>78%</td><td>4 560</td><td><button class="btn btn-ghost">+ Друг</button></td></tr>
+          <tr><td><strong>ShadowKiller</strong></td><td><span class="badge badge-danger">Diamond</span></td><td>CS2</td><td>72%</td><td>3 240</td><td><button class="btn btn-ghost"><i class="fa-solid fa-user-plus"></i></button></td></tr>
+          <tr><td><strong>ProGamer99</strong></td><td><span class="badge badge-warning">Master</span></td><td>Valorant</td><td>68%</td><td>3 890</td><td><button class="btn btn-ghost"><i class="fa-solid fa-user-plus"></i></button></td></tr>
+          <tr><td><strong>PhoenixRise</strong></td><td><span class="badge badge-success">Gold</span></td><td>Dota 2</td><td>61%</td><td>2 150</td><td><button class="btn btn-ghost"><i class="fa-solid fa-user-plus"></i></button></td></tr>
         </tbody>
       </table>
     </section>
 
     <!-- TEAMS -->
     <section id="teams" class="section">
-      <h1>Мои команды</h1>
-      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTeamModal')">+ Создать команду</button>
-
+      <h1 style="font-size:28px; margin-bottom:16px;">Команды</h1>
+      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTeamModal')"><i class="fa-solid fa-plus"></i> Создать команду</button>
       <div class="grid grid-2">
         <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div>
-              <h3>🔥 Phoenix Squad</h3>
-              <p>CS2 • EU Region</p>
-            </div>
-            <span class="badge badge-success">Активна</span>
+          <div style="display:flex; justify-content:space-between;">
+            <h3><i class="fa-solid fa-shield"></i> Phoenix Squad</h3>
+            <span class="badge badge-success">Active</span>
           </div>
-          <div class="stats-grid" style="margin-top:16px;">
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent);">5/5</div><div style="font-size:12px; color:var(--muted);">Состав</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--success);">2 847</div><div style="font-size:12px; color:var(--muted);">Рейтинг</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent-2);">68%</div><div style="font-size:12px; color:var(--muted);">Побед</div></div>
-          </div>
-          <div style="margin-top:14px; display:flex; gap:8px;">
-            <button class="btn btn-ghost">Управление</button>
-            <button class="btn btn-primary">Пригласить</button>
-          </div>
-        </div>
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div>
-              <h3>⚡ Storm Riders</h3>
-              <p>Valorant • NA Region</p>
-            </div>
-            <span class="badge badge-success">Активна</span>
-          </div>
-          <div class="stats-grid" style="margin-top:16px;">
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent);">4/5</div><div style="font-size:12px; color:var(--muted);">Состав</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--success);">3 120</div><div style="font-size:12px; color:var(--muted);">Рейтинг</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--accent-2);">72%</div><div style="font-size:12px; color:var(--muted);">Побед</div></div>
-          </div>
-          <div style="margin-top:14px; display:flex; gap:8px;">
+          <p style="margin-top:8px;">Дисциплина: CS2 • EU Region</p>
+          <div style="margin-top:16px; display:flex; gap:10px;">
             <button class="btn btn-ghost">Управление</button>
             <button class="btn btn-primary">Пригласить</button>
           </div>
@@ -660,371 +758,92 @@
 
     <!-- TOURNAMENTS -->
     <section id="tournaments" class="section">
-      <h1>Турниры</h1>
-      <button class="btn btn-primary" style="margin-bottom:20px;">+ Создать турнир</button>
-
-      <div class="grid grid-3" style="margin-bottom:30px;">
-        <div class="card">
-          <span class="badge badge-success">LIVE</span>
-          <h3 style="margin-top:10px;">OrbitArena Cup</h3>
-          <p>CS2 • 32 команды</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent);">₽ 500 000</strong></p>
-          <button class="btn btn-primary" style="margin-top:12px; width:100%;">Участвовать</button>
-        </div>
-        <div class="card">
-          <span class="badge badge-warning">Регистрация</span>
-          <h3 style="margin-top:10px;">Winter League</h3>
-          <p>Dota 2 • 16 команд</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent);">₽ 250 000</strong></p>
-          <button class="btn btn-ghost" style="margin-top:12px; width:100%;">Зарегистрироваться</button>
-        </div>
-        <div class="card">
-          <span class="badge badge-info">Скоро</span>
-          <h3 style="margin-top:10px;">Spring Championship</h3>
-          <p>Valorant • 64 команды</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent);">₽ 1 000 000</strong></p>
-          <button class="btn btn-ghost" style="margin-top:12px; width:100%;">Уведомить</button>
-        </div>
-      </div>
-
-      <h2>🏆 Турнирная сетка</h2>
+      <h1 style="font-size:28px; margin-bottom:16px;">Турнирная сетка</h1>
       <div class="bracket">
         <div class="bracket-round">
-          <div class="bracket-match"><div class="team winner">Phoenix Squad (2)</div><div class="team">Storm Riders (0)</div></div>
-          <div class="bracket-match"><div class="team winner">Ice Wolves (2)</div><div class="team">Fire Dragons (1)</div></div>
-          <div class="bracket-match"><div class="team">Shadow Kings</div><div class="team">Light Warriors</div></div>
-          <div class="bracket-match"><div class="team winner">Cyber Ninjas (2)</div><div class="team">Tech Titans (0)</div></div>
+          <div class="bracket-match"><div class="team winner">Phoenix Squad <span>2</span></div><div class="team">Storm Riders <span>0</span></div></div>
+          <div class="bracket-match"><div class="team winner">Cyber Ninjas <span>2</span></div><div class="team">Tech Titans <span>1</span></div></div>
         </div>
         <div class="bracket-round">
-          <div class="bracket-match"><div class="team winner">Phoenix Squad (2)</div><div class="team">Ice Wolves (1)</div></div>
-          <div class="bracket-match"><div class="team">Cyber Ninjas</div><div class="team">—</div></div>
-        </div>
-        <div class="bracket-round">
-          <div class="bracket-match"><div class="team">Phoenix Squad</div><div class="team">—</div></div>
+          <div class="bracket-match"><div class="team winner">Phoenix Squad <span>2</span></div><div class="team">Cyber Ninjas <span>1</span></div></div>
         </div>
       </div>
     </section>
 
     <!-- COMMUNITY -->
     <section id="community" class="section">
-      <h1>Сообщество</h1>
-      <div class="grid" style="grid-template-columns: 2fr 1fr; gap:20px;">
-        <div>
-          <div class="card" style="margin-bottom:16px;">
-            <h3>📝 Создать публикацию</h3>
-            <textarea rows="3" placeholder="Что нового?" style="margin-top:10px;"></textarea>
-            <div style="display:flex; gap:10px; margin-top:10px;">
-              <button class="btn btn-primary">Опубликовать</button>
-              <button class="btn btn-ghost">📷 Фото</button>
-              <button class="btn btn-ghost">🎥 Видео</button>
-            </div>
-          </div>
-
-          <div class="card" style="margin-bottom:16px;">
-            <div style="display:flex; gap:12px; align-items:start;">
-              <div class="avatar" style="width:48px; height:48px; font-size:18px;">SK</div>
-              <div style="flex:1;">
-                <strong>ShadowKiller</strong> <span style="color:var(--muted); font-size:12px;">• 2 часа назад</span>
-                <p style="margin-top:8px;">Только что выиграли турнир CyberArena Cup! 🏆 Спасибо команде за невероятную игру!</p>
-                <div style="display:flex; gap:16px; margin-top:12px; color:var(--muted); font-size:13px;">
-                  <span>❤️ 234</span><span>💬 45</span><span>🔄 12</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-bottom:16px;">
-            <div style="display:flex; gap:12px; align-items:start;">
-              <div class="avatar" style="width:48px; height:48px; font-size:18px; background:linear-gradient(135deg,#ff6b6b,#feca57);">PG</div>
-              <div style="flex:1;">
-                <strong>ProGamer99</strong> <span style="color:var(--muted); font-size:12px;">• 5 часов назад</span>
-                <p style="margin-top:8px;">Кто хочет поиграть в Valorant сегодня вечером? Нужен саппорт на ранг Diamond+ 🎯</p>
-                <div style="display:flex; gap:16px; margin-top:12px; color:var(--muted); font-size:13px;">
-                  <span>❤️ 89</span><span>💬 23</span><span>🔄 5</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="card" style="margin-bottom:16px;">
-            <h3>🔥 Тренды</h3>
-            <div style="margin-top:10px;">
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#OrbitArenaCup</div>
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#GalaxyClash</div>
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#ZeroGravityMajor</div>
-              <div style="padding:8px 0;">#NebulaCup</div>
-            </div>
-          </div>
-          <div class="card">
-            <h3>👥 Рекомендуемые группы</h3>
-            <div style="margin-top:10px;">
-              <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                <div><strong>CS2 Pros</strong><div style="font-size:12px; color:var(--muted);">12 450 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Вступить</button>
-              </div>
-              <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                <div><strong>Valorant EU</strong><div style="font-size:12px; color:var(--muted);">8 920 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Вступить</button>
-              </div>
-              <div style="padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
-                <div><strong>Dota 2 CIS</strong><div style="font-size:12px; color:var(--muted);">15 300 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Вступить</button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <h1 style="font-size:28px; margin-bottom:16px;">Сообщество</h1>
+      <div class="card" style="margin-bottom:20px;">
+        <h3><i class="fa-solid fa-pen"></i> Новая публикация</h3>
+        <textarea rows="3" placeholder="Что происходит в вашем составе?" style="margin-top:12px;"></textarea>
+        <button class="btn btn-primary" style="margin-top:12px;"><i class="fa-solid fa-paper-plane"></i> Опубликовать</button>
       </div>
     </section>
 
     <!-- RANKING -->
     <section id="ranking" class="section">
-      <h1>Таблица лидеров</h1>
-      <div class="card" style="margin-bottom:20px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-color:rgba(168,85,247,.4);">
-        <div><strong style="color:var(--accent-3);">⭐ Сезон 7: «Туманность Ориона»</strong> <span style="color:var(--muted); font-size:13px;">• до 30 ноября • сброс рейтинга в начале сезона</span></div>
-        <div class="progress" style="width:220px;"><div class="progress-bar" style="width:72%;"></div></div>
-        <span style="font-size:12px; color:var(--muted);">Прошло 72% сезона</span>
-      </div>
-      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <button class="btn btn-primary rank-tab active" data-tab="players" onclick="switchRankTab('players')">👤 Игроки</button>
-        <button class="btn btn-ghost rank-tab" data-tab="teams" onclick="switchRankTab('teams')">🛡️ Команды</button>
-        <button class="btn btn-ghost rank-tab" data-tab="games" onclick="switchRankTab('games')">🎮 По играм</button>
-      </div>
-      <div id="rankPlayers">
+      <h1 style="font-size:28px; margin-bottom:16px;">Ладдер</h1>
       <table>
-        <thead><tr><th>#</th><th>Игрок</th><th>Ранг</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Тренд</th></tr></thead>
+        <thead><tr><th>#</th><th>Игрок</th><th>Ранг</th><th>Рейтинг</th><th>Винрейт</th></tr></thead>
         <tbody>
-          <tr><td>🥇</td><td><strong>ThunderBolt</strong></td><td><span class="badge badge-danger">Grandmaster</span></td><td><strong>4 560</strong></td><td>892</td><td>78%</td><td style="color:var(--success);">▲ +42</td></tr>
-          <tr><td>🥈</td><td><strong>ProGamer99</strong></td><td><span class="badge badge-warning">Master</span></td><td><strong>3 890</strong></td><td>756</td><td>68%</td><td style="color:var(--success);">▲ +28</td></tr>
-          <tr><td>🥉</td><td><strong>ShadowKiller</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong>3 240</strong></td><td>645</td><td>72%</td><td style="color:var(--danger);">▼ -12</td></tr>
-          <tr><td>4</td><td><strong>IceQueen</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong>3 120</strong></td><td>589</td><td>74%</td><td style="color:var(--success);">▲ +15</td></tr>
-          <tr><td>5</td><td><strong>NightX_Pro</strong></td><td><span class="badge badge-info">Diamond</span></td><td><strong>2 847</strong></td><td>1 247</td><td>68%</td><td style="color:var(--success);">▲ +34</td></tr>
-          <tr><td>6</td><td><strong>PhoenixRise</strong></td><td><span class="badge badge-success">Gold</span></td><td><strong>2 150</strong></td><td>423</td><td>61%</td><td style="color:var(--muted);">— 0</td></tr>
+          <tr><td>1</td><td><strong>ThunderBolt</strong></td><td><span class="badge badge-danger">Grandmaster</span></td><td>4 560</td><td>78%</td></tr>
+          <tr><td>2</td><td><strong>ProGamer99</strong></td><td><span class="badge badge-warning">Master</span></td><td>3 890</td><td>68%</td></tr>
         </tbody>
       </table>
-      </div>
-      <div id="rankTeams" style="display:none;">
-        <table>
-          <thead><tr><th>#</th><th>Команда</th><th>Игра</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Статус</th></tr></thead>
-          <tbody>
-            <tr><td>🥇</td><td><strong>Cyber Ninjas</strong></td><td>CS2</td><td><strong>4 920</strong></td><td>312</td><td>81%</td><td><span class="badge badge-success">LIVE турнир</span></td></tr>
-            <tr><td>🥈</td><td><strong>Phoenix Squad</strong></td><td>CS2</td><td><strong>4 310</strong></td><td>287</td><td>74%</td><td><span class="badge badge-info">Активна</span></td></tr>
-            <tr><td>🥉</td><td><strong>Ice Wolves</strong></td><td>Dota 2</td><td><strong>4 050</strong></td><td>401</td><td>69%</td><td><span class="badge badge-info">Активна</span></td></tr>
-            <tr><td>4</td><td><strong>Storm Riders</strong></td><td>Valorant</td><td><strong>3 780</strong></td><td>198</td><td>72%</td><td><span class="badge badge-warning">Поиск состава</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div id="rankGames" style="display:none;">
-        <div class="grid grid-2">
-          <div class="card"><h3>🔫 CS2 — Топ-5 сезона</h3><table><tbody>
-            <tr><td>1</td><td>ThunderBolt</td><td><strong>4 560</strong></td></tr>
-            <tr><td>2</td><td>ShadowKiller</td><td><strong>3 240</strong></td></tr>
-            <tr><td>3</td><td>NightX_Pro</td><td><strong>2 847</strong></td></tr>
-          </tbody></table></div>
-          <div class="card"><h3>⚔️ Dota 2 — Топ-5 сезона</h3><table><tbody>
-            <tr><td>1</td><td>PhoenixRise</td><td><strong>3 950</strong></td></tr>
-            <tr><td>2</td><td>VoidWalker</td><td><strong>3 410</strong></td></tr>
-            <tr><td>3</td><td>AuroraFan</td><td><strong>2 980</strong></td></tr>
-          </tbody></table></div>
-        </div>
-      </div>
     </section>
 
-    <!-- MESSAGES / CHAT -->
+    <!-- MESSAGES -->
     <section id="messages" class="section">
-      <h1>Сообщения</h1>
+      <h1 style="font-size:28px; margin-bottom:16px;">Чат состава</h1>
       <div class="chat-container">
         <div class="chat-header">
-          <div class="avatar" style="width:40px; height:40px; font-size:16px;">SK</div>
-          <div><strong>ShadowKiller</strong><div style="font-size:12px; color:var(--success);">● В сети</div></div>
+          <i class="fa-solid fa-comments" style="color:var(--accent-red);"></i>
+          <strong>ShadowKiller</strong>
         </div>
         <div class="chat-messages" id="chatMessages">
-          <div class="message"><div class="author">ShadowKiller</div>Привет! Как дела?</div>
-          <div class="message own"><div class="author">Вы</div>Отлично! Готов к турниру?</div>
-          <div class="message"><div class="author">ShadowKiller</div>Да, тренировался весь день 🔥</div>
-          <div class="message own"><div class="author">Вы</div>Круто! Во сколько встречаемся?</div>
-          <div class="message"><div class="author">ShadowKiller</div>В 20:00 по МСК, не опаздывай 😉</div>
+          <div class="message"><div class="author">ShadowKiller</div>Готовы к праккам сегодня?</div>
+          <div class="message own"><div class="author">Вы</div>Да, в 20:00 заходим.</div>
         </div>
         <div class="chat-input">
-          <input id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter')sendMessage()">
-          <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- FRIENDS -->
-    <section id="friends" class="section">
-      <h1>Друзья</h1>
-      <div class="grid grid-3">
-        <div class="card">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="avatar" style="width:50px; height:50px; font-size:18px;">SK</div>
-            <div><strong>ShadowKiller</strong><div style="font-size:12px; color:var(--success);">● В игре</div></div>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px;">
-            <button class="btn btn-ghost" style="flex:1;">Профиль</button>
-            <button class="btn btn-primary" style="flex:1;">Написать</button>
-          </div>
-        </div>
-        <div class="card">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="avatar" style="width:50px; height:50px; font-size:18px; background:linear-gradient(135deg,#ff6b6b,#feca57);">PG</div>
-            <div><strong>ProGamer99</strong><div style="font-size:12px; color:var(--success);">● В сети</div></div>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px;">
-            <button class="btn btn-ghost" style="flex:1;">Профиль</button>
-            <button class="btn btn-primary" style="flex:1;">Написать</button>
-          </div>
-        </div>
-        <div class="card">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="avatar" style="width:50px; height:50px; font-size:18px; background:linear-gradient(135deg,#48dbfb,#0abde3);">IQ</div>
-            <div><strong>IceQueen</strong><div style="font-size:12px; color:var(--muted);">○ Оффлайн</div></div>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px;">
-            <button class="btn btn-ghost" style="flex:1;">Профиль</button>
-            <button class="btn btn-primary" style="flex:1;">Написать</button>
-          </div>
+          <input id="chatInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter')sendMessage()">
+          <button class="btn btn-primary" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
       </div>
     </section>
 
     <!-- MATCHMAKING -->
     <section id="matchmaking" class="section">
-      <h1>🎯 Подбор игроков</h1>
-      <p class="subtitle">Автоматический поиск тиммейтов по вашим параметрам</p>
-
-      <div class="card" style="margin-bottom:24px;">
-        <h3>Параметры поиска</h3>
-        <div class="grid grid-3" style="margin-top:16px;">
-          <div class="form-group"><label>Игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option></select></div>
-          <div class="form-group"><label>Роль</label><select><option>Любая</option><option>Снайпер</option><option>Саппорт</option><option>Капитан</option></select></div>
-          <div class="form-group"><label>Ранг</label><select><option>± 500 рейтинга</option><option>± 250 рейтинга</option><option>Точный ранг</option></select></div>
-          <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
-          <div class="form-group"><label>Время игры</label><select><option>Сейчас</option><option>Вечер</option><option>Выходные</option></select></div>
-          <div class="form-group"><label>Язык</label><select><option>Русский</option><option>English</option></select></div>
-        </div>
-        <button class="btn btn-primary" onclick="startMatchmaking()">🚀 Начать подбор</button>
+      <h1 style="font-size:28px; margin-bottom:16px;">Поиск тиммейтов</h1>
+      <div class="card" style="text-align:center; padding:40px;">
+        <i class="fa-solid fa-radar" style="font-size:48px; color:var(--accent-red); margin-bottom:16px;"></i>
+        <h3>Поиск игроков по роли и K/D</h3>
+        <p style="margin-bottom:20px;">Автоматический подбор оптимального состава.</p>
+        <button class="btn btn-primary" onclick="showNotification('Поиск начат...')"><i class="fa-solid fa-play"></i> Запустить поиск</button>
       </div>
-
-      <div class="card" style="text-align:center; padding:34px; position:relative; overflow:hidden;">
-        <div style="position:absolute; inset:0; background:radial-gradient(circle at center, rgba(0,240,255,.06), transparent 70%); pointer-events:none;"></div>
-        <div style="font-size:64px; line-height:1;" id="mmIcon">📡</div>
-        <h3 style="margin-top:12px; color:var(--accent);" id="mmTitle">Радар матчмейкинга в режиме ожидания</h3>
-        <p style="color:var(--muted); font-size:13px; max-width:420px; margin:8px auto 0;">Алгоритм подбирает игроков по рейтингу (±допуск), роли, региону и времени онлайн. Расчёт совпадения — взвешенная сумма параметров.</p>
-        <div class="progress" style="max-width:420px; margin:18px auto 0; display:none;" id="mmBarWrap"><div class="progress-bar" id="mmBar" style="width:0%;"></div></div>
-      </div>
-
-      <div id="matchmakingResults"></div>
     </section>
 
     <!-- ACHIEVEMENTS -->
-    <section id="achievements" class="section">
-      <h1>🏆 Мои достижения</h1>
-      <div class="grid grid-2">
-        <div class="achievement"><div class="achievement-icon">🏆</div><div><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px;">Победите в сезонном турнире</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">🎯</div><div><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px;">1000 точных попаданий</p><div class="progress"><div class="progress-bar" style="width:87%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">⚡</div><div><h4>Молния</h4><p style="color:var(--muted); font-size:13px;">Победа за 5 минут</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">👑</div><div><h4>Легенда</h4><p style="color:var(--muted); font-size:13px;">Войти в Топ-100</p><div class="progress"><div class="progress-bar" style="width:65%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">🔥</div><div><h4>На огне</h4><p style="color:var(--muted); font-size:13px;">10 побед подряд</p><div class="progress"><div class="progress-bar" style="width:70%"></div></div></div></div>
-        <div class="achievement"><div class="achievement-icon">💎</div><div><h4>Коллекционер</h4><p style="color:var(--muted); font-size:13px;">Собрать 50 скинов</p><div class="progress"><div class="progress-bar" style="width:42%"></div></div></div></div>
-      </div>
-    </section>
-
+    <section id="achievements" class="section"><h1>Достижения</h1></section>
     <!-- HISTORY -->
-    <section id="history" class="section">
-      <h1>📊 История активности</h1>
-      <table>
-        <thead><tr><th>Дата</th><th>Действие</th><th>Игра</th><th>Результат</th><th>Рейтинг</th></tr></thead>
-        <tbody>
-          <tr><td>Сегодня, 18:42</td><td>Матч</td><td>CS2</td><td><span class="badge badge-success">Победа</span></td><td style="color:var(--success);">+24</td></tr>
-          <tr><td>Сегодня, 17:15</td><td>Матч</td><td>CS2</td><td><span class="badge badge-danger">Поражение</span></td><td style="color:var(--danger);">-18</td></tr>
-          <tr><td>Вчера, 22:30</td><td>Турнир</td><td>CS2</td><td><span class="badge badge-success">1 место</span></td><td style="color:var(--success);">+150</td></tr>
-          <tr><td>Вчера, 20:10</td><td>Матч</td><td>Valorant</td><td><span class="badge badge-success">Победа</span></td><td style="color:var(--success);">+22</td></tr>
-          <tr><td>2 дня назад</td><td>Достижение</td><td>—</td><td><span class="badge badge-info">Снайпер</span></td><td>—</td></tr>
-        </tbody>
-      </table>
-    </section>
-
+    <section id="history" class="section"><h1>История активности</h1></section>
     <!-- EVENTS -->
-    <section id="events" class="section">
-      <h1>📅 Игровые события</h1>
-      <div class="grid grid-2">
-        <div class="card"><span class="badge badge-success">LIVE</span><h3 style="margin-top:10px;">CyberArena Championship</h3><p>15 декабря • CS2 • Онлайн</p></div>
-        <div class="card"><span class="badge badge-warning">Скоро</span><h3 style="margin-top:10px;">Winter Dota League</h3><p>1 декабря • Dota 2 • Онлайн</p></div>
-        <div class="card"><span class="badge badge-info">Регистрация</span><h3 style="margin-top:10px;">Valorant Masters</h3><p>20 декабря • Valorant • Москва</p></div>
-        <div class="card"><span class="badge badge-info">Регистрация</span><h3 style="margin-top:10px;">LoL Regional Cup</h3><p>5 января • LoL • Санкт-Петербург</p></div>
-      </div>
-    </section>
-
+    <section id="events" class="section"><h1>События</h1></section>
     <!-- LIBRARY -->
-    <section id="library" class="section">
-      <h1>📚 Моя библиотека</h1>
-      <div class="grid grid-4">
-        <div class="game-card"><div class="game-img">👾</div><div class="game-info"><h4>CS2</h4><div class="genre">452 часа</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div><div class="game-info"><h4>Dota 2</h4><div class="genre">287 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#48dbfb,#0abde3);">🎯</div><div class="game-info"><h4>Valorant</h4><div class="genre">156 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-        <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#1dd1a1,#10ac84);">🏆</div><div class="game-info"><h4>LoL</h4><div class="genre">89 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
-      </div>
-    </section>
-
+    <section id="library" class="section"><h1>Библиотека</h1></section>
     <!-- SETTINGS -->
-    <section id="settings" class="section">
-      <h1>⚙️ Настройки</h1>
-      <div class="card">
-        <h3>Основные</h3>
-        <div class="grid grid-2" style="margin-top:16px;">
-          <div class="form-group"><label>Никнейм</label><input value="NightX_Pro"></div>
-          <div class="form-group"><label>Email</label><input value="player@orbitarena.gg"></div>
-          <div class="form-group"><label>Язык</label><select><option>Русский</option><option>English</option></select></div>
-          <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
-        </div>
-        <h3 style="margin-top:20px;">Уведомления</h3>
-        <div style="margin-top:10px;">
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" checked style="width:auto;"> Сообщения от друзей</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" checked style="width:auto;"> Приглашения в команды</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" checked style="width:auto;"> Начало турниров</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0;"><input type="checkbox" style="width:auto;"> Маркетинговые рассылки</label>
-        </div>
-        <button class="btn btn-primary" style="margin-top:20px;">Сохранить</button>
-      </div>
-    </section>
+    <section id="settings" class="section"><h1>Настройки</h1></section>
 
     <!-- ADMIN -->
     <section id="admin" class="section">
-      <h1>🛡️ Панель администратора</h1>
+      <h1 style="font-size:28px; margin-bottom:16px;">Панель администратора</h1>
       <div class="stats-grid">
-        <div class="stat-box"><div class="value">15 420</div><div class="label">Пользователей</div></div>
+        <div class="stat-box"><div class="value">15 420</div><div class="label">Юзеров</div></div>
         <div class="stat-box"><div class="value">847</div><div class="label">Команд</div></div>
-        <div class="stat-box"><div class="value">124</div><div class="label">Турниров</div></div>
-        <div class="stat-box"><div class="value">23</div><div class="label">Жалоб</div></div>
       </div>
-
-      <div class="grid grid-2" style="margin-top:24px;">
-        <div class="card">
-          <h3>📊 Статистика платформы</h3>
-          <canvas id="adminChart" height="150"></canvas>
-        </div>
-        <div class="card">
-          <h3>⚠️ Последние жалобы</h3>
-          <div style="margin-top:10px;">
-            <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;"><span>Читерство • user_123</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
-            <div style="padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;"><span>Оскорбления • user_456</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
-            <div style="padding:10px 0; display:flex; justify-content:space-between;"><span>Спам • user_789</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;">Рассмотреть</button></div>
-          </div>
-        </div>
+      <div class="card">
+        <h3>Аналитика регистраций</h3>
+        <canvas id="adminChart" height="100"></canvas>
       </div>
-
-      <h2 style="margin-top:24px;">👥 Управление пользователями</h2>
-      <table>
-        <thead><tr><th>ID</th><th>Никнейм</th><th>Email</th><th>Роль</th><th>Статус</th><th>Действия</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td>NightX_Pro</td><td>player@cyber.com</td><td><span class="badge badge-info">Admin</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost">⋯</button></td></tr>
-          <tr><td>2</td><td>ShadowKiller</td><td>shadow@mail.com</td><td><span class="badge badge-warning">User</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost">⋯</button></td></tr>
-          <tr><td>3</td><td>ToxicPlayer</td><td>toxic@mail.com</td><td><span class="badge badge-warning">User</span></td><td><span class="badge badge-danger">Забанен</span></td><td><button class="btn btn-ghost">⋯</button></td></tr>
-        </tbody>
-      </table>
     </section>
 
   </main>
@@ -1034,79 +853,44 @@
 <div id="loginModal" class="modal">
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('loginModal')">×</button>
-    <h2>Вход в аккаунт</h2>
-    <p class="subtitle">С возвращением на орбиту!</p>
-    <div class="form-group"><label>Email или никнейм</label><input placeholder="player@orbitarena.gg"></div>
+    <h2 style="font-size:20px; margin-bottom:16px;">Авторизация</h2>
+    <div class="form-group"><label>Email / Логин</label><input placeholder="user@squadra.gg"></div>
     <div class="form-group"><label>Пароль</label><input type="password" placeholder="••••••••"></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('✅ Успешный вход!'); closeModal('loginModal')">Войти</button>
-    <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--accent); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
+    <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="showNotification('Вход выполнен!'); closeModal('loginModal')">Войти</button>
   </div>
 </div>
 
 <div id="registerModal" class="modal">
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('registerModal')">×</button>
-    <h2>Регистрация</h2>
-    <p class="subtitle">Присоединяйся к галактике киберспорта!</p>
-    <div class="form-group"><label>Никнейм</label><input placeholder="Ваш игровой ник"></div>
-    <div class="form-group"><label>Email</label><input type="email" placeholder="email@example.com"></div>
-    <div class="form-group"><label>Пароль</label><input type="password" placeholder="Минимум 8 символов"></div>
-    <div class="form-group"><label>Любимая игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('🎉 Аккаунт создан!'); closeModal('registerModal')">Создать аккаунт</button>
+    <h2 style="font-size:20px; margin-bottom:16px;">Регистрация</h2>
+    <div class="form-group"><label>Никнейм</label><input placeholder="Ваш ник"></div>
+    <div class="form-group"><label>Email</label><input type="email" placeholder="user@squadra.gg"></div>
+    <div class="form-group"><label>Пароль</label><input type="password" placeholder="••••••••"></div>
+    <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="showNotification('Аккаунт создан!'); closeModal('registerModal')">Создать</button>
   </div>
 </div>
 
 <div id="createTeamModal" class="modal">
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('createTeamModal')">×</button>
-    <h2>Создать команду</h2>
-    <div class="form-group"><label>Название команды</label><input placeholder="Например: Phoenix Squad"></div>
-    <div class="form-group"><label>Тег</label><input placeholder="[PS]"></div>
-    <div class="form-group"><label>Игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option></select></div>
-    <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
-    <div class="form-group"><label>Описание</label><textarea rows="3" placeholder="Расскажите о команде..."></textarea></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('🏆 Команда создана!'); closeModal('createTeamModal')">Создать</button>
+    <h2 style="font-size:20px; margin-bottom:16px;">Новая команда</h2>
+    <div class="form-group"><label>Название</label><input placeholder="Phoenix Squad"></div>
+    <div class="form-group"><label>Тег</label><input placeholder="PS"></div>
+    <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="showNotification('Команда создана!'); closeModal('createTeamModal')">Создать</button>
   </div>
 </div>
 
 <script>
-  // ===== STARFIELD (canvas) =====
-  (function() {
-    const cvs = document.getElementById('space-canvas');
-    const ctx = cvs.getContext('2d');
-    let stars = [], W, H;
-    function resize() {
-      W = cvs.width = innerWidth; H = cvs.height = innerHeight;
-      const count = Math.min(260, Math.floor(W * H / 7000));
-      stars = Array.from({length: count}, () => ({
-        x: Math.random() * W, y: Math.random() * H,
-        r: Math.random() * 1.4 + .3,
-        p: Math.random() * Math.PI * 2,          // twinkle phase
-        s: Math.random() * .02 + .005,           // twinkle speed
-        v: Math.random() * .06 + .015            // drift speed
-      }));
-    }
-    addEventListener('resize', resize); resize();
-    (function loop() {
-      ctx.clearRect(0, 0, W, H);
-      for (const st of stars) {
-        st.p += st.s; st.y -= st.v; if (st.y < -2) st.y = H + 2;
-        const a = .35 + Math.sin(st.p) * .35;
-        ctx.beginPath();
-        ctx.arc(st.x, st.y, st.r, 0, 7);
-        ctx.fillStyle = `rgba(${st.r > 1.1 ? '180,240,255' : '255,255,255'}, ${a})`;
-        ctx.fill();
-      }
-      requestAnimationFrame(loop);
-    })();
-  })();
-
   // NAVIGATION
   function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    const target = document.getElementById(id);
+    if (target) target.classList.add('active');
+
     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
     document.querySelectorAll('aside li').forEach(l => l.classList.remove('active'));
+
     const navLink = document.querySelector(`nav a[onclick*="${id}"]`);
     const asideLink = document.querySelector(`aside li[onclick*="${id}"]`);
     if (navLink) navLink.classList.add('active');
@@ -1117,20 +901,17 @@
   // MODALS
   function openModal(id) { document.getElementById(id).classList.add('active'); }
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-  document.querySelectorAll('.modal').forEach(m => {
-    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
-  });
 
   // NOTIFICATIONS
   function showNotification(text) {
     const n = document.createElement('div');
     n.className = 'notification';
-    n.textContent = text;
+    n.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--accent-red);"></i> ${text}`;
     document.body.appendChild(n);
     setTimeout(() => n.remove(), 3000);
   }
 
-  // CHAT (имитация WebSocket)
+  // CHAT
   function sendMessage() {
     const input = document.getElementById('chatInput');
     if (!input.value.trim()) return;
@@ -1141,80 +922,10 @@
     messages.appendChild(msg);
     input.value = '';
     messages.scrollTop = messages.scrollHeight;
-    // Имитация ответа
-    setTimeout(() => {
-      const reply = document.createElement('div');
-      reply.className = 'message';
-      reply.innerHTML = `<div class="author">ShadowKiller</div>Принято! 👍`;
-      messages.appendChild(reply);
-      messages.scrollTop = messages.scrollHeight;
-    }, 1200);
-  }
-
-  // MATCHMAKING (алгоритм подбора + радар)
-  const mmCandidates = [
-    { n: 'AceX',        i: 'AX', g: 'linear-gradient(135deg,#7b2ff7,#00d4ff)', r: 2890, role: 'Снайпер',  region: 'EU',   time: 'Вечер' },
-    { n: 'Vortex',      i: 'VX', g: 'linear-gradient(135deg,#ff6b6b,#feca57)', r: 2760, role: 'Саппорт', region: 'EU',   time: 'Вечер' },
-    { n: 'ZeroGravity', i: 'ZR', g: 'linear-gradient(135deg,#48dbfb,#0abde3)', r: 2410, role: 'Капитан', region: 'EU',   time: 'Выходные' },
-    { n: 'NightKnight', i: 'NK', g: 'linear-gradient(135deg,#1dd1a1,#10ac84)', r: 3050, role: 'Снайпер',  region: 'NA',   time: 'Утро' },
-    { n: 'Pulsar',      i: 'PL', g: 'linear-gradient(135deg,#f368e0,#ff9ff3)', r: 2905, role: 'Саппорт', region: 'EU',   time: 'Сейчас' },
-    { n: 'CometTail',   i: 'CT', g: 'linear-gradient(135deg,#ffd700,#ff8c00)', r: 2688, role: 'Капитан', region: 'Asia', time: 'Вечер' }
-  ];
-  function matchScore(p, ratingTol, role, region, time) {
-    let s = 40;                                            // база
-    s += Math.max(0, 30 - Math.abs(p.r - 2847) / ratingTol * 30); // близость рейтинга
-    if (role !== 'Любая' && p.role === role) s += 15; else if (role !== 'Любая') s -= 10;
-    if (p.region === region) s += 10;
-    if (p.time === time || time === 'Сейчас' && p.time === 'Вечер') s += 8;
-    return Math.round(Math.min(99, Math.max(35, s)));
-  }
-  function startMatchmaking() {
-    const sel = document.querySelectorAll('#matchmaking select');
-    const tolMap = { '± 500 рейтинга': 500, '± 250 рейтинга': 250, 'Точный ранг': 100 };
-    const tol = tolMap[sel[2].value] || 500;
-    const icon = document.getElementById('mmIcon'), title = document.getElementById('mmTitle');
-    const barWrap = document.getElementById('mmBarWrap'), bar = document.getElementById('mmBar');
-    const results = document.getElementById('matchmakingResults');
-    icon.textContent = '🛰️'; icon.style.animation = 'spin 1.2s linear infinite';
-    title.textContent = 'Сканируем сектор… Подбираем игроков по рейтингу, роли, региону и времени';
-    barWrap.style.display = 'block'; bar.style.width = '0%';
-    results.innerHTML = '';
-    let w = 0;
-    const t = setInterval(() => { w = Math.min(100, w + 7); bar.style.width = w + '%'; if (w >= 100) clearInterval(t); }, 90);
-    setTimeout(() => {
-      icon.textContent = '✅'; icon.style.animation = '';
-      title.textContent = 'Сигнал получен! Найдены подходящие игроки:';
-      const list = mmCandidates
-        .map(p => ({ ...p, score: matchScore(p, tol, sel[1].value, sel[3].value, sel[4].value) }))
-        .sort((a, b) => b.score - a.score).slice(0, 4);
-      results.innerHTML = `<div class="grid grid-2" style="margin-top:20px;">` + list.map(p => `
-        <div class="card"><div style="display:flex; gap:12px; align-items:center;">
-          <div class="avatar" style="width:50px; height:50px; font-size:16px; background:${p.g}; animation:none;">${p.i}</div>
-          <div style="flex:1;"><strong>${p.n}</strong>
-            <div style="font-size:12px; color:var(--muted);">Рейтинг: ${p.r} • Роль: ${p.role} • ${p.region}</div>
-            <div class="progress" style="margin-top:6px;"><div class="progress-bar" style="width:${p.score}%"></div></div>
-          </div>
-          <div style="text-align:right;"><div style="font-weight:900; color:var(--success); font-size:18px;">${p.score}%</div><div style="font-size:11px; color:var(--muted);">совпадение</div></div>
-        </div>
-        <button class="btn btn-primary" style="margin-top:12px; width:100%;" onclick="showNotification('📨 Приглашение отправлено игроку ${p.n}!')">Пригласить</button></div>`).join('') + `</div>`;
-      showNotification('🎯 Матчмейкинг завершён: найдено ' + list.length + ' кандидатов');
-    }, 1700);
-  }
-
-  // RANKING TABS
-  function switchRankTab(tab) {
-    ['players','teams','games'].forEach(t => {
-      document.getElementById('rank' + t[0].toUpperCase() + t.slice(1)).style.display = t === tab ? 'block' : 'none';
-    });
-    document.querySelectorAll('.rank-tab').forEach(b => {
-      const on = b.dataset.tab === tab;
-      b.className = 'btn rank-tab ' + (on ? 'btn-primary active' : 'btn-ghost');
-    });
   }
 
   // CHARTS
   window.addEventListener('load', () => {
-    // Stats chart
     const ctx1 = document.getElementById('statsChart');
     if (ctx1) {
       new Chart(ctx1, {
@@ -1222,31 +933,24 @@
         data: {
           labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
           datasets: [{
-            label: 'Рейтинг',
+            label: 'Рейтинг SQUADRA',
             data: [2650, 2720, 2680, 2790, 2810, 2830, 2847],
-            borderColor: '#00f0ff',
-            backgroundColor: 'rgba(0, 240, 255, 0.1)',
-            tension: 0.4, fill: true
-          }, {
-            label: 'K/D',
-            data: [3.8, 4.1, 3.9, 4.3, 4.2, 4.4, 4.2],
-            borderColor: '#ff00aa',
-            backgroundColor: 'rgba(255, 0, 170, 0.1)',
-            tension: 0.4, fill: true
+            borderColor: '#ff1e27',
+            backgroundColor: 'rgba(255, 30, 39, 0.1)',
+            tension: 0.3, fill: true
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { color: '#e6edf3' } } },
+          plugins: { legend: { labels: { color: '#8a8a9e' } } },
           scales: {
-            x: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } },
-            y: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } }
+            x: { ticks: { color: '#8a8a9e' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#8a8a9e' }, grid: { color: 'rgba(255,255,255,0.05)' } }
           }
         }
       });
     }
 
-    // Admin chart
     const ctx2 = document.getElementById('adminChart');
     if (ctx2) {
       new Chart(ctx2, {
@@ -1254,24 +958,23 @@
         data: {
           labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
           datasets: [{
-            label: 'Новые пользователи',
+            label: 'Новые игроки',
             data: [1200, 1900, 2400, 2800, 3200, 3800],
-            backgroundColor: 'rgba(0, 240, 255, 0.6)',
-            borderColor: '#00f0ff', borderWidth: 1
+            backgroundColor: 'rgba(255, 30, 39, 0.6)',
+            borderColor: '#ff1e27', borderWidth: 1
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { color: '#e6edf3' } } },
+          plugins: { legend: { labels: { color: '#8a8a9e' } } },
           scales: {
-            x: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } },
-            y: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } }
+            x: { ticks: { color: '#8a8a9e' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#8a8a9e' }, grid: { color: 'rgba(255,255,255,0.05)' } }
           }
         }
       });
     }
   });
 </script>
-
 </body>
 </html>
