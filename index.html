@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CyberArena — Игровая платформа</title>
+<title>OrbitArena — Космическая игровая платформа 🚀</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
@@ -21,11 +21,37 @@
     --border: #2a3348;
   }
   body {
-    background: radial-gradient(circle at top, #0f1528 0%, #05070d 100%);
+    background: radial-gradient(ellipse 120% 80% at 20% -10%, #1b1440 0%, transparent 55%),
+                radial-gradient(ellipse 100% 70% at 85% 15%, #0b2a4a 0%, transparent 50%),
+                radial-gradient(ellipse 90% 60% at 50% 110%, #2a0b3d 0%, transparent 55%),
+                linear-gradient(180deg, #05070f 0%, #030409 100%);
+    background-attachment: fixed;
     color: var(--text);
     min-height: 100vh;
     overflow-x: hidden;
   }
+
+  /* ===== SPACE BACKGROUND ===== */
+  #space-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .nebula {
+    position: fixed; border-radius: 50%; filter: blur(90px);
+    z-index: 0; pointer-events: none; opacity: .35;
+  }
+  .nebula-1 { width: 600px; height: 600px; top: -180px; left: -140px;
+    background: radial-gradient(circle, rgba(168,85,247,.5), transparent 70%);
+    animation: drift 26s ease-in-out infinite alternate; }
+  .nebula-2 { width: 520px; height: 520px; bottom: -160px; right: -120px;
+    background: radial-gradient(circle, rgba(0,240,255,.35), transparent 70%);
+    animation: drift 32s ease-in-out infinite alternate-reverse; }
+  .nebula-3 { width: 420px; height: 420px; top: 35%; right: 20%;
+    background: radial-gradient(circle, rgba(255,0,170,.22), transparent 70%);
+    animation: drift 40s ease-in-out infinite alternate; }
+  @keyframes drift {
+    from { transform: translate(0,0) scale(1); }
+    to   { transform: translate(60px, -40px) scale(1.15); }
+  }
+  header, .container, .modal, .notification { position: relative; z-index: 1; }
+  header { z-index: 100; }
   /* HEADER */
   header {
     position: sticky; top: 0; z-index: 100;
@@ -37,10 +63,15 @@
   }
   .logo {
     font-size: 24px; font-weight: 900;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    background: linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
+    background-size: 300% 100%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     letter-spacing: 2px;
+    animation: holo 6s linear infinite;
+    text-shadow: 0 0 30px rgba(0,240,255,.35);
+    display: flex; align-items: center; gap: 8px;
   }
+  @keyframes holo { to { background-position: 300% 0; } }
   nav ul { display: flex; gap: 8px; list-style: none; flex-wrap: wrap; }
   nav a {
     color: var(--muted); text-decoration: none; padding: 8px 14px;
@@ -59,13 +90,21 @@
   }
   .btn-primary {
     background: linear-gradient(90deg, var(--accent), var(--accent-3));
-    color: #000;
+    color: #05070d;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
   }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 240, 255, 0.4); }
-  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 26px rgba(0, 240, 255, 0.55); }
+  .btn-ghost { background: rgba(18,24,38,.4); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 14px rgba(0,240,255,.25); }
   .btn-danger { background: var(--danger); color: #fff; }
-  .btn-success { background: var(--success); color: #000; }
+  .btn-success { background: var(--success); color: #05070d; }
+
+  /* HOLO HEADINGS */
+  h1 { font-size: 34px; margin-bottom: 8px; letter-spacing: .5px; }
+  h1, h2.grad {
+    background: linear-gradient(90deg, #fff 0%, var(--accent) 45%, var(--accent-3) 75%, var(--accent-2) 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
 
   /* LAYOUT */
   .container { display: flex; min-height: calc(100vh - 70px); }
@@ -91,12 +130,21 @@
   }
   main { flex: 1; padding: 30px; }
 
+  /* GLASSMORPHISM PANELS */
+  aside, .card, .stat-box, .game-card, table, .chat-container, .modal-content,
+  .achievement, .bracket-match, .profile-header, input, select, textarea {
+    background: rgba(18, 24, 38, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  aside { border-right: 1px solid rgba(0, 240, 255, 0.12); }
+
   /* SECTIONS */
   .section { display: none; animation: fadeIn .4s; }
   .section.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-  h1 { font-size: 32px; margin-bottom: 8px; }
+  h1 { font-size: 34px; margin-bottom: 8px; letter-spacing: .5px; }
   h2 { font-size: 24px; margin-bottom: 16px; }
   h3 { font-size: 18px; margin-bottom: 12px; }
   .subtitle { color: var(--muted); margin-bottom: 24px; }
@@ -123,15 +171,23 @@
 
   /* GAME CARDS */
   .game-card {
-    background: var(--bg-2); border-radius: 12px; overflow: hidden;
-    border: 1px solid var(--border); cursor: pointer; transition: all .3s;
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid rgba(0, 240, 255, 0.15); cursor: pointer; transition: all .3s;
   }
-  .game-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0, 240, 255, 0.2); }
+  .game-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 240, 255, 0.25), 0 0 0 1px rgba(0,240,255,.3);
+  }
   .game-img {
     height: 140px;
-    background: linear-gradient(135deg, var(--accent-3), var(--accent-2));
+    background: linear-gradient(135deg, #2b1a6b, #7b2ff7 45%, #00d4ff);
     display: flex; align-items: center; justify-content: center;
     font-size: 48px; position: relative;
+  }
+  .game-img::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.7) 1px, transparent 1px);
+    background-size: 26px 26px; opacity: .12; pointer-events: none;
   }
   .game-info { padding: 16px; }
   .game-info h4 { margin-bottom: 6px; }
@@ -140,17 +196,32 @@
 
   /* PROFILE */
   .profile-header {
-    background: linear-gradient(135deg, var(--bg-3), var(--bg-2));
-    border-radius: 12px; padding: 30px; display: flex;
+    background: linear-gradient(135deg, rgba(43,26,107,.6), rgba(0,212,255,.12) 60%, rgba(18,24,38,.5));
+    border-radius: 16px; padding: 30px; display: flex;
     align-items: center; gap: 24px; margin-bottom: 24px;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.08) inset;
+    position: relative; overflow: hidden;
   }
+  .profile-header::after {
+    content: ''; position: absolute; top: -60%; left: -20%;
+    width: 140px; height: 220%; transform: rotate(25deg);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    animation: shine 5s ease-in-out infinite;
+  }
+  @keyframes shine { 0%,60% { left: -20%; } 100% { left: 120%; } }
   .avatar {
     width: 100px; height: 100px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    background: conic-gradient(from 180deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
     display: flex; align-items: center; justify-content: center;
-    font-size: 40px; font-weight: 900; color: #000;
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+    font-size: 40px; font-weight: 900; color: #05070d;
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.45), 0 0 60px rgba(168, 85, 247, 0.25);
+    border: 3px solid rgba(5, 7, 13, .9);
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 25px rgba(0,240,255,.4), 0 0 50px rgba(168,85,247,.2); }
+    50%      { box-shadow: 0 0 40px rgba(0,240,255,.65), 0 0 80px rgba(168,85,247,.35); }
   }
   .profile-info h2 { margin-bottom: 4px; }
   .profile-info .level { color: var(--accent); font-size: 14px; }
@@ -161,14 +232,19 @@
     background: var(--bg-2); padding: 20px; border-radius: 12px;
     border: 1px solid var(--border); text-align: center;
   }
-  .stat-box .value { font-size: 28px; font-weight: 900; color: var(--accent); }
-  .stat-box .label { color: var(--muted); font-size: 12px; text-transform: uppercase; margin-top: 4px; }
+  .stat-box .value {
+    font-size: 28px; font-weight: 900;
+    background: linear-gradient(90deg, var(--accent), var(--accent-3));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(0,240,255,.35));
+  }
+  .stat-box .label { color: var(--muted); font-size: 12px; text-transform: uppercase; margin-top: 4px; letter-spacing: 1px; }
 
   /* TABLE */
   table { width: 100%; border-collapse: collapse; background: var(--bg-2); border-radius: 12px; overflow: hidden; }
   th, td { padding: 14px; text-align: left; border-bottom: 1px solid var(--border); }
-  th { background: var(--bg-3); color: var(--accent); font-size: 13px; text-transform: uppercase; }
-  tr:hover { background: var(--bg-3); }
+  th { background: rgba(26, 34, 54, 0.8); color: var(--accent); font-size: 13px; text-transform: uppercase; }
+  tr:hover { background: rgba(0, 240, 255, 0.05); }
 
   /* FORMS */
   .form-group { margin-bottom: 16px; }
@@ -186,15 +262,19 @@
   /* MODAL */
   .modal {
     display: none; position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+    background: rgba(3, 4, 9, 0.75); backdrop-filter: blur(6px);
     align-items: center; justify-content: center;
   }
   .modal.active { display: flex; }
   .modal-content {
-    background: var(--bg-2); border-radius: 16px; padding: 30px;
-    width: 90%; max-width: 450px; border: 1px solid var(--border);
+    border-radius: 18px; padding: 30px;
+    width: 90%; max-width: 450px;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 60px rgba(0, 240, 255, 0.15), 0 20px 60px rgba(0,0,0,.6);
     position: relative;
+    animation: modalIn .3s cubic-bezier(.2,.9,.3,1.2);
   }
+  @keyframes modalIn { from { transform: scale(.9) translateY(20px); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .modal-close {
     position: absolute; top: 14px; right: 14px;
     background: none; border: none; color: var(--muted);
@@ -219,9 +299,9 @@
     max-width: 70%; padding: 10px 14px; border-radius: 12px;
     background: var(--bg-3); font-size: 14px;
   }
-  .message.own { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-3)); color: #000; }
+  .message.own { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-3)); color: #05070d; box-shadow: 0 0 18px rgba(0,240,255,.25); }
   .message .author { font-size: 11px; color: var(--accent); margin-bottom: 4px; font-weight: 600; }
-  .message.own .author { color: rgba(0,0,0,0.6); }
+  .message.own .author { color: rgba(5,7,13,0.65); }
   .chat-input {
     padding: 12px; border-top: 1px solid var(--border);
     display: flex; gap: 10px;
@@ -246,19 +326,23 @@
   .progress-bar {
     height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
     border-radius: 4px; transition: width .6s;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
   }
 
   /* ACHIEVEMENTS */
   .achievement {
     display: flex; align-items: center; gap: 14px;
-    background: var(--bg-2); padding: 14px; border-radius: 10px;
-    border: 1px solid var(--border);
+    padding: 14px; border-radius: 12px;
+    border: 1px solid rgba(255, 215, 0, 0.18);
+    transition: all .3s;
   }
+  .achievement:hover { border-color: rgba(255,215,0,.5); box-shadow: 0 0 20px rgba(255,215,0,.12); transform: translateY(-2px); }
   .achievement-icon {
     width: 48px; height: 48px; border-radius: 50%;
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    background: radial-gradient(circle at 30% 30%, #ffe9a8, #ffd700 45%, #ff8c00);
     display: flex; align-items: center; justify-content: center;
     font-size: 22px;
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
   }
 
   /* NOTIFICATIONS */
@@ -286,8 +370,25 @@
   /* SCROLLBAR */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent), var(--accent-3)); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* SHOOTING STAR */
+  .shooting-star {
+    position: fixed; top: 12%; left: -160px; width: 150px; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.95));
+    border-radius: 2px; z-index: 0; pointer-events: none; opacity: 0;
+    transform: rotate(18deg);
+    animation: shoot 11s ease-in infinite;
+    box-shadow: 0 0 12px rgba(0,240,255,.7);
+  }
+  @keyframes shoot {
+    0%   { transform: translateX(0) translateY(0) rotate(18deg); opacity: 0; }
+    4%   { opacity: 1; }
+    14%  { transform: translateX(115vw) translateY(38vh) rotate(18deg); opacity: 0; }
+    100% { transform: translateX(115vw) translateY(38vh) rotate(18deg); opacity: 0; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 768px) {
     aside { display: none; }
@@ -298,9 +399,16 @@
 </head>
 <body>
 
+<!-- SPACE BACKGROUND -->
+<canvas id="space-canvas"></canvas>
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="nebula nebula-3"></div>
+<div class="shooting-star"></div>
+
 <!-- HEADER -->
 <header>
-  <div class="logo">⚡ CYBERARENA</div>
+  <div class="logo">🚀 ORBIT<span style="-webkit-text-fill-color:currentColor; opacity:.9;">ARENA</span></div>
   <nav>
     <ul>
       <li><a onclick="showSection('home')" class="active">Главная</a></li>
@@ -343,8 +451,18 @@
 
     <!-- HOME -->
     <section id="home" class="section active">
-      <h1>Добро пожаловать в CyberArena!</h1>
+      <h1>Добро пожаловать на орбиту! OrbitArena ждёт тебя 🚀</h1>
       <p class="subtitle">Платформа для киберспорта, турниров и игрового сообщества</p>
+
+      <div class="card" style="margin-bottom:30px; background:linear-gradient(135deg, rgba(43,26,107,.55), rgba(0,212,255,.1)); border-color:rgba(0,240,255,.25); display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+        <div style="font-size:56px; filter:drop-shadow(0 0 18px rgba(0,240,255,.6)); animation:pulse-glow 3s infinite;">🪐</div>
+        <div style="flex:1; min-width:240px;">
+          <h2 style="margin-bottom:6px;">Твоя орбита. Твоя лига. Твоя эпоха.</h2>
+          <p>Собирай команду, покоряй турниры и поднимайся в галактическом рейтинге — 24/7, из любой точки Вселенной.</p>
+        </div>
+        <button class="btn btn-primary" onclick="showSection('matchmaking')">🛰️ Найти тиммейтов</button>
+        <button class="btn btn-ghost" onclick="showSection('tournaments')">Смотреть турниры</button>
+      </div>
 
       <div class="grid grid-4" style="margin-bottom: 30px;">
         <div class="stat-box"><div class="value">128 450</div><div class="label">Игроков онлайн</div></div>
@@ -356,7 +474,7 @@
       <h2>🔥 Популярные игры</h2>
       <div class="grid grid-4" style="margin-bottom: 30px;">
         <div class="game-card" onclick="showSection('games')">
-          <div class="game-img">🎮</div>
+          <div class="game-img">👾</div>
           <div class="game-info"><h4>CS2</h4><div class="genre">FPS • Шутер</div><div class="online">● 45 230 онлайн</div></div>
         </div>
         <div class="game-card" onclick="showSection('games')">
@@ -364,11 +482,11 @@
           <div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA • Стратегия</div><div class="online">● 38 120 онлайн</div></div>
         </div>
         <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#48dbfb,#0abde3);">🏆</div>
+          <div class="game-img" style="background:linear-gradient(135deg,#00d4ff,#7b2ff7);">🌟</div>
           <div class="game-info"><h4>Valorant</h4><div class="genre">FPS • Тактика</div><div class="online">● 29 870 онлайн</div></div>
         </div>
         <div class="game-card" onclick="showSection('games')">
-          <div class="game-img" style="background:linear-gradient(135deg,#1dd1a1,#10ac84);">🎯</div>
+          <div class="game-img" style="background:linear-gradient(135deg,#12d8a0,#00d4ff);">🛸</div>
           <div class="game-info"><h4>League of Legends</h4><div class="genre">MOBA</div><div class="online">● 52 410 онлайн</div></div>
         </div>
       </div>
@@ -377,15 +495,15 @@
       <div class="grid grid-2">
         <div class="card">
           <span class="badge badge-success">LIVE</span>
-          <h3 style="margin-top:10px;">CyberArena Championship 2025</h3>
+          <h3 style="margin-top:10px;">OrbitArena Championship 2026</h3>
           <p>CS2 • Призовой фонд: ₽ 500 000</p>
           <p style="margin-top:10px;">🏆 32 команды • 📅 Финал: 15 декабря</p>
           <button class="btn btn-primary" style="margin-top:14px;">Смотреть</button>
         </div>
         <div class="card">
           <span class="badge badge-warning">Скоро</span>
-          <h3 style="margin-top:10px;">Winter League Dota 2</h3>
-          <p>Dota 2 • Призовой фонд: ₽ 250 000</h3>
+          <h3 style="margin-top:10px;">Winter Galaxy League Dota 2</h3>
+          <p>Dota 2 • Призовой фонд: ₽ 250 000</p>
           <p style="margin-top:10px;">🏆 16 команд • 📅 Старт: 1 декабря</p>
           <button class="btn btn-ghost" style="margin-top:14px;">Регистрация</button>
         </div>
@@ -457,7 +575,7 @@
       </div>
 
       <div class="grid grid-4">
-        <div class="game-card"><div class="game-img">🎮</div><div class="game-info"><h4>CS2</h4><div class="genre">FPS</div><div class="online">● 45 230</div><div class="progress"><div class="progress-bar" style="width:90%"></div></div></div></div>
+        <div class="game-card"><div class="game-img">👾</div><div class="game-info"><h4>CS2</h4><div class="genre">FPS</div><div class="online">● 45 230</div><div class="progress"><div class="progress-bar" style="width:90%"></div></div></div></div>
         <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div><div class="game-info"><h4>Dota 2</h4><div class="genre">MOBA</div><div class="online">● 38 120</div><div class="progress"><div class="progress-bar" style="width:75%"></div></div></div></div>
         <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#48dbfb,#0abde3);">🎯</div><div class="game-info"><h4>Valorant</h4><div class="genre">FPS</div><div class="online">● 29 870</div><div class="progress"><div class="progress-bar" style="width:65%"></div></div></div></div>
         <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#1dd1a1,#10ac84);">🏆</div><div class="game-info"><h4>LoL</h4><div class="genre">MOBA</div><div class="online">● 52 410</div><div class="progress"><div class="progress-bar" style="width:95%"></div></div></div></div>
@@ -548,7 +666,7 @@
       <div class="grid grid-3" style="margin-bottom:30px;">
         <div class="card">
           <span class="badge badge-success">LIVE</span>
-          <h3 style="margin-top:10px;">CyberArena Cup</h3>
+          <h3 style="margin-top:10px;">OrbitArena Cup</h3>
           <p>CS2 • 32 команды</p>
           <p style="margin-top:8px;"><strong style="color:var(--accent);">₽ 500 000</strong></p>
           <button class="btn btn-primary" style="margin-top:12px; width:100%;">Участвовать</button>
@@ -633,10 +751,10 @@
           <div class="card" style="margin-bottom:16px;">
             <h3>🔥 Тренды</h3>
             <div style="margin-top:10px;">
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#CyberArenaCup</div>
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#ValorantChampions</div>
-              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#CS2Major</div>
-              <div style="padding:8px 0;">#Dota2TI</div>
+              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#OrbitArenaCup</div>
+              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#GalaxyClash</div>
+              <div style="padding:8px 0; border-bottom:1px solid var(--border);">#ZeroGravityMajor</div>
+              <div style="padding:8px 0;">#NebulaCup</div>
             </div>
           </div>
           <div class="card">
@@ -663,11 +781,17 @@
     <!-- RANKING -->
     <section id="ranking" class="section">
       <h1>Таблица лидеров</h1>
-      <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <button class="btn btn-primary">Игроки</button>
-        <button class="btn btn-ghost">Команды</button>
-        <button class="btn btn-ghost">По играм</button>
+      <div class="card" style="margin-bottom:20px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-color:rgba(168,85,247,.4);">
+        <div><strong style="color:var(--accent-3);">⭐ Сезон 7: «Туманность Ориона»</strong> <span style="color:var(--muted); font-size:13px;">• до 30 ноября • сброс рейтинга в начале сезона</span></div>
+        <div class="progress" style="width:220px;"><div class="progress-bar" style="width:72%;"></div></div>
+        <span style="font-size:12px; color:var(--muted);">Прошло 72% сезона</span>
       </div>
+      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+        <button class="btn btn-primary rank-tab active" data-tab="players" onclick="switchRankTab('players')">👤 Игроки</button>
+        <button class="btn btn-ghost rank-tab" data-tab="teams" onclick="switchRankTab('teams')">🛡️ Команды</button>
+        <button class="btn btn-ghost rank-tab" data-tab="games" onclick="switchRankTab('games')">🎮 По играм</button>
+      </div>
+      <div id="rankPlayers">
       <table>
         <thead><tr><th>#</th><th>Игрок</th><th>Ранг</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Тренд</th></tr></thead>
         <tbody>
@@ -679,6 +803,32 @@
           <tr><td>6</td><td><strong>PhoenixRise</strong></td><td><span class="badge badge-success">Gold</span></td><td><strong>2 150</strong></td><td>423</td><td>61%</td><td style="color:var(--muted);">— 0</td></tr>
         </tbody>
       </table>
+      </div>
+      <div id="rankTeams" style="display:none;">
+        <table>
+          <thead><tr><th>#</th><th>Команда</th><th>Игра</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td>🥇</td><td><strong>Cyber Ninjas</strong></td><td>CS2</td><td><strong>4 920</strong></td><td>312</td><td>81%</td><td><span class="badge badge-success">LIVE турнир</span></td></tr>
+            <tr><td>🥈</td><td><strong>Phoenix Squad</strong></td><td>CS2</td><td><strong>4 310</strong></td><td>287</td><td>74%</td><td><span class="badge badge-info">Активна</span></td></tr>
+            <tr><td>🥉</td><td><strong>Ice Wolves</strong></td><td>Dota 2</td><td><strong>4 050</strong></td><td>401</td><td>69%</td><td><span class="badge badge-info">Активна</span></td></tr>
+            <tr><td>4</td><td><strong>Storm Riders</strong></td><td>Valorant</td><td><strong>3 780</strong></td><td>198</td><td>72%</td><td><span class="badge badge-warning">Поиск состава</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="rankGames" style="display:none;">
+        <div class="grid grid-2">
+          <div class="card"><h3>🔫 CS2 — Топ-5 сезона</h3><table><tbody>
+            <tr><td>1</td><td>ThunderBolt</td><td><strong>4 560</strong></td></tr>
+            <tr><td>2</td><td>ShadowKiller</td><td><strong>3 240</strong></td></tr>
+            <tr><td>3</td><td>NightX_Pro</td><td><strong>2 847</strong></td></tr>
+          </tbody></table></div>
+          <div class="card"><h3>⚔️ Dota 2 — Топ-5 сезона</h3><table><tbody>
+            <tr><td>1</td><td>PhoenixRise</td><td><strong>3 950</strong></td></tr>
+            <tr><td>2</td><td>VoidWalker</td><td><strong>3 410</strong></td></tr>
+            <tr><td>3</td><td>AuroraFan</td><td><strong>2 980</strong></td></tr>
+          </tbody></table></div>
+        </div>
+      </div>
     </section>
 
     <!-- MESSAGES / CHAT -->
@@ -692,7 +842,7 @@
         <div class="chat-messages" id="chatMessages">
           <div class="message"><div class="author">ShadowKiller</div>Привет! Как дела?</div>
           <div class="message own"><div class="author">Вы</div>Отлично! Готов к турниру?</div>
-          <div class="message"><div class="author">ShadowKiller</div">Да, тренировался весь день 🔥</div>
+          <div class="message"><div class="author">ShadowKiller</div>Да, тренировался весь день 🔥</div>
           <div class="message own"><div class="author">Вы</div>Круто! Во сколько встречаемся?</div>
           <div class="message"><div class="author">ShadowKiller</div>В 20:00 по МСК, не опаздывай 😉</div>
         </div>
@@ -758,6 +908,14 @@
         <button class="btn btn-primary" onclick="startMatchmaking()">🚀 Начать подбор</button>
       </div>
 
+      <div class="card" style="text-align:center; padding:34px; position:relative; overflow:hidden;">
+        <div style="position:absolute; inset:0; background:radial-gradient(circle at center, rgba(0,240,255,.06), transparent 70%); pointer-events:none;"></div>
+        <div style="font-size:64px; line-height:1;" id="mmIcon">📡</div>
+        <h3 style="margin-top:12px; color:var(--accent);" id="mmTitle">Радар матчмейкинга в режиме ожидания</h3>
+        <p style="color:var(--muted); font-size:13px; max-width:420px; margin:8px auto 0;">Алгоритм подбирает игроков по рейтингу (±допуск), роли, региону и времени онлайн. Расчёт совпадения — взвешенная сумма параметров.</p>
+        <div class="progress" style="max-width:420px; margin:18px auto 0; display:none;" id="mmBarWrap"><div class="progress-bar" id="mmBar" style="width:0%;"></div></div>
+      </div>
+
       <div id="matchmakingResults"></div>
     </section>
 
@@ -804,7 +962,7 @@
     <section id="library" class="section">
       <h1>📚 Моя библиотека</h1>
       <div class="grid grid-4">
-        <div class="game-card"><div class="game-img">🎮</div><div class="game-info"><h4>CS2</h4><div class="genre">452 часа</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
+        <div class="game-card"><div class="game-img">👾</div><div class="game-info"><h4>CS2</h4><div class="genre">452 часа</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
         <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#ff6b6b,#feca57);">⚔️</div><div class="game-info"><h4>Dota 2</h4><div class="genre">287 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
         <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#48dbfb,#0abde3);">🎯</div><div class="game-info"><h4>Valorant</h4><div class="genre">156 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
         <div class="game-card"><div class="game-img" style="background:linear-gradient(135deg,#1dd1a1,#10ac84);">🏆</div><div class="game-info"><h4>LoL</h4><div class="genre">89 часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;">Играть</button></div></div>
@@ -818,7 +976,7 @@
         <h3>Основные</h3>
         <div class="grid grid-2" style="margin-top:16px;">
           <div class="form-group"><label>Никнейм</label><input value="NightX_Pro"></div>
-          <div class="form-group"><label>Email</label><input value="player@cyberarena.com"></div>
+          <div class="form-group"><label>Email</label><input value="player@orbitarena.gg"></div>
           <div class="form-group"><label>Язык</label><select><option>Русский</option><option>English</option></select></div>
           <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
         </div>
@@ -877,8 +1035,8 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('loginModal')">×</button>
     <h2>Вход в аккаунт</h2>
-    <p class="subtitle">С возвращением в CyberArena!</p>
-    <div class="form-group"><label>Email или никнейм</label><input placeholder="player@cyberarena.com"></div>
+    <p class="subtitle">С возвращением на орбиту!</p>
+    <div class="form-group"><label>Email или никнейм</label><input placeholder="player@orbitarena.gg"></div>
     <div class="form-group"><label>Пароль</label><input type="password" placeholder="••••••••"></div>
     <button class="btn btn-primary" style="width:100%;" onclick="showNotification('✅ Успешный вход!'); closeModal('loginModal')">Войти</button>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--accent); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
@@ -889,7 +1047,7 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('registerModal')">×</button>
     <h2>Регистрация</h2>
-    <p class="subtitle">Присоединяйся к киберспортивному сообществу!</p>
+    <p class="subtitle">Присоединяйся к галактике киберспорта!</p>
     <div class="form-group"><label>Никнейм</label><input placeholder="Ваш игровой ник"></div>
     <div class="form-group"><label>Email</label><input type="email" placeholder="email@example.com"></div>
     <div class="form-group"><label>Пароль</label><input type="password" placeholder="Минимум 8 символов"></div>
@@ -912,6 +1070,37 @@
 </div>
 
 <script>
+  // ===== STARFIELD (canvas) =====
+  (function() {
+    const cvs = document.getElementById('space-canvas');
+    const ctx = cvs.getContext('2d');
+    let stars = [], W, H;
+    function resize() {
+      W = cvs.width = innerWidth; H = cvs.height = innerHeight;
+      const count = Math.min(260, Math.floor(W * H / 7000));
+      stars = Array.from({length: count}, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.4 + .3,
+        p: Math.random() * Math.PI * 2,          // twinkle phase
+        s: Math.random() * .02 + .005,           // twinkle speed
+        v: Math.random() * .06 + .015            // drift speed
+      }));
+    }
+    addEventListener('resize', resize); resize();
+    (function loop() {
+      ctx.clearRect(0, 0, W, H);
+      for (const st of stars) {
+        st.p += st.s; st.y -= st.v; if (st.y < -2) st.y = H + 2;
+        const a = .35 + Math.sin(st.p) * .35;
+        ctx.beginPath();
+        ctx.arc(st.x, st.y, st.r, 0, 7);
+        ctx.fillStyle = `rgba(${st.r > 1.1 ? '180,240,255' : '255,255,255'}, ${a})`;
+        ctx.fill();
+      }
+      requestAnimationFrame(loop);
+    })();
+  })();
+
   // NAVIGATION
   function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -962,20 +1151,65 @@
     }, 1200);
   }
 
-  // MATCHMAKING
+  // MATCHMAKING (алгоритм подбора + радар)
+  const mmCandidates = [
+    { n: 'AceX',        i: 'AX', g: 'linear-gradient(135deg,#7b2ff7,#00d4ff)', r: 2890, role: 'Снайпер',  region: 'EU',   time: 'Вечер' },
+    { n: 'Vortex',      i: 'VX', g: 'linear-gradient(135deg,#ff6b6b,#feca57)', r: 2760, role: 'Саппорт', region: 'EU',   time: 'Вечер' },
+    { n: 'ZeroGravity', i: 'ZR', g: 'linear-gradient(135deg,#48dbfb,#0abde3)', r: 2410, role: 'Капитан', region: 'EU',   time: 'Выходные' },
+    { n: 'NightKnight', i: 'NK', g: 'linear-gradient(135deg,#1dd1a1,#10ac84)', r: 3050, role: 'Снайпер',  region: 'NA',   time: 'Утро' },
+    { n: 'Pulsar',      i: 'PL', g: 'linear-gradient(135deg,#f368e0,#ff9ff3)', r: 2905, role: 'Саппорт', region: 'EU',   time: 'Сейчас' },
+    { n: 'CometTail',   i: 'CT', g: 'linear-gradient(135deg,#ffd700,#ff8c00)', r: 2688, role: 'Капитан', region: 'Asia', time: 'Вечер' }
+  ];
+  function matchScore(p, ratingTol, role, region, time) {
+    let s = 40;                                            // база
+    s += Math.max(0, 30 - Math.abs(p.r - 2847) / ratingTol * 30); // близость рейтинга
+    if (role !== 'Любая' && p.role === role) s += 15; else if (role !== 'Любая') s -= 10;
+    if (p.region === region) s += 10;
+    if (p.time === time || time === 'Сейчас' && p.time === 'Вечер') s += 8;
+    return Math.round(Math.min(99, Math.max(35, s)));
+  }
   function startMatchmaking() {
+    const sel = document.querySelectorAll('#matchmaking select');
+    const tolMap = { '± 500 рейтинга': 500, '± 250 рейтинга': 250, 'Точный ранг': 100 };
+    const tol = tolMap[sel[2].value] || 500;
+    const icon = document.getElementById('mmIcon'), title = document.getElementById('mmTitle');
+    const barWrap = document.getElementById('mmBarWrap'), bar = document.getElementById('mmBar');
     const results = document.getElementById('matchmakingResults');
-    results.innerHTML = '<h3 style="margin:20px 0;">🔄 Поиск игроков...</h3>';
+    icon.textContent = '🛰️'; icon.style.animation = 'spin 1.2s linear infinite';
+    title.textContent = 'Сканируем сектор… Подбираем игроков по рейтингу, роли, региону и времени';
+    barWrap.style.display = 'block'; bar.style.width = '0%';
+    results.innerHTML = '';
+    let w = 0;
+    const t = setInterval(() => { w = Math.min(100, w + 7); bar.style.width = w + '%'; if (w >= 100) clearInterval(t); }, 90);
     setTimeout(() => {
-      results.innerHTML = `
-        <h3 style="margin:20px 0;">✅ Найдено 4 подходящих игрока:</h3>
-        <div class="grid grid-2">
-          <div class="card"><div style="display:flex; gap:12px;"><div class="avatar" style="width:50px; height:50px;">AX</div><div><strong>AceX</strong><div style="font-size:12px; color:var(--muted);">Ранг: Diamond • Роль: Снайпер</div><div style="font-size:12px; color:var(--success);">Совпадение: 94%</div></div></div><button class="btn btn-primary" style="margin-top:10px; width:100%;">Пригласить</button></div>
-          <div class="card"><div style="display:flex; gap:12px;"><div class="avatar" style="width:50px; height:50px; background:linear-gradient(135deg,#ff6b6b,#feca57);">VX</div><div><strong>Vortex</strong><div style="font-size:12px; color:var(--muted);">Ранг: Diamond • Роль: Саппорт</div><div style="font-size:12px; color:var(--success);">Совпадение: 89%</div></div></div><button class="btn btn-primary" style="margin-top:10px; width:100%;">Пригласить</button></div>
-          <div class="card"><div style="display:flex; gap:12px;"><div class="avatar" style="width:50px; height:50px; background:linear-gradient(135deg,#48dbfb,#0abde3);">ZR</div><div><strong>ZeroGravity</strong><div style="font-size:12px; color:var(--muted);">Ранг: Gold • Роль: Капитан</div><div style="font-size:12px; color:var(--success);">Совпадение: 82%</div></div></div><button class="btn btn-primary" style="margin-top:10px; width:100%;">Пригласить</button></div>
-          <div class="card"><div style="display:flex; gap:12px;"><div class="avatar" style="width:50px; height:50px; background:linear-gradient(135deg,#1dd1a1,#10ac84);">NK</div><div><strong>NightKnight</strong><div style="font-size:12px; color:var(--muted);">Ранг: Diamond • Роль: Снайпер</div><div style="font-size:12px; color:var(--success);">Совпадение: 78%</div></div></div><button class="btn btn-primary" style="margin-top:10px; width:100%;">Пригласить</button></div>
-        </div>`;
-    }, 1500);
+      icon.textContent = '✅'; icon.style.animation = '';
+      title.textContent = 'Сигнал получен! Найдены подходящие игроки:';
+      const list = mmCandidates
+        .map(p => ({ ...p, score: matchScore(p, tol, sel[1].value, sel[3].value, sel[4].value) }))
+        .sort((a, b) => b.score - a.score).slice(0, 4);
+      results.innerHTML = `<div class="grid grid-2" style="margin-top:20px;">` + list.map(p => `
+        <div class="card"><div style="display:flex; gap:12px; align-items:center;">
+          <div class="avatar" style="width:50px; height:50px; font-size:16px; background:${p.g}; animation:none;">${p.i}</div>
+          <div style="flex:1;"><strong>${p.n}</strong>
+            <div style="font-size:12px; color:var(--muted);">Рейтинг: ${p.r} • Роль: ${p.role} • ${p.region}</div>
+            <div class="progress" style="margin-top:6px;"><div class="progress-bar" style="width:${p.score}%"></div></div>
+          </div>
+          <div style="text-align:right;"><div style="font-weight:900; color:var(--success); font-size:18px;">${p.score}%</div><div style="font-size:11px; color:var(--muted);">совпадение</div></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px; width:100%;" onclick="showNotification('📨 Приглашение отправлено игроку ${p.n}!')">Пригласить</button></div>`).join('') + `</div>`;
+      showNotification('🎯 Матчмейкинг завершён: найдено ' + list.length + ' кандидатов');
+    }, 1700);
+  }
+
+  // RANKING TABS
+  function switchRankTab(tab) {
+    ['players','teams','games'].forEach(t => {
+      document.getElementById('rank' + t[0].toUpperCase() + t.slice(1)).style.display = t === tab ? 'block' : 'none';
+    });
+    document.querySelectorAll('.rank-tab').forEach(b => {
+      const on = b.dataset.tab === tab;
+      b.className = 'btn rank-tab ' + (on ? 'btn-primary active' : 'btn-ghost');
+    });
   }
 
   // CHARTS
@@ -1005,8 +1239,8 @@
           responsive: true,
           plugins: { legend: { labels: { color: '#e6edf3' } } },
           scales: {
-            x: { ticks: { color: '#8b95a7' }, grid: { color: '#2a3348' } },
-            y: { ticks: { color: '#8b95a7' }, grid: { color: '#2a3348' } }
+            x: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } },
+            y: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } }
           }
         }
       });
@@ -1030,8 +1264,8 @@
           responsive: true,
           plugins: { legend: { labels: { color: '#e6edf3' } } },
           scales: {
-            x: { ticks: { color: '#8b95a7' }, grid: { color: '#2a3348' } },
-            y: { ticks: { color: '#8b95a7' }, grid: { color: '#2a3348' } }
+            x: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } },
+            y: { ticks: { color: '#8b95a7' }, grid: { color: 'rgba(0, 240, 255, 0.07)' } }
           }
         }
       });
