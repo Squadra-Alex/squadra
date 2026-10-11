@@ -960,7 +960,7 @@
     <!-- TOURNAMENTS -->
     <section id="tournaments" class="section">
       <h1><i class="fa-solid fa-flag-checkered"></i>Турниры</h1>
-      <button class="btn btn-primary" style="margin-bottom:20px;"><i class="fa-solid fa-plus"></i> Создать турнир</button>
+      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTournamentModal')"><i class="fa-solid fa-plus"></i> Создать турнир</button>
 
       <div class="grid grid-3" style="margin-bottom:30px;">
         <div class="card">
@@ -985,6 +985,7 @@
           <button class="btn btn-ghost" data-tournament-id="spring-championship" onclick="registerForTournament(&quot;spring-championship&quot;)" style="margin-top:12px; width:100%;">Уведомить</button>
         </div>
       </div>
+      <div class="grid grid-3" id="createdTournamentGrid" style="margin:0 0 30px;"></div>
 
       <h2><i class="fa-solid fa-sitemap"></i>Турнирная сетка</h2>
       <div class="bracket">
@@ -1034,20 +1035,7 @@
           </div>
           <div class="card">
             <h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
-            <div style="margin-top:10px;">
-              <div class="list-divider friend-row">
-                <div><strong>CS2 Pros</strong><div style="font-size:12px; color:var(--muted);">12 450 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:11px;">Вступить</button>
-              </div>
-              <div class="list-divider friend-row">
-                <div><strong>Valorant EU</strong><div style="font-size:12px; color:var(--muted);">8 920 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:11px;">Вступить</button>
-              </div>
-              <div class="list-divider friend-row">
-                <div><strong>Dota 2 CIS</strong><div style="font-size:12px; color:var(--muted);">15 300 участников</div></div>
-                <button class="btn btn-ghost" style="padding:6px 12px; font-size:11px;">Вступить</button>
-              </div>
-            </div>
+            <div id="communityGroups" style="margin-top:10px;"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
           </div>
         </div>
       </div>
@@ -1289,6 +1277,19 @@
     <div class="form-group"><label>Регион</label><select id="teamRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
     <div class="form-group"><label>Описание</label><textarea id="teamDescription" rows="3" maxlength="1000" placeholder="Расскажите о команде..."></textarea></div>
     <button class="btn btn-primary" style="width:100%;" onclick="createTeam()"><i class="fa-solid fa-shield-halved"></i> Создать</button>
+  </div>
+</div>
+
+<div id="createTournamentModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('createTournamentModal')"><i class="fa-solid fa-xmark"></i></button>
+    <h2 style="font-family:Oswald; text-transform:uppercase;">Создать турнир</h2>
+    <div class="form-group"><label>Название</label><input id="tournamentName" maxlength="100" placeholder="Например: Squadra Open"></div>
+    <div class="form-group"><label>Игра</label><select id="tournamentGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>League of Legends</option></select></div>
+    <div class="grid grid-2"><div class="form-group"><label>Команд</label><input id="tournamentLimit" type="number" min="2" max="256" value="16"></div><div class="form-group"><label>Начало</label><input id="tournamentStarts" type="datetime-local"></div></div>
+    <div class="form-group"><label>Призовой фонд</label><input id="tournamentPrize" maxlength="80" placeholder="Например: ₽ 50 000"></div>
+    <div class="form-group"><label>Описание</label><textarea id="tournamentDescription" rows="3" maxlength="2000" placeholder="Правила и информация о турнире"></textarea></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="createTournament()"><i class="fa-solid fa-flag-checkered"></i> Создать</button>
   </div>
 </div>
 
@@ -1709,6 +1710,7 @@
   const requireAccount = () => { showNotification('Войди в аккаунт, чтобы сохранить эти данные.'); openModal('loginModal'); };
   const queryError = (label,error) => { if(error) console.error(label,error); return error; };
 
+  let accountTournamentIds=[];
   async function loadAccountData() {
     if (!supabaseClient || !currentUser) return;
     const uid=currentUser.id;
@@ -1741,7 +1743,9 @@
     renderCommunity(postRows,new Set((likes.data||[]).map(x=>x.post_id)));
     fillChatRecipients(accountFriends);
     fillAccountSettings(accountProfile,st.data,prefs.data);
-    renderTournamentRegistrations((regs.data||[]).map(x=>x.tournament_id));
+    accountTournamentIds=(regs.data||[]).map(x=>x.tournament_id);
+    renderTournamentRegistrations(accountTournamentIds);
+    await Promise.all([loadCreatedTournaments(),loadCommunityGroups()]);
     renderNotifications(notifs.data||[]);
     if(document.getElementById('plName')) filterPlayers();
   }
@@ -1900,6 +1904,49 @@
     const req=wasLiked?supabaseClient.from('community_post_likes').delete().eq('post_id',id).eq('user_id',currentUser.id):supabaseClient.from('community_post_likes').insert({post_id:id,user_id:currentUser.id});
     const {error}=await req;if(error)console.error(error);await loadAccountData();
   }
+  async function loadCreatedTournaments() {
+    const el=document.getElementById('createdTournamentGrid');if(!el||!supabaseClient||!currentUser)return;
+    const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,description,participant_limit').not('owner_id','is',null).order('created_at',{ascending:false}).limit(30);
+    if(error){console.error('Could not load community tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить созданные турниры.</p>';return;}
+    el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='registration'?'badge-warning':'badge-info')+'">'+(t.status==='registration'?'Регистрация':escapeHtml(t.status))+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong style="color:var(--red)">'+escapeHtml(t.prize)+'</strong></p>':'')+(t.description?'<p>'+escapeHtml(t.description)+'</p>':'')+(t.status==='registration'?'<button class="btn btn-primary" data-tournament-id="'+escapeHtml(t.id)+'" onclick="registerForTournament(\''+escapeHtml(t.id)+'\')">Участвовать</button>':'')+'</article>').join('');
+    renderTournamentRegistrations(accountTournamentIds||[]);
+  }
+  async function createTournament() {
+    if(!currentUser)return requireAccount();
+    const name=document.getElementById('tournamentName').value.trim();
+    const limit=Number(document.getElementById('tournamentLimit').value);
+    if(name.length<3)return showNotification('Название турнира должно содержать минимум 3 символа.');
+    if(!Number.isInteger(limit)||limit<2||limit>256)return showNotification('Укажи от 2 до 256 команд.');
+    const starts=document.getElementById('tournamentStarts').value;
+    const payload={id:'user-'+crypto.randomUUID(),owner_id:currentUser.id,name,game_name:document.getElementById('tournamentGame').value,status:'registration',prize:document.getElementById('tournamentPrize').value.trim(),description:document.getElementById('tournamentDescription').value.trim(),participant_limit:limit,starts_at:starts?new Date(starts).toISOString():null};
+    const {error}=await supabaseClient.from('tournaments').insert(payload);
+    if(error){console.error('Could not create tournament:',error);return showNotification('Не удалось создать турнир. Проверь заполнение и права доступа.');}
+    closeModal('createTournamentModal');document.getElementById('tournamentName').value='';document.getElementById('tournamentDescription').value='';
+    await loadCreatedTournaments();showNotification('Турнир создан и опубликован.');
+  }
+  async function loadCommunityGroups() {
+    const el=document.getElementById('communityGroups');if(!el||!supabaseClient||!currentUser)return;
+    const [groupsResult,membersResult]=await Promise.all([
+      supabaseClient.from('community_groups').select('id,name,game_name,description').order('name'),
+      supabaseClient.from('community_group_members').select('group_id,user_id')
+    ]);
+    if(groupsResult.error||membersResult.error){console.error('Could not load groups:',groupsResult.error||membersResult.error);el.innerHTML='<p class="subtitle">Не удалось загрузить группы.</p>';return;}
+    const members=membersResult.data||[];
+    el.innerHTML=(groupsResult.data||[]).map(g=>{
+      const joined=members.some(m=>m.group_id===g.id&&m.user_id===currentUser.id),count=members.filter(m=>m.group_id===g.id).length;
+      return '<div class="list-divider friend-row"><div><strong>'+escapeHtml(g.name)+'</strong><div style="font-size:12px;color:var(--muted)">'+escapeHtml(g.game_name)+' • '+count+' участников</div></div><button class="btn '+(joined?'btn-primary':'btn-ghost')+'" style="padding:6px 12px;font-size:11px" onclick="toggleCommunityGroup(\''+escapeHtml(g.id)+'\','+joined+')">'+(joined?'Вышел':'Вступить')+'</button></div>';
+    }).join('')||'<p class="subtitle">Групп пока нет.</p>';
+  }
+  async function toggleCommunityGroup(groupId,joined) {
+    if(!currentUser)return requireAccount();
+    const request=joined
+      ?supabaseClient.from('community_group_members').delete().eq('group_id',groupId).eq('user_id',currentUser.id)
+      :supabaseClient.from('community_group_members').insert({group_id:groupId,user_id:currentUser.id});
+    const {error}=await request;
+    if(error){console.error('Could not update group membership:',error);return showNotification('Не удалось изменить участие в группе.');}
+    await loadCommunityGroups();
+  }
+
   async function registerForTournament(id) {
     if(!currentUser)return requireAccount();
     const {error}=await supabaseClient.from('tournament_registrations').insert({tournament_id:id,user_id:currentUser.id});
@@ -1998,7 +2045,7 @@
     if(currentUser) await loadAccountData();
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
-      if(currentUser) loadAccountData(); else {accountProfile=null;accountFriends=[];}
+      if(currentUser) loadAccountData(); else {accountProfile=null;accountFriends=[];accountTournamentIds=[];}
       renderAuthState(currentUser);
       if (event === 'SIGNED_OUT') { location.reload(); }
       if (event === 'SIGNED_IN') {
