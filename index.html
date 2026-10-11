@@ -1128,16 +1128,16 @@
     <section id="admin" class="section">
       <h1><i class="fa-solid fa-shield-halved"></i>Панель администратора</h1>
       <p class="subtitle">Данные платформы и модерация сообщества</p>
-      <div class="stats-grid">
+      <div class="stats-grid" id="adminStatsGrid">
         <div class="stat-box"><div class="value" id="adminUsersCount">—</div><div class="label">Игроков</div></div>
         <div class="stat-box"><div class="value" id="adminTeamsCount">—</div><div class="label">Команд</div></div>
         <div class="stat-box"><div class="value" id="adminTournamentsCount">—</div><div class="label">Турниров</div></div>
         <div class="stat-box"><div class="value" id="adminPostsCount">—</div><div class="label">Публикаций</div></div><div class="stat-box"><div class="value" id="adminMatchesCount">—</div><div class="label">Матчей</div></div>
       </div>
-      <div class="card" style="margin-top:24px;"><h2><i class="fa-solid fa-chart-column"></i>Регистрации игроков за 7 дней</h2><div id="adminRegistrationChart" class="grid" style="grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:160px;"><p class="subtitle">Загружаем график…</p></div></div>
-      <div class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-users-gear"></i>Команды платформы</h2></div><div id="adminTeamsList"><p class="subtitle">Загрузка команд…</p></div></div>
-      <div class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-trophy"></i>Турниры платформы</h2></div><div id="adminTournamentsList"><p class="subtitle">Загрузка турниров…</p></div></div>
-      <div class="card" style="margin-top:24px;">
+      <div id="adminChartCard" class="card" style="margin-top:24px;"><h2><i class="fa-solid fa-chart-column"></i>Регистрации игроков за 7 дней</h2><div id="adminRegistrationChart" class="grid" style="grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:160px;"><p class="subtitle">Загружаем график…</p></div></div>
+      <div id="adminTeamsCard" class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-users-gear"></i>Команды платформы</h2></div><div id="adminTeamsList"><p class="subtitle">Загрузка команд…</p></div></div>
+      <div id="adminTournamentsCard" class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-trophy"></i>Турниры платформы</h2></div><div id="adminTournamentsList"><p class="subtitle">Загрузка турниров…</p></div></div>
+      <div id="adminGamesCard" class="card" style="margin-top:24px;">
         <div class="section-heading"><h2><i class="fa-solid fa-gamepad"></i>Каталог игр</h2></div>
         <div class="grid grid-3" style="align-items:end;">
           <div class="form-group"><label for="adminGameName">Название</label><input id="adminGameName" maxlength="60" placeholder="Название игры"></div>
@@ -1146,7 +1146,7 @@
         </div>
         <div id="adminGamesList"></div>
       </div>
-      <div class="card" style="margin-top:24px;">
+      <div id="adminUsersCard" class="card" style="margin-top:24px;">
         <div class="section-heading"><h2><i class="fa-solid fa-user-gear"></i>Игроки</h2><button class="btn btn-ghost" onclick="loadAdminPanel()"><i class="fa-solid fa-rotate"></i> Обновить</button></div>
         <p id="adminStatus" class="subtitle">Загружаю данные…</p>
         <div style="overflow-x:auto;"><table><thead><tr><th>Игрок</th><th>Игра</th><th>Регион</th><th>Ранг</th><th>Уровень</th><th>Рейтинг</th><th>Создан</th><th>Доступ и действия</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
@@ -1497,6 +1497,7 @@
   let supabaseClient = null;
   let currentUser = null;
   let isAdmin = false;
+  let isModerator = false;
   let accountProfile = null;
   let accountFriends = [];
   let accountMatchmakingPrefs = null;
@@ -2214,7 +2215,7 @@
   }
 
   async function reviewCommunityReport(reportId,status) {
-    if(!isAdmin)return;
+    if(!isModerator)return;
     const {error}=await supabaseClient.from('community_reports').update({status,reviewed_by:currentUser.id,reviewed_at:new Date().toISOString()}).eq('id',reportId);
     if(error){console.error(error);return showNotification('Не удалось обновить статус жалобы.');}
     await loadAdminPanel();
@@ -2343,21 +2344,40 @@
 
   async function loadAdminAccess() {
     const uid=currentUser?.id;
-    isAdmin=false;
+    isAdmin=false;isModerator=false;
     const nav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');
-    if(nav) nav.hidden=true;
-    if(!supabaseClient||!uid) return;
-    const {data,error}=await supabaseClient.from('user_roles').select('role').eq('user_id',uid).eq('role','admin').maybeSingle();
-    if(error){console.error('Could not check admin role:',error);return;}
-    if(currentUser?.id!==uid) return;
-    isAdmin=!!data;
-    if(nav) nav.hidden=!isAdmin;
-    if(!isAdmin&&document.getElementById('admin')?.classList.contains('active')) showSection('home');
-    if(isAdmin&&document.getElementById('admin')?.classList.contains('active')) loadAdminPanel();
+    if(nav)nav.hidden=true;
+    if(!supabaseClient||!uid)return;
+    const {data,error}=await supabaseClient.from('user_roles').select('role').eq('user_id',uid).in('role',['admin','moderator']);
+    if(error){console.error('Could not check moderation role:',error);return;}
+    if(currentUser?.id!==uid)return;
+    const roles=(data||[]).map(r=>r.role);isAdmin=roles.includes('admin');isModerator=isAdmin||roles.includes('moderator');
+    if(nav)nav.hidden=!isModerator;
+    for(const id of ['adminStatsGrid','adminChartCard','adminTeamsCard','adminTournamentsCard','adminGamesCard','adminUsersCard']){const el=document.getElementById(id);if(el)el.hidden=!isAdmin;}
+    const title=document.querySelector('#admin h1'),subtitle=document.querySelector('#admin > .subtitle');
+    if(title)title.innerHTML=isAdmin?'<i class="fa-solid fa-shield-halved"></i>Панель администратора':'<i class="fa-solid fa-shield-halved"></i>Модерация сообщества';
+    if(subtitle)subtitle.textContent=isAdmin?'Данные платформы и модерация сообщества':'Жалобы и публикации сообщества';
+    if(!isModerator&&document.getElementById('admin')?.classList.contains('active'))showSection('home');
+    if(isModerator&&document.getElementById('admin')?.classList.contains('active'))loadAdminPanel();
+  }
+
+  async function loadModerationPanel() {
+    const [reports,feed]=await Promise.all([
+      supabaseClient.from('community_reports').select('id,reason,details,status,created_at').order('created_at',{ascending:false}).limit(100),
+      supabaseClient.from('community_posts').select('id,user_id,body,created_at,media_type').order('created_at',{ascending:false}).limit(50)
+    ]);
+    const reportsEl=document.getElementById('adminReportsList');
+    if(reportsEl)reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="list-divider" style="padding:12px 0"><strong>'+escapeHtml(r.reason)+'</strong><span class="subtitle"> • '+escapeHtml(r.status)+' • '+new Date(r.created_at).toLocaleString('ru-RU')+'</span><p>'+escapeHtml(r.details||'Без описания')+'</p><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работе</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
+    const ids=[...new Set((feed.data||[]).map(p=>p.user_id))];
+    const authors=ids.length?await supabaseClient.from('profiles').select('id,username,display_name').in('id',ids):{data:[]};
+    const names=new Map((authors.data||[]).map(p=>[p.id,p.display_name||p.username||'Игрок']));
+    const feedEl=document.getElementById('adminPostsList');
+    if(feedEl)feedEl.innerHTML=(feed.data||[]).map(p=>'<article class="list-divider" style="padding:16px 0"><strong>'+escapeHtml(names.get(p.user_id)||'Игрок')+'</strong><span class="subtitle"> • '+new Date(p.created_at).toLocaleString('ru-RU')+'</span><p style="white-space:pre-wrap">'+escapeHtml(p.body||'')+'</p><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+p.id+'&quot;)">Удалить публикацию</button></article>').join('')||'<p class="subtitle">Публикаций пока нет.</p>';
   }
 
   async function loadAdminPanel() {
-    if(!isAdmin||!supabaseClient) return;
+    if(!isModerator||!supabaseClient)return;
+    if(!isAdmin){await loadModerationPanel();return;}
     const status=document.getElementById('adminStatus');
     if(status) status.textContent='Загружаю данные…';
     const [users,teams,tournaments,posts,profiles,feed,reports,userDirectory,matchesCount]=await Promise.all([
@@ -2483,7 +2503,7 @@
   }
 
   async function adminDeletePost(postId) {
-    if(!isAdmin||!supabaseClient||!confirm('Удалить эту публикацию для всех пользователей?')) return;
+    if(!isModerator||!supabaseClient||!confirm('Удалить эту публикацию для всех пользователей?')) return;
     const {error}=await supabaseClient.from('community_posts').delete().eq('id',postId);
     if(error){console.error('Could not remove community post:',error);showNotification('Не удалось удалить публикацию.');return;}
     showNotification('Публикация удалена.');
