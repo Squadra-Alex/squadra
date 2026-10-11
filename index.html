@@ -864,22 +864,7 @@
         <div><span class="eyebrow">СОРЕВНОВАНИЯ</span><h2><i class="fa-solid fa-flag-checkered"></i> Турниры сообщества</h2></div>
         <button class="text-link" onclick="showSection('tournaments')">Все турниры <i class="fa-solid fa-arrow-right"></i></button>
       </div>
-      <div class="grid grid-2 home-tournaments">
-        <div class="card">
-          <span class="badge badge-danger badge-live">LIVE</span>
-          <h3 style="margin-top:10px;">Squadra Championship 2026</h3>
-          <p style="color:var(--muted); font-size:14px;">CS2 • Призовой фонд: ₽ 500 000</p>
-          <p style="margin-top:10px; font-size:14px;"><i class="fa-solid fa-trophy" style="color:var(--red); margin-right:8px;"></i>32 команды &nbsp;&nbsp;<i class="fa-solid fa-calendar" style="color:var(--red); margin-right:8px;"></i>Финал: 15 декабря</p>
-          <button class="btn btn-primary" style="margin-top:14px;" onclick="showSection('tournaments')">Смотреть</button>
-        </div>
-        <div class="card">
-          <span class="badge badge-warning">Скоро</span>
-          <h3 style="margin-top:10px;">Winter Crimson League Dota 2</h3>
-          <p style="color:var(--muted); font-size:14px;">Dota 2 • Призовой фонд: ₽ 250 000</p>
-          <p style="margin-top:10px; font-size:14px;"><i class="fa-solid fa-trophy" style="color:var(--red); margin-right:8px;"></i>16 команд &nbsp;&nbsp;<i class="fa-solid fa-calendar" style="color:var(--red); margin-right:8px;"></i>Старт: 1 декабря</p>
-          <button class="btn btn-ghost" style="margin-top:14px;" onclick="registerForTournament('winter-league')">Регистрация</button>
-        </div>
-      </div>
+      <div class="grid grid-2 home-tournaments" id="homeTournaments"><p class="subtitle">Загружаем турниры…</p></div>
     </section>
 
     <!-- PROFILE -->
@@ -1294,7 +1279,7 @@
       <div class="game-info">
         <h4>${g.name}</h4>
         <div class="genre">${g.genre}</div>
-        <div class="online">${fmt(g.online)} онлайн</div>
+        <div class="online">${fmt(g.playerCount||0)} игроков на Squadra</div>
         <div class="progress"><div class="progress-bar" style="width:${g.pop}%"></div></div>
         <button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="event.stopPropagation();addGameToLibrary(&quot;${g.name}&quot;)"><i class="fa-solid fa-plus"></i> В библиотеку</button>
       </div>
@@ -2085,8 +2070,18 @@
     if(error){console.error('Game catalog:',error);return;}
     if(!data?.length)return;
     const old=new Map(games.map(g=>[g.name,g]));
-    games=data.map(g=>({...old.get(g.name),name:g.name,genre:g.genre,sort_order:g.sort_order}));
+    const {data:profiles}=currentUser?await supabaseClient.from('profiles').select('game_name'):{data:[]};
+    const counts=new Map();(profiles||[]).forEach(p=>counts.set(p.game_name,(counts.get(p.game_name)||0)+1));
+    games=data.map(g=>({...old.get(g.name),name:g.name,genre:g.genre,sort_order:g.sort_order,playerCount:counts.get(g.name)||0}));
     renderGames();
+    const home=document.getElementById('homeGames');if(home)home.innerHTML=games.slice(0,4).map(gameCard).join('');
+  }
+
+  async function loadHomeTournaments() {
+    const el=document.getElementById('homeTournaments');if(!el||!supabaseClient)return;
+    const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,participant_limit').order('starts_at',{ascending:true,nullsFirst:false}).limit(2);
+    if(error){console.error('Home tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить турниры.</p>';return;}
+    el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='live'?'badge-danger':'badge-warning')+'">'+escapeHtml(t.status)+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+(t.starts_at?' • '+new Date(t.starts_at).toLocaleDateString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong>'+escapeHtml(t.prize)+'</strong></p>':'')+'<button class="btn btn-ghost" onclick="showSection(\'tournaments\')">Подробнее</button></article>').join('')||'<p class="subtitle">Опубликованных турниров пока нет.</p>';
   }
 
   async function loadSeason() {
@@ -2163,7 +2158,7 @@
     const select=document.getElementById('platformEventGame');
     if(select){const old=select.value;select.innerHTML='<option value="">Без привязки к игре</option>'+(games.data||[]).map(g=>'<option value="'+escapeHtml(g.id)+'">'+escapeHtml(g.name)+'</option>').join('');select.value=old;}
     const rows=ev.data||[],ids=rows.map(e=>e.id);
-    const regs=ids.length?await supabaseClient.from('platform_event_registrations').select('event_id,user_id').in('event_id',ids):{data:[]};
+    const regs=currentUser&&ids.length?await supabaseClient.from('platform_event_registrations').select('event_id,user_id').in('event_id',ids):{data:[]};
     const counts=new Map(),mine=new Set();(regs.data||[]).forEach(x=>{counts.set(x.event_id,(counts.get(x.event_id)||0)+1);if(x.user_id===currentUser?.id)mine.add(x.event_id);});
     const list=[...rows.map(e=>({...e,_event:true})),...(tr.data||[]).map(t=>({...t,_tournament:true}))].sort((x,y)=>new Date(x.starts_at||0)-new Date(y.starts_at||0));
     el.innerHTML=list.map(e=>{
@@ -2462,7 +2457,7 @@
 
     currentUser=session?.user||null;
     renderAuthState(currentUser);
-    if(currentUser) { await loadAccountData(); await loadAdminAccess(); setupRealtime(); }
+    if(currentUser) { await loadAccountData(); await loadAdminAccess(); setupRealtime(); } else { await Promise.all([loadGameCatalog(),loadHomeTournaments(),loadCreatedTournaments(),loadPlatformEvents()]); }
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
       if(currentUser) { loadAccountData(); loadAdminAccess(); setupRealtime(); } else {if(realtimeChannel)supabaseClient.removeChannel(realtimeChannel);realtimeChannel=null;activeCommunityGroup=null;isAdmin=false;const adminNav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
