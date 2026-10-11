@@ -1283,17 +1283,19 @@
   const fmt = n => n.toLocaleString('ru-RU');
 
   function gameCard(g) {
+    const name=escapeHtml(g.name),genre=escapeHtml(g.genre),seed=encodeURIComponent(g.seed||g.name||'squadra');
+    const gameArg=JSON.stringify(g.name).replace(/"/g,'&quot;');
     return `<div class="card game-card" onclick="showSection('games')">
       <div class="game-img">
         <span class="fallback-icon"><i class="fa-solid fa-gamepad"></i></span>
-        <img src="https://picsum.photos/seed/${g.seed}/400/240" alt="${g.name}" loading="lazy" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">
+        <img src="https://picsum.photos/seed/${seed}/400/240" alt="${name}" loading="lazy" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">
       </div>
       <div class="game-info">
-        <h4>${g.name}</h4>
-        <div class="genre">${g.genre}</div>
+        <h4>${name}</h4>
+        <div class="genre">${genre}</div>
         <div class="online">${fmt(g.playerCount||0)} игроков на Squadra</div>
-        <div class="progress"><div class="progress-bar" style="width:${g.pop}%"></div></div>
-        <button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="event.stopPropagation();addGameToLibrary(&quot;${g.name}&quot;)"><i class="fa-solid fa-plus"></i> В библиотеку</button>
+        <div class="progress"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,Number(g.pop)||0))}%"></div></div>
+        <button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="event.stopPropagation();addGameToLibrary(${gameArg})"><i class="fa-solid fa-plus"></i> В библиотеку</button>
       </div>
     </div>`;
   }
