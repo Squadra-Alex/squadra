@@ -1677,7 +1677,7 @@
     accountTournamentIds=(regs.data||[]).map(x=>x.tournament_id);
     renderTournamentRegistrations(accountTournamentIds);
     await Promise.all([loadCreatedTournaments(),loadCommunityGroups()]);
-    renderNotifications(notifs.data||[]);await Promise.all([loadPendingMatches(),loadGameCatalog(),loadLeaderboards(),loadPlatformEvents()]);
+    renderNotifications(notifs.data||[]);await Promise.all([loadPendingMatches(),loadGameCatalog(),loadLeaderboards(),loadPlatformEvents(),loadHomeTournaments()]);
     if(document.getElementById('plName')) filterPlayers();
   }
 
