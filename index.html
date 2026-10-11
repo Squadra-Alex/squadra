@@ -2002,7 +2002,7 @@
   async function loadAdminAccess() {
     const uid=currentUser?.id;
     isAdmin=false;
-    const nav=document.querySelector('aside li:has(a[onclick*="showSection(\'admin\')"])');
+    const nav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');
     if(nav) nav.hidden=true;
     if(!supabaseClient||!uid) return;
     const {data,error}=await supabaseClient.from('user_roles').select('role').eq('user_id',uid).eq('role','admin').maybeSingle();
@@ -2134,7 +2134,7 @@
     if(currentUser) { await loadAccountData(); await loadAdminAccess(); }
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
-      if(currentUser) { loadAccountData(); loadAdminAccess(); } else {isAdmin=false;const adminNav=document.querySelector('aside li:has(a[onclick*="showSection(\'admin\')"])');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
+      if(currentUser) { loadAccountData(); loadAdminAccess(); } else {isAdmin=false;const adminNav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
       renderAuthState(currentUser);
       if (event === 'SIGNED_OUT') { location.reload(); }
       if (event === 'SIGNED_IN') {
