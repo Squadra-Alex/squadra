@@ -1013,10 +1013,12 @@
           <div class="card" style="margin-bottom:16px;">
             <h3><i class="fa-solid fa-pen-to-square" style="color:var(--red); margin-right:8px;"></i>Создать публикацию</h3>
             <textarea id="communityPostBody" rows="3" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
-            <div style="display:flex; gap:10px; margin-top:10px;">
+            <input id="communityMediaFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" hidden onchange="selectCommunityMediaFile(this)">
+            <div id="communityMediaPreview" class="subtitle" style="display:none;margin:10px 0;"></div>
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
               <button class="btn btn-primary" onclick="publishCommunityPost()"><i class="fa-solid fa-upload"></i> Опубликовать</button>
-              <button class="btn btn-ghost"><i class="fa-solid fa-image"></i> Фото</button>
-              <button class="btn btn-ghost"><i class="fa-solid fa-video"></i> Видео</button>
+              <button class="btn btn-ghost" onclick="selectCommunityMedia('image')"><i class="fa-solid fa-image"></i> Фото</button>
+              <button class="btn btn-ghost" onclick="selectCommunityMedia('video')"><i class="fa-solid fa-video"></i> Видео</button>
             </div>
           </div>
 
@@ -1560,6 +1562,7 @@
   let currentUser = null;
   let accountProfile = null;
   let accountFriends = [];
+  let communityMediaFile = null;
 
   function authIsConfigured() {
     return !SUPABASE_URL.includes('YOUR_PROJECT_REF') &&
@@ -1722,7 +1725,7 @@
       supabaseClient.from('team_members').select('role,teams(id,name,tag,game_name,region,description,owner_id)').eq('user_id',uid),
       supabaseClient.from('activity_history').select('*').eq('user_id',uid).order('created_at',{ascending:false}).limit(30),
       supabaseClient.from('achievements').select('id,title,description,icon,target,sort_order,user_achievements(progress,unlocked_at)').order('sort_order'),
-      supabaseClient.from('community_posts').select('id,user_id,body,created_at,community_post_likes(user_id)').order('created_at',{ascending:false}).limit(30),
+      supabaseClient.from('community_posts').select('id,user_id,body,created_at,media_url,media_type,community_post_likes(user_id)').order('created_at',{ascending:false}).limit(30),
       supabaseClient.from('community_post_likes').select('post_id').eq('user_id',uid),
       supabaseClient.from('matchmaking_preferences').select('*').eq('user_id',uid).maybeSingle(),
       supabaseClient.from('tournament_registrations').select('tournament_id').eq('user_id',uid),
@@ -1847,7 +1850,12 @@
   }
   function renderCommunity(rows,liked) {
     const el=document.getElementById('communityPosts');if(!el)return;
-    el.innerHTML=rows.map(p=>'<article class="card" style="margin-bottom:14px"><strong>'+escapeHtml(p.profiles?.display_name||p.profiles?.username||'Игрок')+'</strong><small class="subtitle"> • '+new Date(p.created_at).toLocaleString('ru-RU')+'</small><p style="margin:14px 0;white-space:pre-wrap">'+escapeHtml(p.body)+'</p><button class="btn btn-ghost" onclick="togglePostLike(\''+p.id+'\', '+liked.has(p.id)+')"><i class="fa-solid fa-heart"></i> '+(p.community_post_likes?.length||0)+'</button></article>').join('')||'<p class="subtitle">Пока нет публикаций.</p>';
+    el.innerHTML=rows.map(p=>{
+      const media=p.media_url?(p.media_type==='video'
+        ?'<video controls preload="metadata" style="display:block;width:100%;max-height:480px;border-radius:10px;margin:10px 0" src="'+escapeHtml(p.media_url)+'"></video>'
+        :'<img loading="lazy" style="display:block;max-width:100%;max-height:480px;border-radius:10px;margin:10px 0;object-fit:contain" src="'+escapeHtml(p.media_url)+'" alt="Изображение в публикации">'):'';
+      return '<article class="card" style="margin-bottom:14px"><strong>'+escapeHtml(p.profiles?.display_name||p.profiles?.username||'Игрок')+'</strong><small class="subtitle"> • '+new Date(p.created_at).toLocaleString('ru-RU')+'</small>'+(p.body?'<p style="margin:14px 0;white-space:pre-wrap">'+escapeHtml(p.body)+'</p>':'')+media+'<button class="btn btn-ghost" onclick="togglePostLike(\\''+p.id+'\\', '+liked.has(p.id)+')"><i class="fa-solid fa-heart"></i> '+(p.community_post_likes?.length||0)+'</button></article>';
+    }).join('')||'<p class="subtitle">Пока нет публикаций.</p>';
   }
   function fillChatRecipients(rows) {
     const sel=document.getElementById('chatRecipient');if(!sel)return;
@@ -1892,12 +1900,48 @@
     if(a.error||b.error){console.error(a.error,b.error);return showNotification('Настройки не сохранены. Возможно, ник уже занят.');}
     await loadAccountData();showNotification('Профиль и настройки сохранены.');
   }
+  function selectCommunityMedia(type) {
+    if(!currentUser)return requireAccount();
+    const input=document.getElementById('communityMediaFile');
+    input.accept=type==='video'?'video/mp4,video/webm':'image/jpeg,image/png,image/webp,image/gif';
+    input.click();
+  }
+  function selectCommunityMediaFile(input) {
+    const file=input.files?.[0];if(!file)return;
+    const isVideo=file.type.startsWith('video/'),maxSize=isVideo?50*1024*1024:8*1024*1024;
+    if((isVideo&&!['video/mp4','video/webm'].includes(file.type))||(!isVideo&&!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type))){
+      input.value='';return showNotification('Выбери JPG, PNG, WEBP, GIF, MP4 или WEBM.');
+    }
+    if(file.size>maxSize){input.value='';return showNotification(isVideo?'Видео должно быть до 50 МБ.':'Изображение должно быть до 8 МБ.');}
+    communityMediaFile=file;
+    const preview=document.getElementById('communityMediaPreview');
+    preview.style.display='block';
+    preview.innerHTML='<i class="fa-solid '+(isVideo?'fa-video':'fa-image')+'"></i> '+escapeHtml(file.name)+' ('+Math.max(1,Math.round(file.size/1024))+' КБ) <button type="button" class="btn btn-ghost" onclick="clearCommunityMedia()">Убрать</button>';
+  }
+  function clearCommunityMedia() {
+    communityMediaFile=null;
+    const input=document.getElementById('communityMediaFile');if(input)input.value='';
+    const preview=document.getElementById('communityMediaPreview');if(preview){preview.style.display='none';preview.replaceChildren();}
+  }
   async function publishCommunityPost() {
     if(!currentUser)return requireAccount();
-    const input=document.getElementById('communityPostBody'),body=input?.value.trim();if(!body)return;
-    const {error}=await supabaseClient.from('community_posts').insert({user_id:currentUser.id,body});
-    if(error){console.error(error);return showNotification('Не удалось опубликовать запись.');}
-    input.value='';await loadAccountData();
+    const input=document.getElementById('communityPostBody'),body=input?.value.trim()||'';
+    if(!body&&!communityMediaFile)return showNotification('Добавь текст или выбери фото/видео.');
+    let media_url=null,media_type=null,mediaPath=null;
+    if(communityMediaFile){
+      const file=communityMediaFile,safeName=file.name.normalize('NFKC').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-80);
+      mediaPath=currentUser.id+'/'+Date.now()+'-'+crypto.randomUUID()+'-'+safeName;
+      const {error:uploadError}=await supabaseClient.storage.from('squadra-community').upload(mediaPath,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+      if(uploadError){console.error('Community media upload failed:',uploadError);return showNotification('Не удалось загрузить файл. Попробуй ещё раз.');}
+      media_url=supabaseClient.storage.from('squadra-community').getPublicUrl(mediaPath).data.publicUrl;
+      media_type=file.type.startsWith('video/')?'video':'image';
+    }
+    const {error}=await supabaseClient.from('community_posts').insert({user_id:currentUser.id,body,media_url,media_type});
+    if(error){
+      if(mediaPath)await supabaseClient.storage.from('squadra-community').remove([mediaPath]);
+      console.error(error);return showNotification('Не удалось опубликовать запись.');
+    }
+    input.value='';clearCommunityMedia();await loadAccountData();
   }
   async function togglePostLike(id,wasLiked) {
     if(!currentUser)return requireAccount();
