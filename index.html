@@ -1956,8 +1956,27 @@
       showNotification('Не удалось загрузить авторизацию. Обнови страницу и попробуй ещё раз.');
       return;
     }
-    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    let { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError) console.error('Could not read Supabase session:', sessionError);
+
+    const authParams = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = authParams.get('access_token');
+    const refreshToken = authParams.get('refresh_token');
+    if (!session && accessToken && refreshToken) {
+      const { data, error } = await supabaseClient.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+      if (error) {
+        console.error('Could not create Supabase session from OAuth callback:', error);
+      } else {
+        session = data.session;
+      }
+    }
+    if (accessToken || refreshToken) {
+      history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    }
+
     currentUser=session?.user||null;
     renderAuthState(currentUser);
     if(currentUser) await loadAccountData();
