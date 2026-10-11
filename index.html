@@ -1948,9 +1948,16 @@
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
-    if (!authIsConfigured() || !window.supabase?.createClient) return;
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!authIsConfigured()) return;
+    try {
+      supabaseClient = await ensureSupabaseClient();
+    } catch (error) {
+      console.error('Supabase Auth could not initialize:', error);
+      showNotification('Не удалось загрузить авторизацию. Обнови страницу и попробуй ещё раз.');
+      return;
+    }
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) console.error('Could not read Supabase session:', sessionError);
     currentUser=session?.user||null;
     renderAuthState(currentUser);
     if(currentUser) await loadAccountData();
