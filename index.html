@@ -750,17 +750,6 @@
     *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
   }
 
-  .google-auth-button { min-height:48px; }
-  .google-auth-button.is-fallback .google-fallback { display:flex; }
-  .google-fallback {
-    display:flex; align-items:center; justify-content:center; gap:11px; width:min(100%,320px); min-height:46px;
-    margin:8px auto 2px; padding:0 18px; color:#202124; background:#fff;
-    border:1px solid #dadce0; border-radius:6px; font:600 14px Arial,sans-serif; cursor:pointer;
-    transition:background .18s,box-shadow .18s;
-  }
-  .google-fallback[hidden] { display:none !important; }
-  .google-fallback:hover { background:#f7f8f8; box-shadow:0 2px 7px rgba(0,0,0,.18); }
-  .google-fallback i { color:#4285f4; font-size:17px; }
 
 </style>
 </head>
@@ -1268,7 +1257,7 @@
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
     <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
-    <div id="googleLoginButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleOAuth()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleLoginButton" class="google-auth-button"></div>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
@@ -1278,7 +1267,7 @@
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
     <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
-    <div id="googleSignupButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleOAuth()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleSignupButton" class="google-auth-button"></div>
   </div>
 </div>
 
@@ -1575,126 +1564,44 @@
     return { nonce, hashedNonce };
   }
 
-  let googleIdentityLoader = null;
-
-  function loadGoogleIdentityServices() {
-    if (window.google?.accounts?.id) return Promise.resolve();
-    if (googleIdentityLoader) return googleIdentityLoader;
-    googleIdentityLoader = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => window.google?.accounts?.id
-        ? resolve()
-        : reject(new Error('Google Identity Services is unavailable.'));
-      script.onerror = () => reject(new Error('Could not load Google Identity Services.'));
-      document.head.appendChild(script);
-    });
-    return googleIdentityLoader;
-  }
-
   async function initGoogleIdentity() {
-    try {
-      await loadGoogleIdentityServices();
-      const { nonce, hashedNonce } = await createGoogleNonce();
-      googleAuthNonce = nonce;
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        nonce: hashedNonce,
-        use_fedcm_for_button: true,
-        callback: handleGoogleCredential
-      });
-      ['googleLoginButton', 'googleSignupButton'].forEach(id => {
-        const container = document.getElementById(id);
-        if (!container) return;
-        container.classList.remove('is-fallback');
-        const fallback = container.querySelector('.google-fallback');
-        if (fallback) fallback.hidden = true;
-        try {
-          window.google.accounts.id.renderButton(container, {
-            type: 'standard',
-            theme: 'filled_black',
-            size: 'large',
-            text: 'continue_with',
-            shape: 'rectangular',
-            logo_alignment: 'left',
-            width: Math.min(320, Math.max(240, container.clientWidth || 320)),
-            locale: 'ru'
-          });
-          window.setTimeout(() => {
-            if (!container.querySelector('iframe')) {
-              container.classList.add('is-fallback');
-              if (fallback) fallback.hidden = false;
-            }
-          }, 1200);
-        } catch (error) {
-          console.error('Could not render Google Identity button:', error);
-          container.classList.add('is-fallback');
-          if (fallback) fallback.hidden = false;
-        }
-      });
-    } catch (error) {
-      console.error('Google Identity Services did not load:', error);
-      ['googleLoginButton', 'googleSignupButton'].forEach(id => {
-        const container = document.getElementById(id);
-        if (!container) return;
-        container.classList.add('is-fallback');
-        const fallback = container.querySelector('.google-fallback');
-        if (fallback) fallback.hidden = false;
-      });
+    if (!window.google?.accounts?.id) {
+      console.error('Google Identity Services did not load.');
+      return;
     }
-  }
-
-  let supabaseLibraryLoader = null;
-
-  async function ensureSupabaseClient() {
-    if (!authIsConfigured()) throw new Error('Supabase Auth is not configured.');
-    if (!window.supabase?.createClient) {
-      if (!supabaseLibraryLoader) {
-        supabaseLibraryLoader = new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-          script.async = true;
-          script.onload = () => window.supabase?.createClient
-            ? resolve()
-            : reject(new Error('Supabase client library is unavailable.'));
-          script.onerror = () => reject(new Error('Could not load Supabase client library.'));
-          document.head.appendChild(script);
-        });
-      }
-      await supabaseLibraryLoader;
-    }
-    if (!supabaseClient) {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    }
-    return supabaseClient;
-  }
-
-  async function startGoogleOAuth() {
-    try {
-      const client = await ensureSupabaseClient();
-      const { error } = await client.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin + window.location.pathname }
+    const { nonce, hashedNonce } = await createGoogleNonce();
+    googleAuthNonce = nonce;
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      nonce: hashedNonce,
+      use_fedcm_for_button: true,
+      callback: handleGoogleCredential
+    });
+    ['googleLoginButton', 'googleSignupButton'].forEach(id => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      window.google.accounts.id.renderButton(button, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: 320,
+        locale: 'ru'
       });
-      if (error) throw error;
-    } catch (error) {
-      console.error('Google OAuth fallback failed:', error);
-      showNotification('Не удалось открыть вход Google. Попробуйте ещё раз.');
-    }
+    });
   }
 
   async function handleGoogleCredential(response) {
     if (googleSignInPending) return;
-    if (!response?.credential || !googleAuthNonce) {
+    if (!response?.credential || !googleAuthNonce || !supabaseClient) {
       showNotification('Не удалось получить ответ Google. Попробуйте ещё раз.');
       return;
     }
     googleSignInPending = true;
     try {
-      const client = await ensureSupabaseClient();
-      const { error } = await client.auth.signInWithIdToken({
+      const { error } = await supabaseClient.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
         nonce: googleAuthNonce
@@ -1958,13 +1865,13 @@
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
-    initGoogleIdentity();
     if (!authIsConfigured() || !window.supabase?.createClient) return;
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser=session?.user||null;
     renderAuthState(currentUser);
     if(currentUser) await loadAccountData();
+    initGoogleIdentity();
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
       if(currentUser) loadAccountData(); else {accountProfile=null;accountFriends=[];}
