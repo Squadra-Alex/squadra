@@ -38,6 +38,7 @@
     --neon-soft: 0 0 10px rgba(255,43,53,.18);
   }
   html { scroll-behavior:smooth; }
+  [hidden] { display:none !important; }
   body {
     font-family:'Inter',system-ui,sans-serif;
     background:var(--bg);
@@ -783,7 +784,7 @@
       <li><a onclick="showSection('tournaments')">Турниры</a></li>
       <li><a onclick="showSection('community')">Сообщество</a></li>
       <li><a onclick="showSection('ranking')">Рейтинг</a></li>
-      <li><a onclick="showSection('admin')">Админ</a></li>
+      <li hidden><a onclick="showSection('admin')">Админ</a></li>
     </ul>
   </nav>
   <div class="auth-buttons">
@@ -1206,37 +1207,23 @@
     <!-- ADMIN -->
     <section id="admin" class="section">
       <h1><i class="fa-solid fa-shield-halved"></i>Панель администратора</h1>
+      <p class="subtitle">Данные платформы и модерация сообщества</p>
       <div class="stats-grid">
-        <div class="stat-box"><div class="value">15 420</div><div class="label">Пользователей</div></div>
-        <div class="stat-box"><div class="value">847</div><div class="label">Команд</div></div>
-        <div class="stat-box"><div class="value">124</div><div class="label">Турниров</div></div>
-        <div class="stat-box"><div class="value">23</div><div class="label">Жалоб</div></div>
+        <div class="stat-box"><div class="value" id="adminUsersCount">—</div><div class="label">Игроков</div></div>
+        <div class="stat-box"><div class="value" id="adminTeamsCount">—</div><div class="label">Команд</div></div>
+        <div class="stat-box"><div class="value" id="adminTournamentsCount">—</div><div class="label">Турниров</div></div>
+        <div class="stat-box"><div class="value" id="adminPostsCount">—</div><div class="label">Публикаций</div></div>
       </div>
-
-      <div class="grid grid-2" style="margin-top:24px;">
-        <div class="card">
-          <h3><i class="fa-solid fa-chart-column" style="color:var(--red); margin-right:8px;"></i>Статистика платформы</h3>
-          <canvas id="adminChart" height="170"></canvas>
-        </div>
-        <div class="card">
-          <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--red); margin-right:8px;"></i>Последние жалобы</h3>
-          <div style="margin-top:10px;">
-            <div class="list-divider friend-row"><span><i class="fa-solid fa-skull" style="color:var(--red); margin-right:8px;"></i>Читерство • user_123</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;" onclick="showNotification('Для разбора жалоб требуется назначенная роль администратора.')">Рассмотреть</button></div>
-            <div class="list-divider friend-row"><span><i class="fa-solid fa-face-frown" style="color:var(--red); margin-right:8px;"></i>Оскорбления • user_456</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;" onclick="showNotification('Для разбора жалоб требуется назначенная роль администратора.')">Рассмотреть</button></div>
-            <div class="list-divider friend-row"><span><i class="fa-solid fa-envelope-open-text" style="color:var(--red); margin-right:8px;"></i>Спам • user_789</span><button class="btn btn-danger" style="padding:4px 10px; font-size:11px;" onclick="showNotification('Для разбора жалоб требуется назначенная роль администратора.')">Рассмотреть</button></div>
-          </div>
-        </div>
+      <div class="card" style="margin-top:24px;">
+        <div class="section-heading"><h2><i class="fa-solid fa-user-gear"></i>Игроки</h2><button class="btn btn-ghost" onclick="loadAdminPanel()"><i class="fa-solid fa-rotate"></i> Обновить</button></div>
+        <p id="adminStatus" class="subtitle">Загружаю данные…</p>
+        <div style="overflow-x:auto;"><table><thead><tr><th>Игрок</th><th>Игра</th><th>Регион</th><th>Ранг</th><th>Уровень</th><th>Рейтинг</th><th>Создан</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
       </div>
-
-      <h2 style="margin-top:24px;"><i class="fa-solid fa-user-gear"></i>Управление пользователями</h2>
-      <table>
-        <thead><tr><th>ID</th><th>Никнейм</th><th>Email</th><th>Роль</th><th>Статус</th><th>Действия</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td>NightX_Pro</td><td>nightx@squadra.gg</td><td><span class="badge badge-danger">Admin</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost" aria-label="Действия администратора" title="Требуется роль администратора" onclick="showNotification('Панель управления станет доступна после назначения роли администратора.')"><i class="fa-solid fa-ellipsis"></i></button></td></tr>
-          <tr><td>2</td><td>ShadowKiller</td><td>shadow@mail.com</td><td><span class="badge badge-info">User</span></td><td><span class="badge badge-success">Активен</span></td><td><button class="btn btn-ghost" aria-label="Действия администратора" title="Требуется роль администратора" onclick="showNotification('Панель управления станет доступна после назначения роли администратора.')"><i class="fa-solid fa-ellipsis"></i></button></td></tr>
-          <tr><td>3</td><td>ToxicPlayer</td><td>toxic@mail.com</td><td><span class="badge badge-info">User</span></td><td><span class="badge badge-danger">Забанен</span></td><td><button class="btn btn-ghost" aria-label="Действия администратора" title="Требуется роль администратора" onclick="showNotification('Панель управления станет доступна после назначения роли администратора.')"><i class="fa-solid fa-ellipsis"></i></button></td></tr>
-        </tbody>
-      </table>
+      <div class="card" style="margin-top:24px;">
+        <div class="section-heading"><h2><i class="fa-solid fa-flag"></i>Публикации сообщества</h2></div>
+        <p class="subtitle">Удаление публикации сразу скрывает её для всех игроков.</p>
+        <div id="adminPostsList"><p class="subtitle">Загружаю публикации…</p></div>
+      </div>
     </section>
 
   </main>
@@ -1404,6 +1391,11 @@
   }
 
   function showSection(id) {
+    if (id === 'admin' && !isAdmin) {
+      showNotification('Доступ к панели администратора закрыт.');
+      return;
+    }
+    if (id === 'admin') loadAdminPanel();
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
@@ -1560,6 +1552,7 @@
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_NqXL2IVq6GATI0qbTs5iDA_5bVLpzo8';
   let supabaseClient = null;
   let currentUser = null;
+  let isAdmin = false;
   let accountProfile = null;
   let accountFriends = [];
   let communityMediaFile = null;
@@ -2006,6 +1999,58 @@
     const el=document.getElementById('notificationCount');if(el)el.textContent=unread?String(unread):'';
   }
 
+  async function loadAdminAccess() {
+    const uid=currentUser?.id;
+    isAdmin=false;
+    const nav=document.querySelector('aside li:has(a[onclick*="showSection(\'admin\')"])');
+    if(nav) nav.hidden=true;
+    if(!supabaseClient||!uid) return;
+    const {data,error}=await supabaseClient.from('user_roles').select('role').eq('user_id',uid).eq('role','admin').maybeSingle();
+    if(error){console.error('Could not check admin role:',error);return;}
+    if(currentUser?.id!==uid) return;
+    isAdmin=!!data;
+    if(nav) nav.hidden=!isAdmin;
+    if(!isAdmin&&document.getElementById('admin')?.classList.contains('active')) showSection('home');
+    if(isAdmin&&document.getElementById('admin')?.classList.contains('active')) loadAdminPanel();
+  }
+
+  async function loadAdminPanel() {
+    if(!isAdmin||!supabaseClient) return;
+    const status=document.getElementById('adminStatus');
+    if(status) status.textContent='Загружаю данные…';
+    const [users,teams,tournaments,posts,profiles,feed]=await Promise.all([
+      supabaseClient.from('profiles').select('id',{count:'exact',head:true}),
+      supabaseClient.from('teams').select('id',{count:'exact',head:true}),
+      supabaseClient.from('tournaments').select('id',{count:'exact',head:true}),
+      supabaseClient.from('community_posts').select('id',{count:'exact',head:true}),
+      supabaseClient.from('profiles').select('id,username,display_name,game_name,region,rank_name,level,rating,created_at').order('created_at',{ascending:false}).limit(100),
+      supabaseClient.from('community_posts').select('id,user_id,body,created_at,media_type').order('created_at',{ascending:false}).limit(30)
+    ]);
+    const errors=[users,teams,tournaments,posts,profiles,feed].filter(r=>r.error);
+    if(errors.length){console.error('Admin dashboard query failed:',errors.map(r=>r.error));if(status)status.textContent='Не удалось загрузить часть данных. Проверь подключение и обнови страницу.';}
+    const count=(r)=>r.count??'—';
+    document.getElementById('adminUsersCount').textContent=count(users);
+    document.getElementById('adminTeamsCount').textContent=count(teams);
+    document.getElementById('adminTournamentsCount').textContent=count(tournaments);
+    document.getElementById('adminPostsCount').textContent=count(posts);
+    const userRows=document.getElementById('adminUsersBody');
+    if(userRows) userRows.innerHTML=(profiles.data||[]).map(p=>'<tr><td>'+escapeHtml(p.display_name||p.username||'Игрок')+'</td><td>'+escapeHtml(p.game_name||'—')+'</td><td>'+escapeHtml(p.region||'—')+'</td><td>'+escapeHtml(p.rank_name||'—')+'</td><td>'+escapeHtml(String(p.level??'—'))+'</td><td>'+escapeHtml(String(p.rating??'—'))+'</td><td>'+new Date(p.created_at).toLocaleDateString('ru-RU')+'</td></tr>').join('')||'<tr><td colspan="7" class="subtitle">Пока нет зарегистрированных игроков</td></tr>';
+    const feedEl=document.getElementById('adminPostsList');
+    const authorIds=[...new Set((feed.data||[]).map(p=>p.user_id))];
+    const authorResult=authorIds.length?await supabaseClient.from('profiles').select('id,username,display_name').in('id',authorIds):{data:[]};
+    const authors=new Map((authorResult.data||[]).map(p=>[p.id,p.display_name||p.username||'Игрок']));
+    if(feedEl) feedEl.innerHTML=(feed.data||[]).map(p=>'<article class="list-divider" style="padding:16px 0;"><div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;"><div><strong>'+escapeHtml(authors.get(p.user_id)||'Игрок')+'</strong><span class="subtitle"> · '+new Date(p.created_at).toLocaleString('ru-RU')+'</span><p style="margin-top:8px;white-space:pre-wrap;">'+escapeHtml(p.body||'')+'</p>'+(p.media_type?'<span class="badge badge-info">'+escapeHtml(p.media_type)+'</span>':'')+'</div><button class="btn btn-danger" onclick="adminDeletePost(\''+p.id+'\')"><i class="fa-solid fa-trash"></i> Удалить</button></div></article>').join('')||'<p class="subtitle">Публикаций пока нет.</p>';
+    if(status) status.textContent='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';
+  }
+
+  async function adminDeletePost(postId) {
+    if(!isAdmin||!supabaseClient||!confirm('Удалить эту публикацию для всех пользователей?')) return;
+    const {error}=await supabaseClient.from('community_posts').delete().eq('id',postId);
+    if(error){console.error('Could not remove community post:',error);showNotification('Не удалось удалить публикацию.');return;}
+    showNotification('Публикация удалена.');
+    await loadAdminPanel();
+  }
+
   function renderAuthState(user) {
     const actions = document.querySelector('.auth-buttons');
     if (!actions) return;
@@ -2086,10 +2131,10 @@
 
     currentUser=session?.user||null;
     renderAuthState(currentUser);
-    if(currentUser) await loadAccountData();
+    if(currentUser) { await loadAccountData(); await loadAdminAccess(); }
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
-      if(currentUser) loadAccountData(); else {accountProfile=null;accountFriends=[];accountTournamentIds=[];}
+      if(currentUser) { loadAccountData(); loadAdminAccess(); } else {isAdmin=false;const adminNav=document.querySelector('aside li:has(a[onclick*="showSection(\'admin\')"])');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
       renderAuthState(currentUser);
       if (event === 'SIGNED_OUT') { location.reload(); }
       if (event === 'SIGNED_IN') {
