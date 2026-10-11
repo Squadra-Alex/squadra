@@ -560,6 +560,196 @@
     .avatar { width:64px; height:64px; }
   }
 
+
+  /* Squadra visual system v2 — preserve the red / charcoal palette */
+  :root {
+    --bg:#09090b; --bg-2:#111114; --bg-3:#19191d;
+    --panel:#121215; --red:#f43b45; --red-deep:#bc2029; --red-dark:#70141b;
+    --red-glow:rgba(244,59,69,.28); --text:#f1f0f0; --muted:#9a989a;
+    --border:rgba(255,255,255,.075); --border-hi:rgba(244,59,69,.36);
+    --neon:0 8px 24px rgba(244,59,69,.14); --neon-soft:0 4px 16px rgba(244,59,69,.09);
+  }
+  html { scroll-padding-top:90px; }
+  body {
+    background:
+      radial-gradient(ellipse at 70% -10%,rgba(128,18,27,.16),transparent 38%),
+      linear-gradient(180deg,#0b0b0e 0%,#09090b 56%,#0b0b0e 100%);
+    color:var(--text); line-height:1.6;
+  }
+  #fx-canvas,.scanlines { display:none; }
+  .bg-redglow,.bg-blackhole { opacity:.2; filter:blur(120px); }
+  header {
+    height:76px; padding:0 clamp(18px,4.5vw,72px); gap:clamp(16px,2.3vw,38px);
+    background:rgba(10,10,12,.88); border-bottom:1px solid rgba(255,255,255,.07);
+    box-shadow:0 12px 40px rgba(0,0,0,.24);
+  }
+  .logo { font-family:'Inter',sans-serif; font-size:23px; letter-spacing:.1em; }
+  .logo i { font-size:20px; }
+  .logo .sq-b { animation:none; text-shadow:none; }
+  nav { min-width:0; }
+  nav ul { gap:2px; }
+  nav a { padding:9px 10px; color:#aaa8aa; font-family:'Inter',sans-serif; font-size:12px; font-weight:600; letter-spacing:0; text-transform:none; }
+  nav a::after { left:10px; right:10px; bottom:-4px; height:2px; box-shadow:none; }
+  nav a.active { color:#fff; text-shadow:none; }
+  .auth-buttons { flex-shrink:0; align-items:center; gap:10px; }
+  .auth-buttons .btn { min-height:42px; padding:10px 18px; font-size:12px; }
+  .account-chip {
+    display:flex; align-items:center; gap:9px; max-width:210px; padding:8px 12px;
+    color:#e9e7e8; background:rgba(255,255,255,.035); border:1px solid var(--border);
+    border-radius:10px; font:600 12px 'Inter',sans-serif; cursor:pointer;
+  }
+  .account-chip i { color:var(--red); font-size:17px; }
+  .account-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .container {
+    grid-template-columns:220px minmax(0,1fr); gap:34px;
+    max-width:1530px; margin:38px auto 0; padding:0 clamp(18px,4.5vw,72px);
+  }
+  aside {
+    position:sticky; top:100px; padding:18px 11px;
+    background:rgba(17,17,20,.68); border:1px solid var(--border); border-radius:14px;
+    box-shadow:0 20px 55px rgba(0,0,0,.18); backdrop-filter:blur(16px);
+  }
+  aside h3 { margin:21px 11px 8px; color:#777579; font:700 10px 'Inter',sans-serif; letter-spacing:.13em; }
+  aside li { min-height:40px; padding:9px 11px; border:0; border-radius:9px; color:#a7a5a7; font-size:12px; }
+  aside li i { color:#777579; font-size:13px; }
+  aside li:hover { background:rgba(255,255,255,.045); color:#f5f3f4; }
+  aside li.active { color:#fff; background:rgba(244,59,69,.105); box-shadow:inset 2px 0 var(--red); text-shadow:none; }
+  aside li.active i { color:var(--red); }
+  main { min-width:0; }
+  h1,h2,h3,h4,.logo,th,.btn,.stat-box .value,.badge,.rank-pos { font-family:'Inter',sans-serif; letter-spacing:normal; }
+  h1 { font-size:clamp(36px,5.2vw,68px); font-weight:750; line-height:1.05; letter-spacing:-.055em; text-transform:none; margin:12px 0 15px; }
+  h1 .accent { color:#ff4a53; text-shadow:none; }
+  h1 i { color:var(--red); font-size:.52em; margin-right:5px; filter:none; }
+  h2 { font-size:20px; font-weight:700; text-transform:none; letter-spacing:-.025em; margin:0 0 14px; }
+  h2 i { font-size:.85em; }
+  h3 { font-size:17px; line-height:1.35; letter-spacing:-.02em; }
+  .subtitle { color:#aaa7aa; font-size:14px; line-height:1.75; margin-bottom:22px; }
+  .home-intro { padding:8px 0 15px; }
+  .home-intro .subtitle { max-width:610px; font-size:15px; margin:0; }
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; color:#a7a2a4; font-size:10px; font-weight:700; letter-spacing:.15em; line-height:1.4; }
+  .eyebrow i { color:var(--red); font-size:7px; }
+  .hero {
+    min-height:270px; align-items:center; gap:25px; padding:clamp(26px,4vw,48px);
+    background:
+      radial-gradient(ellipse at 90% 16%,rgba(244,59,69,.22),transparent 32%),
+      linear-gradient(112deg,#191316 0%,#171316 48%,#0e0e11 100%);
+    border:1px solid rgba(244,59,69,.2); border-radius:18px;
+    box-shadow:0 25px 70px rgba(0,0,0,.28); margin:20px 0 24px;
+  }
+  .hero::before {
+    content:''; position:absolute; right:-35px; top:-120px; width:360px; height:360px;
+    border:1px solid rgba(244,59,69,.13); border-radius:50%;
+    box-shadow:0 0 0 35px rgba(244,59,69,.025),0 0 0 75px rgba(244,59,69,.02);
+    pointer-events:none;
+  }
+  .hero-emblem {
+    z-index:1; width:76px; height:76px; border-radius:18px; font-size:31px;
+    background:linear-gradient(145deg,#f1444e,#981922); border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 16px 42px rgba(244,59,69,.2);
+  }
+  .hero-body { z-index:1; }
+  .hero-body h2 { margin:8px 0 8px; font-size:clamp(25px,3vw,34px); letter-spacing:-.04em; text-transform:none; }
+  .hero-body p { max-width:560px; color:#bbb6b8; font-size:14px; line-height:1.75; }
+  .hero-actions { z-index:1; }
+  .home-pathways { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:24px 0 36px; }
+  .pathway-card {
+    min-width:0; min-height:86px; display:flex; align-items:center; gap:13px; padding:15px;
+    text-align:left; color:var(--text); background:linear-gradient(145deg,#151518,#101013);
+    border:1px solid var(--border); border-radius:13px; cursor:pointer;
+    transition:background .2s,border-color .2s,transform .2s;
+  }
+  .pathway-card:hover { transform:translateY(-2px); background:#191619; border-color:var(--border-hi); }
+  .pathway-icon { width:40px; height:40px; flex:0 0 40px; display:grid; place-items:center; color:#ff515a; background:rgba(244,59,69,.09); border-radius:11px; }
+  .pathway-copy { display:flex; flex-direction:column; min-width:0; gap:3px; }
+  .pathway-copy strong { font-size:13px; font-weight:700; }
+  .pathway-copy small { color:var(--muted); font-size:10px; line-height:1.5; }
+  .pathway-arrow { margin-left:auto; color:#747175; font-size:11px; }
+  .home-section-heading { display:flex; align-items:end; justify-content:space-between; gap:20px; margin:34px 0 15px; }
+  .home-section-heading h2 { margin:6px 0 0; }
+  .text-link { display:inline-flex; align-items:center; gap:9px; padding:8px 0; border:0; color:#d3ced0; background:none; font:600 12px 'Inter',sans-serif; cursor:pointer; }
+  .text-link i { color:var(--red); transition:transform .2s; }
+  .text-link:hover { color:#fff; }
+  .text-link:hover i { transform:translateX(3px); }
+  .home-games-grid .game-img { height:150px; }
+  .home-tournaments .card { min-height:205px; }
+  .grid { gap:15px; }
+  .card {
+    padding:20px; background:linear-gradient(145deg,rgba(21,21,24,.96),rgba(16,16,19,.96));
+    border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.18);
+  }
+  .card::before { display:none; }
+  .card:hover { border-color:rgba(244,59,69,.23); box-shadow:0 16px 40px rgba(0,0,0,.28); transform:translateY(-2px); }
+  .stat-box { text-align:left; padding:18px; border-radius:13px; background:#141417; border-color:var(--border); }
+  .stat-box .value { color:#ff4a53; font-size:27px; text-shadow:none; }
+  .stat-box .label { color:#939094; font:700 10px 'Inter',sans-serif; letter-spacing:.1em; }
+  .btn {
+    min-height:42px; padding:10px 17px; border-radius:9px; font:700 11px 'Inter',sans-serif;
+    letter-spacing:.015em; text-transform:none;
+  }
+  .btn-primary { color:#fff; background:linear-gradient(135deg,#c8232d,#f13d47); box-shadow:0 8px 20px rgba(204,33,43,.17); }
+  .btn-primary:hover { transform:translateY(-1px); filter:brightness(1.08); box-shadow:0 10px 26px rgba(204,33,43,.24); }
+  .btn-ghost { color:#e1dddf; background:rgba(255,255,255,.035); border-color:rgba(255,255,255,.13); }
+  .btn-ghost:hover { color:#fff; background:rgba(244,59,69,.09); border-color:rgba(244,59,69,.3); }
+  input,select,textarea { border-radius:9px; background:#111114; border-color:rgba(255,255,255,.11); }
+  input:focus,select:focus,textarea:focus { border-color:var(--red); box-shadow:0 0 0 3px rgba(244,59,69,.12); }
+  table { border-radius:13px; border-color:var(--border); background:#121215; }
+  th { color:#fa555d; background:rgba(244,59,69,.07); border-bottom-color:rgba(244,59,69,.18); }
+  td { color:#d0ccce; }
+  .badge { border-radius:6px; }
+  .game-card { border-radius:14px; }
+  .game-img { background:linear-gradient(135deg,#221317,#141417); }
+  .profile-header { border-radius:16px; background:linear-gradient(110deg,rgba(130,22,31,.22),rgba(18,18,21,.94) 60%); }
+  .avatar { box-shadow:0 0 0 4px rgba(244,59,69,.08); }
+  .chat-container { border-radius:15px; }
+  .modal { background:rgba(4,4,5,.78); }
+  .modal-content { background:#141417; border:1px solid rgba(244,59,69,.27); border-radius:16px; }
+  .modal-content::before { background:linear-gradient(90deg,transparent,#f43b45,transparent); box-shadow:none; }
+  footer { background:rgba(12,12,14,.92); border-color:var(--border); }
+  @media (max-width:1250px) {
+    header { gap:14px; }
+    nav ul { display:flex; overflow-x:auto; scrollbar-width:none; }
+    nav ul::-webkit-scrollbar { display:none; }
+    nav a { white-space:nowrap; padding-inline:8px; }
+    .container { grid-template-columns:205px minmax(0,1fr); gap:24px; }
+  }
+  @media (max-width:920px) {
+    header { height:auto; min-height:70px; flex-wrap:wrap; padding-top:12px; padding-bottom:12px; gap:9px 16px; }
+    header nav { order:3; width:100%; }
+    nav ul { display:flex; }
+    .container { grid-template-columns:1fr; gap:18px; margin-top:20px; }
+    aside { position:static; padding:11px; }
+    aside ul { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:3px; }
+    .hero { align-items:flex-start; }
+    .profile-header { flex-wrap:wrap; }
+  }
+  @media (max-width:640px) {
+    header { gap:8px 10px; }
+    .logo { font-size:20px; }
+    .auth-buttons .btn { min-height:40px; width:auto; padding:8px 12px; font-size:11px; gap:7px; }
+    .auth-buttons .btn span { display:inline; }
+    nav a { padding:8px 10px; }
+    .container { padding:0 15px; margin-top:16px; }
+    .home-intro { padding-top:4px; }
+    h1 { font-size:clamp(37px,11vw,54px); }
+    .home-intro .subtitle { font-size:13px; }
+    .hero { gap:14px; padding:21px; }
+    .hero-emblem { width:48px; height:48px; flex-basis:48px; font-size:20px; }
+    .hero-body { min-width:0; flex:1; }
+    .hero-body h2 { font-size:23px; }
+    .hero-actions { width:100%; }
+    .hero-actions .btn { flex:1; padding-inline:10px; }
+    .home-pathways { grid-template-columns:1fr; gap:9px; margin:18px 0 30px; }
+    .pathway-card { min-height:70px; }
+    .home-section-heading { align-items:start; }
+    .text-link { padding-top:15px; white-space:nowrap; font-size:10px; }
+    .home-games-grid,.home-tournaments,.grid-4,.grid-3,.grid-2,.stats-grid { grid-template-columns:1fr; }
+    .profile-header { gap:14px; padding:18px; }
+    .avatar { width:64px; height:64px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -588,8 +778,7 @@
     </ul>
   </nav>
   <div class="auth-buttons">
-    <button class="btn btn-ghost" onclick="openModal('loginModal')"><i class="fa-solid fa-right-to-bracket"></i> Войти</button>
-    <button class="btn btn-primary" onclick="openModal('registerModal')"><i class="fa-solid fa-user-plus"></i> Регистрация</button>
+    <button class="btn btn-primary" onclick="openModal('loginModal')" aria-label="Войти в Squadra"><i class="fa-solid fa-arrow-right-to-bracket"></i><span>Войти</span></button>
   </div>
 </header>
 
@@ -617,33 +806,54 @@
 
     <!-- HOME -->
     <section id="home" class="section active">
-      <h1><i class="fa-solid fa-bolt"></i>Добро пожаловать в <span class="accent">Squadra</span></h1>
-      <p class="subtitle">Киберспортивная платформа: команды, турниры, рейтинги и живое сообщество</p>
+      <div class="home-intro">
+        <span class="eyebrow"><i class="fa-solid fa-circle"></i> ПЛАТФОРМА ДЛЯ ИГРОКОВ</span>
+        <h1>Играй <span class="accent">вместе.</span><br>Побеждай командой.</h1>
+        <p class="subtitle">Находи своих, собирай состав и выходи на соревнования. Всё для игры — в одном месте.</p>
+      </div>
 
       <div class="hero">
         <div class="hero-emblem"><i class="fa-solid fa-shield-halved"></i></div>
         <div class="hero-body">
-          <h2>Собери состав. Выйди на арену.</h2>
-          <p>Подбор тиммейтов по рейтингу и роли, турнирные сетки, сезонные лиги и статистика каждого матча — всё в одном месте.</p>
+          <span class="eyebrow">ТВОЯ СЛЕДУЮЩАЯ ИГРА НАЧИНАЕТСЯ ЗДЕСЬ</span>
+          <h2>Найди свою команду</h2>
+          <p>Подбери игроков по игре и региону, создай команду или присоединись к турниру Squadra.</p>
         </div>
         <div class="hero-actions">
-          <button class="btn btn-primary" onclick="showSection('matchmaking')"><i class="fa-solid fa-satellite-dish"></i> Найти тиммейтов</button>
-          <button class="btn btn-ghost" onclick="showSection('tournaments')"><i class="fa-solid fa-list-ul"></i> Турниры</button>
+          <button class="btn btn-primary" onclick="showSection('matchmaking')"><i class="fa-solid fa-crosshairs"></i> Найти игроков</button>
+          <button class="btn btn-ghost" onclick="showSection('games')"><i class="fa-solid fa-gamepad"></i> Каталог игр</button>
         </div>
       </div>
 
-      <div class="grid grid-4" style="margin-bottom: 30px;">
-        <div class="stat-box"><div class="value">128 450</div><div class="label">Игроков онлайн</div></div>
-        <div class="stat-box"><div class="value">3 240</div><div class="label">Активных команд</div></div>
-        <div class="stat-box"><div class="value">87</div><div class="label">Турниров сейчас</div></div>
-        <div class="stat-box"><div class="value">₽ 2.4M</div><div class="label">Призовой фонд</div></div>
+      <div class="home-pathways">
+        <button class="pathway-card" onclick="showSection('players')">
+          <span class="pathway-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="pathway-copy"><strong>Найди игроков</strong><small>Подбор по игре, рейтингу и региону</small></span>
+          <i class="fa-solid fa-arrow-up-right-from-square pathway-arrow"></i>
+        </button>
+        <button class="pathway-card" onclick="showSection('teams')">
+          <span class="pathway-icon"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="pathway-copy"><strong>Собери команду</strong><small>Создавай состав и приглашай друзей</small></span>
+          <i class="fa-solid fa-arrow-up-right-from-square pathway-arrow"></i>
+        </button>
+        <button class="pathway-card" onclick="showSection('tournaments')">
+          <span class="pathway-icon"><i class="fa-solid fa-trophy"></i></span>
+          <span class="pathway-copy"><strong>Играй турниры</strong><small>Следи за соревнованиями и регистрацией</small></span>
+          <i class="fa-solid fa-arrow-up-right-from-square pathway-arrow"></i>
+        </button>
       </div>
 
-      <h2><i class="fa-solid fa-fire"></i>Популярные игры</h2>
-      <div class="grid grid-4" style="margin-bottom: 30px;" id="homeGames"></div>
+      <div class="home-section-heading">
+        <div><span class="eyebrow">ВЫБЕРИ СВОЮ АРЕНУ</span><h2><i class="fa-solid fa-gamepad"></i> Игры на Squadra</h2></div>
+        <button class="text-link" onclick="showSection('games')">Все игры <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+      <div class="grid grid-4 home-games-grid" id="homeGames"></div>
 
-      <h2><i class="fa-solid fa-flag-checkered"></i>Активные турниры</h2>
-      <div class="grid grid-2">
+      <div class="home-section-heading">
+        <div><span class="eyebrow">СОРЕВНОВАНИЯ</span><h2><i class="fa-solid fa-flag-checkered"></i> Турниры сообщества</h2></div>
+        <button class="text-link" onclick="showSection('tournaments')">Все турниры <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+      <div class="grid grid-2 home-tournaments">
         <div class="card">
           <span class="badge badge-danger badge-live">LIVE</span>
           <h3 style="margin-top:10px;">Squadra Championship 2026</h3>
@@ -1623,22 +1833,23 @@
     actions.replaceChildren();
     if (!user) {
       const login = document.createElement('button');
-      login.className = 'btn btn-ghost';
-      login.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Войти';
+      login.className = 'btn btn-primary';
+      login.setAttribute('aria-label', 'Войти в Squadra');
+      login.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i><span>Войти</span>';
       login.onclick = () => openModal('loginModal');
-      const register = document.createElement('button');
-      register.className = 'btn btn-primary';
-      register.innerHTML = '<i class="fa-solid fa-user-plus"></i> Регистрация';
-      register.onclick = () => openModal('registerModal');
-      actions.append(login, register);
+      actions.append(login);
       return;
     }
-    const identity = document.createElement('span');
-    identity.className = 'badge badge-success';
-    identity.textContent = user.email || user.user_metadata?.name || 'В аккаунте';
+    const identity = document.createElement('button');
+    identity.className = 'account-chip';
+    identity.type = 'button';
+    identity.innerHTML = '<i class="fa-solid fa-circle-user"></i><span></span>';
+    identity.querySelector('span').textContent = user.user_metadata?.name || user.email || 'Мой аккаунт';
+    identity.onclick = () => showSection('profile');
+    identity.setAttribute('aria-label', 'Открыть профиль');
     const signOut = document.createElement('button');
     signOut.className = 'btn btn-ghost';
-    signOut.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Выйти';
+    signOut.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i><span>Выйти</span>';
     signOut.onclick = async () => {
       const { error } = await supabaseClient.auth.signOut();
       if (error) showNotification('Не удалось выйти. Попробуйте ещё раз.');
