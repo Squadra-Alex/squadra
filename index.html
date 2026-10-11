@@ -440,6 +440,8 @@
     .grid-2 { grid-template-columns:1fr; }
   }
 
+  .google-auth-button { display:flex; justify-content:center; min-height:44px; margin:12px auto 4px; }
+  .google-auth-button iframe { max-width:100%; }
   /* ===== VISUAL REDESIGN ===== */
   :root {
     --bg:#09090c; --bg-2:#111116; --bg-3:#19191f;
@@ -1162,7 +1164,7 @@
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
     <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
-    <button class="btn btn-primary" style="width:100%;" onclick="startGoogleAuth('login')"><i class="fa-brands fa-google"></i> Продолжить с Google</button>
+    <div id="googleLoginButton" class="google-auth-button"></div>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
@@ -1172,7 +1174,7 @@
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
     <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
-    <button class="btn btn-primary" style="width:100%;" onclick="startGoogleAuth('signup')"><i class="fa-brands fa-google"></i> Создать аккаунт через Google</button>
+    <div id="googleSignupButton" class="google-auth-button"></div>
   </div>
 </div>
 
@@ -1189,6 +1191,7 @@
   </div>
 </div>
 
+<script src="https://accounts.google.com/gsi/client"></script>
 <script>
   // ===== PARTICLE FX (canvas): красные искры + тёмные dust-частицы =====
   (function() {
@@ -1486,26 +1489,72 @@
       !SUPABASE_PUBLISHABLE_KEY.includes('YOUR_SUPABASE_PUBLISHABLE_KEY');
   }
 
-  async function startGoogleAuth() {
-    if (!authIsConfigured()) {
-      showNotification('Сначала укажите URL проекта Supabase и publishable key.');
+  // Google Identity Services returns the Google ID token directly to this page.
+  // Supabase validates it and creates the Squadra session without redirecting through *.supabase.co.
+  const GOOGLE_CLIENT_ID = '198639216760-l2lh0amnv10r1j8nvbtf62oa10o6q27h.apps.googleusercontent.com';
+  let googleAuthNonce = null;
+  let googleSignInPending = false;
+
+  async function createGoogleNonce() {
+    const random = crypto.getRandomValues(new Uint8Array(32));
+    const nonce = btoa(String.fromCharCode(...random));
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(nonce));
+    const hashedNonce = Array.from(new Uint8Array(digest))
+      .map(byte => byte.toString(16).padStart(2, '0')).join('');
+    return { nonce, hashedNonce };
+  }
+
+  async function initGoogleIdentity() {
+    if (!window.google?.accounts?.id) {
+      console.error('Google Identity Services did not load.');
       return;
     }
-    if (!supabaseClient) {
-      showNotification('Не удалось загрузить Supabase. Обновите страницу и попробуйте снова.');
-      return;
-    }
-    if (location.protocol === 'file:') {
-      showNotification('Откройте Squadra через сайт или локальный веб-сервер для входа.');
-      return;
-    }
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: location.origin + location.pathname }
+    const { nonce, hashedNonce } = await createGoogleNonce();
+    googleAuthNonce = nonce;
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      nonce: hashedNonce,
+      use_fedcm_for_button: true,
+      callback: handleGoogleCredential
     });
-    if (error) {
-      console.error('Google OAuth error:', error);
-      showNotification('Не удалось начать вход через Google. Проверьте настройки OAuth.');
+    ['googleLoginButton', 'googleSignupButton'].forEach(id => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      window.google.accounts.id.renderButton(button, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: 320,
+        locale: 'ru'
+      });
+    });
+  }
+
+  async function handleGoogleCredential(response) {
+    if (googleSignInPending) return;
+    if (!response?.credential || !googleAuthNonce || !supabaseClient) {
+      showNotification('Не удалось получить ответ Google. Попробуйте ещё раз.');
+      return;
+    }
+    googleSignInPending = true;
+    try {
+      const { error } = await supabaseClient.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+        nonce: googleAuthNonce
+      });
+      if (error) {
+        console.error('Supabase Google sign-in error:', error);
+        showNotification('Не удалось войти. Проверьте Google-провайдера в Supabase.');
+      }
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      showNotification('Не удалось завершить вход через Google.');
+    } finally {
+      googleSignInPending = false;
     }
   }
 
@@ -1549,6 +1598,7 @@
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const { data: { session } } = await supabaseClient.auth.getSession();
     renderAuthState(session?.user || null);
+    initGoogleIdentity();
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       renderAuthState(nextSession?.user || null);
       if (event === 'SIGNED_IN') {
