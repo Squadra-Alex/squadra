@@ -1265,7 +1265,7 @@
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
     <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
-    <div id="googleLoginButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleIdentityPrompt('googleLoginButton')"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleLoginButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleOAuth()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
@@ -1275,7 +1275,7 @@
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
     <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
-    <div id="googleSignupButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleIdentityPrompt('googleSignupButton')"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
+    <div id="googleSignupButton" class="google-auth-button"><button class="google-fallback" type="button" onclick="startGoogleOAuth()"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></button></div>
   </div>
 </div>
 
@@ -1417,8 +1417,6 @@
     const modal = document.getElementById(id);
     if (!modal) return;
     modal.classList.add('active');
-    const googleButtonId = id === 'loginModal' ? 'googleLoginButton' : id === 'registerModal' ? 'googleSignupButton' : null;
-    if (googleButtonId) requestAnimationFrame(() => initGoogleIdentity(googleButtonId));
   }
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
   document.querySelectorAll('.modal').forEach(m => {
@@ -1652,15 +1650,21 @@
     }
   }
 
-  async function startGoogleIdentityPrompt(buttonId) {
-    await initGoogleIdentity(buttonId);
-    const container = document.getElementById(buttonId);
-    if (!container?.querySelector('iframe')) {
-      showNotification('Google-кнопка не загрузилась. Попробуй нажать ещё раз.');
+  let supabaseAuthLoader = null;
+
+  async function startGoogleOAuth() {
+    try {
+      const client = await ensureSupabaseClient();
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + window.location.pathname }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Google OAuth could not be started:', error);
+      showNotification('Не удалось открыть вход Google. Попробуй ещё раз.');
     }
   }
-
-  let supabaseAuthLoader = null;
 
   async function ensureSupabaseClient() {
     if (!authIsConfigured()) throw new Error('Supabase Auth is not configured.');
@@ -1958,7 +1962,6 @@
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
-    initGoogleIdentity();
     if (!authIsConfigured() || !window.supabase?.createClient) return;
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const { data: { session } } = await supabaseClient.auth.getSession();
