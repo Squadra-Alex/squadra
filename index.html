@@ -1837,7 +1837,7 @@
     if(!currentUser)return requireAccount();
     const username=document.getElementById('settingsUsername').value.trim();
     if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))return showNotification('Ник: 3–24 символа, латиница, цифры или _.');
-    let avatar_url=profileData?.avatar_url||null;
+    let avatar_url=accountProfile?.avatar_url||null;
     const avatarInput=document.getElementById('settingsAvatarFile'),avatarFile=avatarInput?.files?.[0];
     if(avatarFile){
       if(!['image/jpeg','image/png','image/webp','image/gif'].includes(avatarFile.type)||avatarFile.size>5*1024*1024)return showNotification('Аватар: JPG, PNG, WEBP или GIF до 5 МБ.');
