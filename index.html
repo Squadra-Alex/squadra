@@ -665,35 +665,30 @@
     <section id="profile" class="section">
       <h1><i class="fa-solid fa-user"></i>Мой профиль</h1>
       <div class="profile-header">
-        <img class="avatar" src="https://picsum.photos/seed/squadra-nightx/200/200" alt="NightX_Pro" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:'NX'}))">
+        <img class="avatar" id="profileAvatar" src="" alt="Аватар профиля" onerror="this.removeAttribute('src')">
         <div class="profile-info">
-          <h2>NightX_Pro</h2>
-          <div class="level"><i class="fa-solid fa-star"></i> Уровень 47 • Ранг: Diamond II</div>
-          <div class="status"><span class="dot on"></span>В сети • Последняя игра: 2 часа назад</div>
+          <h2 id="profileDisplayName">Войди, чтобы открыть профиль</h2>
+          <div class="level"><i class="fa-solid fa-star"></i> <span id="profileLevel">Уровень 1</span> • <span id="profileGameRank">CS2 • Unranked</span></div>
+          <div class="status"><span class="dot on"></span><span id="profileStatus">Профиль синхронизируется с аккаунтом</span></div>
         </div>
         <div style="margin-left:auto;">
-          <button class="btn btn-primary"><i class="fa-solid fa-pen"></i> Редактировать</button>
+          <button class="btn btn-primary" onclick="showSection('settings')"><i class="fa-solid fa-pen"></i> Редактировать профиль</button>
         </div>
       </div>
 
       <div class="stats-grid">
-        <div class="stat-box"><div class="value">1 247</div><div class="label">Матчей</div></div>
-        <div class="stat-box"><div class="value">68%</div><div class="label">Побед</div></div>
-        <div class="stat-box"><div class="value">2 847</div><div class="label">Рейтинг</div></div>
-        <div class="stat-box"><div class="value">4.2</div><div class="label">K/D</div></div>
-        <div class="stat-box"><div class="value">156</div><div class="label">Достижений</div></div>
+        <div class="stat-box"><div class="value" id="profileMatches">0</div><div class="label">Матчей</div></div>
+        <div class="stat-box"><div class="value" id="profileWinRate">0%</div><div class="label">Побед</div></div>
+        <div class="stat-box"><div class="value" id="profileRating">0</div><div class="label">Рейтинг</div></div>
+        <div class="stat-box"><div class="value" id="profileKd">0.0</div><div class="label">K/D</div></div>
+        <div class="stat-box"><div class="value" id="profileAchievementsCount">0</div><div class="label">Достижений</div></div>
       </div>
 
       <h2><i class="fa-solid fa-chart-line"></i>Статистика по играм</h2>
-      <div class="card" style="margin-bottom:24px;"><canvas id="statsChart" height="110"></canvas></div>
+      <div class="card" id="profileStatsSummary" style="margin-bottom:24px;color:var(--muted);">Войди, чтобы увидеть свою историю.</div>
 
       <h2><i class="fa-solid fa-medal"></i>Последние достижения</h2>
-      <div class="grid grid-2">
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-trophy"></i></div><div><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px;">Получено 2 дня назад</p></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bullseye"></i></div><div><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px;">1000 точных попаданий</p></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bolt"></i></div><div><h4>Молния</h4><p style="color:var(--muted); font-size:13px;">Победа за 5 минут</p></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-crown"></i></div><div><h4>Легенда</h4><p style="color:var(--muted); font-size:13px;">Топ-100 рейтинга</p></div></div>
-      </div>
+      <div class="grid grid-2" id="profileRecentAchievements"><p class="subtitle">Достижения появятся после входа.</p></div>
     </section>
 
     <!-- GAMES -->
@@ -740,44 +735,7 @@
       <h1><i class="fa-solid fa-users"></i>Мои команды</h1>
       <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTeamModal')"><i class="fa-solid fa-plus"></i> Создать команду</button>
 
-      <div class="grid grid-2">
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div style="display:flex; gap:14px; align-items:center;">
-              <img src="https://picsum.photos/seed/squadra-phoenix/120/120" alt="" style="width:52px;height:52px;border-radius:10px;border:1px solid var(--border-hi);" onerror="this.outerHTML='<div class=achievement-icon><i class=&quot;fa-solid fa-fire&quot;></i></div>'">
-              <div><h3>Phoenix Squad</h3><p style="color:var(--muted); font-size:13px;">CS2 • EU Region</p></div>
-            </div>
-            <span class="badge badge-success">Активна</span>
-          </div>
-          <div class="stats-grid" style="margin-top:16px;">
-            <div><div style="font-size:20px; font-weight:700; color:var(--red); font-family:Oswald;">5/5</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Состав</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--text); font-family:Oswald;">2 847</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Рейтинг</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--success); font-family:Oswald;">68%</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Побед</div></div>
-          </div>
-          <div style="margin-top:14px; display:flex; gap:8px;">
-            <button class="btn btn-ghost"><i class="fa-solid fa-sliders"></i> Управление</button>
-            <button class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Пригласить</button>
-          </div>
-        </div>
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div style="display:flex; gap:14px; align-items:center;">
-              <img src="https://picsum.photos/seed/squadra-storm/120/120" alt="" style="width:52px;height:52px;border-radius:10px;border:1px solid var(--border-hi);" onerror="this.outerHTML='<div class=achievement-icon><i class=&quot;fa-solid fa-bolt-lightning&quot;></i></div>'">
-              <div><h3>Storm Riders</h3><p style="color:var(--muted); font-size:13px;">Valorant • NA Region</p></div>
-            </div>
-            <span class="badge badge-success">Активна</span>
-          </div>
-          <div class="stats-grid" style="margin-top:16px;">
-            <div><div style="font-size:20px; font-weight:700; color:var(--red); font-family:Oswald;">4/5</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Состав</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--text); font-family:Oswald;">3 120</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Рейтинг</div></div>
-            <div><div style="font-size:20px; font-weight:700; color:var(--success); font-family:Oswald;">72%</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Побед</div></div>
-          </div>
-          <div style="margin-top:14px; display:flex; gap:8px;">
-            <button class="btn btn-ghost"><i class="fa-solid fa-sliders"></i> Управление</button>
-            <button class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Пригласить</button>
-          </div>
-        </div>
-      </div>
+      <div class="grid grid-2" id="teamsGrid"><p class="subtitle">Войди, чтобы увидеть команды.</p></div>
     </section>
 
     <!-- TOURNAMENTS -->
@@ -791,21 +749,21 @@
           <h3 style="margin-top:10px;">Squadra Cup</h3>
           <p style="color:var(--muted); font-size:14px;">CS2 • 32 команды</p>
           <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 500 000</strong></p>
-          <button class="btn btn-primary" style="margin-top:12px; width:100%;">Участвовать</button>
+          <button class="btn btn-primary" data-tournament-id="squadra-cup" onclick="registerForTournament(&quot;squadra-cup&quot;)" style="margin-top:12px; width:100%;">Участвовать</button>
         </div>
         <div class="card">
           <span class="badge badge-warning">Регистрация</span>
           <h3 style="margin-top:10px;">Winter League</h3>
           <p style="color:var(--muted); font-size:14px;">Dota 2 • 16 команд</p>
           <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 250 000</strong></p>
-          <button class="btn btn-ghost" style="margin-top:12px; width:100%;">Зарегистрироваться</button>
+          <button class="btn btn-ghost" data-tournament-id="winter-league" onclick="registerForTournament(&quot;winter-league&quot;)" style="margin-top:12px; width:100%;">Зарегистрироваться</button>
         </div>
         <div class="card">
           <span class="badge badge-info">Скоро</span>
           <h3 style="margin-top:10px;">Spring Championship</h3>
           <p style="color:var(--muted); font-size:14px;">Valorant • 64 команды</p>
           <p style="margin-top:8px;"><strong style="color:var(--red); font-family:Oswald; font-size:18px;">₽ 1 000 000</strong></p>
-          <button class="btn btn-ghost" style="margin-top:12px; width:100%;">Уведомить</button>
+          <button class="btn btn-ghost" data-tournament-id="spring-championship" onclick="registerForTournament(&quot;spring-championship&quot;)" style="margin-top:12px; width:100%;">Уведомить</button>
         </div>
       </div>
 
@@ -834,43 +792,15 @@
         <div>
           <div class="card" style="margin-bottom:16px;">
             <h3><i class="fa-solid fa-pen-to-square" style="color:var(--red); margin-right:8px;"></i>Создать публикацию</h3>
-            <textarea rows="3" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
+            <textarea id="communityPostBody" rows="3" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
             <div style="display:flex; gap:10px; margin-top:10px;">
-              <button class="btn btn-primary"><i class="fa-solid fa-upload"></i> Опубликовать</button>
+              <button class="btn btn-primary" onclick="publishCommunityPost()"><i class="fa-solid fa-upload"></i> Опубликовать</button>
               <button class="btn btn-ghost"><i class="fa-solid fa-image"></i> Фото</button>
               <button class="btn btn-ghost"><i class="fa-solid fa-video"></i> Видео</button>
             </div>
           </div>
 
-          <div class="card" style="margin-bottom:16px;">
-            <div style="display:flex; gap:12px; align-items:start;">
-              <img class="mini-avatar" src="https://picsum.photos/seed/squadra-shadow/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'SK'}))">
-              <div style="flex:1;">
-                <strong>ShadowKiller</strong> <span class="post-meta">• 2 часа назад</span>
-                <p style="margin-top:8px; font-size:14px;">Только что выиграли Squadra Cup! Спасибо команде за невероятную игру. Это только начало — едем на чемпионат <span style="color:var(--red);">#SquadraCup</span></p>
-                <div class="post-actions">
-                  <span><i class="fa-solid fa-heart"></i>234</span>
-                  <span><i class="fa-solid fa-comment"></i>45</span>
-                  <span><i class="fa-solid fa-share"></i>12</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-bottom:16px;">
-            <div style="display:flex; gap:12px; align-items:start;">
-              <img class="mini-avatar" src="https://picsum.photos/seed/squadra-progamer/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'PG'}))">
-              <div style="flex:1;">
-                <strong>ProGamer99</strong> <span class="post-meta">• 5 часов назад</span>
-                <p style="margin-top:8px; font-size:14px;">Кто хочет поиграть в Valorant сегодня вечером? Нужен саппорт на ранг Diamond+ <span style="color:var(--red);">#LookingForTeam</span></p>
-                <div class="post-actions">
-                  <span><i class="fa-solid fa-heart"></i>89</span>
-                  <span><i class="fa-solid fa-comment"></i>23</span>
-                  <span><i class="fa-solid fa-share"></i>5</span>
-                </div>
-              </div>
-            </div>
-          </div>
+<div id="communityPosts"><p class="subtitle">Загружаю публикации…</p></div>
         </div>
 
         <div>
@@ -962,17 +892,8 @@
     <section id="messages" class="section">
       <h1><i class="fa-solid fa-comment-dots"></i>Сообщения</h1>
       <div class="chat-container">
-        <div class="chat-header">
-          <img class="mini-avatar" style="width:40px;height:40px;font-size:13px;" src="https://picsum.photos/seed/squadra-shadow/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'SK'}))">
-          <div><strong>ShadowKiller</strong><div class="presence-online"><span class="dot on"></span>В сети</div></div>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-          <div class="message"><div class="author">ShadowKiller</div>Привет! Как дела?</div>
-          <div class="message own"><div class="author">Вы</div>Отлично! Готов к турниру?</div>
-          <div class="message"><div class="author">ShadowKiller</div>Да, тренировался весь день</div>
-          <div class="message own"><div class="author">Вы</div>Круто! Во сколько встречаемся?</div>
-          <div class="message"><div class="author">ShadowKiller</div>В 20:00 по МСК, не опаздывай</div>
-        </div>
+        <div class="chat-header"><div style="flex:1;"><label for="chatRecipient">Диалог с другом</label><select id="chatRecipient" onchange="loadDirectMessages()"><option value="">Выбери друга</option></select></div></div>
+        <div class="chat-messages" id="chatMessages"><p class="subtitle">Сообщения будут храниться в твоём аккаунте.</p></div>
         <div class="chat-input">
           <input id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter')sendMessage()">
           <button class="btn btn-primary" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
@@ -983,38 +904,7 @@
     <!-- FRIENDS -->
     <section id="friends" class="section">
       <h1><i class="fa-solid fa-users"></i>Друзья</h1>
-      <div class="grid grid-3">
-        <div class="card">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/squadra-shadow/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'SK'}))">
-            <div><strong>ShadowKiller</strong><div class="presence-online"><span class="dot on"></span>В игре</div></div>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px;">
-            <button class="btn btn-ghost" style="flex:1;">Профиль</button>
-            <button class="btn btn-primary" style="flex:1;">Написать</button>
-          </div>
-        </div>
-        <div class="card">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/squadra-progamer/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'PG'}))">
-            <div><strong>ProGamer99</strong><div class="presence-online"><span class="dot on"></span>В сети</div></div>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px;">
-            <button class="btn btn-ghost" style="flex:1;">Профиль</button>
-            <button class="btn btn-primary" style="flex:1;">Написать</button>
-          </div>
-        </div>
-        <div class="card">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/squadra-icequeen/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'IQ'}))">
-            <div><strong>IceQueen</strong><div class="presence-offline"><span class="dot off"></span>Оффлайн</div></div>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px;">
-            <button class="btn btn-ghost" style="flex:1;">Профиль</button>
-            <button class="btn btn-primary" style="flex:1;">Написать</button>
-          </div>
-        </div>
-      </div>
+      <div class="grid grid-3" id="friendsGrid"><p class="subtitle">Войди, чтобы увидеть друзей.</p></div>
     </section>
 
     <!-- MATCHMAKING -->
@@ -1025,12 +915,12 @@
       <div class="card" style="margin-bottom:24px;">
         <h3>Параметры поиска</h3>
         <div class="grid grid-3" style="margin-top:16px;">
-          <div class="form-group"><label>Игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option></select></div>
-          <div class="form-group"><label>Роль</label><select><option>Любая</option><option>Снайпер</option><option>Саппорт</option><option>Капитан</option></select></div>
-          <div class="form-group"><label>Ранг</label><select><option>± 500 рейтинга</option><option>± 250 рейтинга</option><option>Точный ранг</option></select></div>
-          <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
-          <div class="form-group"><label>Время игры</label><select><option>Сейчас</option><option>Вечер</option><option>Выходные</option></select></div>
-          <div class="form-group"><label>Язык</label><select><option>Русский</option><option>English</option></select></div>
+          <div class="form-group"><label>Игра</label><select id="mmGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
+          <div class="form-group"><label>Роль</label><select id="mmRole"><option>Любая</option><option>Снайпер</option><option>Саппорт</option><option>Капитан</option></select></div>
+          <div class="form-group"><label>Ранг</label><select id="mmTolerance"><option>± 500 рейтинга</option><option>± 250 рейтинга</option><option>Точный ранг</option></select></div>
+          <div class="form-group"><label>Регион</label><select id="mmRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
+          <div class="form-group"><label>Время игры</label><select id="mmPlayTime"><option>Сейчас</option><option>Вечер</option><option>Выходные</option></select></div>
+          <div class="form-group"><label>Язык</label><select id="mmLanguage"><option>Русский</option><option>English</option></select></div>
         </div>
         <button class="btn btn-primary" onclick="startMatchmaking()"><i class="fa-solid fa-magnifying-glass-location"></i> Начать подбор</button>
       </div>
@@ -1048,14 +938,7 @@
     <!-- ACHIEVEMENTS -->
     <section id="achievements" class="section">
       <h1><i class="fa-solid fa-trophy"></i>Мои достижения</h1>
-      <div class="grid grid-2">
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-trophy"></i></div><div style="flex:1;"><h4>Чемпион сезона</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Победите в сезонном турнире</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bullseye"></i></div><div style="flex:1;"><h4>Снайпер</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">1000 точных попаданий</p><div class="progress"><div class="progress-bar" style="width:87%"></div></div></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-bolt"></i></div><div style="flex:1;"><h4>Молния</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Победа за 5 минут</p><div class="progress"><div class="progress-bar" style="width:100%"></div></div></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-crown"></i></div><div style="flex:1;"><h4>Легенда</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Войти в Топ-100</p><div class="progress"><div class="progress-bar" style="width:65%"></div></div></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-fire-flame-curved"></i></div><div style="flex:1;"><h4>На огне</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">10 побед подряд</p><div class="progress"><div class="progress-bar" style="width:70%"></div></div></div></div>
-        <div class="card achievement"><div class="achievement-icon"><i class="fa-solid fa-gem"></i></div><div style="flex:1;"><h4>Коллекционер</h4><p style="color:var(--muted); font-size:13px; margin-bottom:8px;">Собрать 50 скинов</p><div class="progress"><div class="progress-bar" style="width:42%"></div></div></div></div>
-      </div>
+      <div class="grid grid-2" id="achievementsGrid"><p class="subtitle">Войди, чтобы загрузить достижения.</p></div>
     </section>
 
     <!-- HISTORY -->
@@ -1063,13 +946,7 @@
       <h1><i class="fa-solid fa-clock-rotate-left"></i>История активности</h1>
       <table>
         <thead><tr><th>Дата</th><th>Действие</th><th>Игра</th><th>Результат</th><th>Рейтинг</th></tr></thead>
-        <tbody>
-          <tr><td>Сегодня, 18:42</td><td><i class="fa-solid fa-gamepad" style="color:var(--red); margin-right:8px;"></i>Матч</td><td>CS2</td><td><span class="badge badge-success">Победа</span></td><td class="trend-up">+24</td></tr>
-          <tr><td>Сегодня, 17:15</td><td><i class="fa-solid fa-gamepad" style="color:var(--red); margin-right:8px;"></i>Матч</td><td>CS2</td><td><span class="badge badge-danger">Поражение</span></td><td class="trend-down">-18</td></tr>
-          <tr><td>Вчера, 22:30</td><td><i class="fa-solid fa-flag-checkered" style="color:var(--red); margin-right:8px;"></i>Турнир</td><td>CS2</td><td><span class="badge badge-success">1 место</span></td><td class="trend-up">+150</td></tr>
-          <tr><td>Вчера, 20:10</td><td><i class="fa-solid fa-gamepad" style="color:var(--red); margin-right:8px;"></i>Матч</td><td>Valorant</td><td><span class="badge badge-success">Победа</span></td><td class="trend-up">+22</td></tr>
-          <tr><td>2 дня назад</td><td><i class="fa-solid fa-medal" style="color:var(--red); margin-right:8px;"></i>Достижение</td><td>—</td><td><span class="badge badge-info">Снайпер</span></td><td class="trend-flat">—</td></tr>
-        </tbody>
+        <tbody id="historyBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">Войди, чтобы увидеть историю.</td></tr></tbody>
       </table>
     </section>
 
@@ -1087,7 +964,8 @@
     <!-- LIBRARY -->
     <section id="library" class="section">
       <h1><i class="fa-solid fa-gamepad"></i>Моя библиотека</h1>
-      <div class="grid grid-4" id="libraryGrid"></div>
+      <p class="subtitle">Игры и предпочтения, сохранённые в твоём аккаунте.</p>
+      <div class="grid grid-4" id="libraryGrid"><p class="subtitle">Войди, чтобы увидеть библиотеку.</p></div>
     </section>
 
     <!-- SETTINGS -->
@@ -1096,19 +974,23 @@
       <div class="card">
         <h3>Основные</h3>
         <div class="grid grid-2" style="margin-top:16px;">
-          <div class="form-group"><label>Никнейм</label><input value="NightX_Pro"></div>
-          <div class="form-group"><label>Email</label><input value="player@squadra.gg"></div>
-          <div class="form-group"><label>Язык</label><select><option>Русский</option><option>English</option></select></div>
-          <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
+          <div class="form-group"><label>Имя профиля</label><input id="settingsDisplayName" maxlength="80" placeholder="Как к тебе обращаться"></div>
+          <div class="form-group"><label>Никнейм</label><input id="settingsUsername" maxlength="24" placeholder="Уникальный ник"></div>
+          <div class="form-group"><label>Email аккаунта</label><input id="settingsEmail" readonly></div>
+          <div class="form-group"><label>Язык</label><select id="settingsLanguage"><option value="ru">Русский</option><option value="en">English</option></select></div>
+          <div class="form-group"><label>Регион</label><select id="settingsRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
+          <div class="form-group"><label>Основная игра</label><select id="settingsGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
+          <div class="form-group" style="grid-column:1/-1;"><label>О себе</label><textarea id="settingsBio" rows="3" maxlength="500" placeholder="Расскажи о себе"></textarea></div>
         </div>
         <h3 style="margin-top:20px;">Уведомления</h3>
         <div style="margin-top:10px;">
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" checked style="width:auto; accent-color:var(--red);"> Сообщения от друзей</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" checked style="width:auto; accent-color:var(--red);"> Приглашения в команды</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" checked style="width:auto; accent-color:var(--red);"> Начало турниров</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input type="checkbox" style="width:auto; accent-color:var(--red);"> Маркетинговые рассылки</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyMessages" type="checkbox" style="width:auto; accent-color:var(--red);"> Сообщения от друзей</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyTeamInvites" type="checkbox" style="width:auto; accent-color:var(--red);"> Приглашения в команды</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyTournaments" type="checkbox" style="width:auto; accent-color:var(--red);"> Начало турниров</label>
+          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyMarketing" type="checkbox" style="width:auto; accent-color:var(--red);"> Маркетинговые рассылки</label>
         </div>
-        <button class="btn btn-primary" style="margin-top:20px;"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+        
+        <button class="btn btn-primary" style="margin-top:18px;" onclick="saveAccountSettings()"><i class="fa-solid fa-floppy-disk"></i> Сохранить профиль</button>
       </div>
     </section>
 
@@ -1182,12 +1064,12 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('createTeamModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Создать команду</h2>
-    <div class="form-group"><label>Название команды</label><input placeholder="Например: Phoenix Squad"></div>
-    <div class="form-group"><label>Тег</label><input placeholder="[PS]"></div>
-    <div class="form-group"><label>Игра</label><select><option>CS2</option><option>Dota 2</option><option>Valorant</option></select></div>
-    <div class="form-group"><label>Регион</label><select><option>EU</option><option>NA</option><option>Asia</option></select></div>
-    <div class="form-group"><label>Описание</label><textarea rows="3" placeholder="Расскажите о команде..."></textarea></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="showNotification('Команда создана'); closeModal('createTeamModal')"><i class="fa-solid fa-shield-halved"></i> Создать</button>
+    <div class="form-group"><label>Название команды</label><input id="teamName" maxlength="60" placeholder="Например: Phoenix Squad"></div>
+    <div class="form-group"><label>Тег</label><input id="teamTag" maxlength="12" placeholder="[PS]"></div>
+    <div class="form-group"><label>Игра</label><select id="teamGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
+    <div class="form-group"><label>Регион</label><select id="teamRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
+    <div class="form-group"><label>Описание</label><textarea id="teamDescription" rows="3" maxlength="1000" placeholder="Расскажите о команде..."></textarea></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="createTeam()"><i class="fa-solid fa-shield-halved"></i> Создать</button>
   </div>
 </div>
 
@@ -1264,6 +1146,7 @@
         <div class="genre">${g.genre}</div>
         <div class="online">${fmt(g.online)} онлайн</div>
         <div class="progress"><div class="progress-bar" style="width:${g.pop}%"></div></div>
+        <button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="event.stopPropagation();addGameToLibrary(&quot;${g.name}&quot;)"><i class="fa-solid fa-plus"></i> В библиотеку</button>
       </div>
     </div>`;
   }
@@ -1277,19 +1160,27 @@
     document.getElementById('gamesGrid').innerHTML = list.map(gameCard).join('') || '<p class="subtitle">Ничего не найдено</p>';
   }
 
-  function filterPlayers() {
-    const q = (document.getElementById('plName').value || '').toLowerCase();
-    const g = document.getElementById('plGame').value;
-    const r = document.getElementById('plRank').value;
-    const reg = document.getElementById('plRegion').value;
-    const badge = { Bronze:'badge-info', Silver:'badge-info', Gold:'badge-success', Diamond:'badge-info', Master:'badge-warning', Grandmaster:'badge-danger' };
-    const list = players.filter(p => (!q || p.n.toLowerCase().includes(q)) && (!g || p.g === g) && (!r || p.r === r) && (!reg || p.reg === reg));
-    document.getElementById('playersBody').innerHTML = list.map(p =>
-      `<tr><td><strong>${p.n}</strong></td><td><span class="badge ${badge[p.r]}">${p.r}</span></td><td>${p.lv}</td><td>${p.g}</td><td>${p.reg}</td><td>${p.wr}%</td><td><strong style="font-family:Oswald;">${fmt(p.rt)}</strong></td><td><button class="btn btn-ghost" onclick="showNotification('Заявка в друзья отправлена: ${p.n}')"><i class="fa-solid fa-user-plus"></i> Друг</button></td></tr>`
-    ).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted);">Игроки не найдены</td></tr>';
+  async function filterPlayers() {
+    const body = document.getElementById('playersBody');
+    if (!body) return;
+    if (!supabaseClient || !currentUser) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Войди, чтобы искать игроков.</td></tr>'; return; }
+    let query = supabaseClient.from('profiles').select('id,username,display_name,avatar_url,game_name,region,rank_name,rating,level,matches_played,wins,kd').neq('id', currentUser.id).limit(50);
+    const q = (document.getElementById('plName')?.value || '').trim();
+    const game = document.getElementById('plGame')?.value;
+    const rank = document.getElementById('plRank')?.value;
+    const region = document.getElementById('plRegion')?.value;
+    if (q) query = query.ilike('username', '%' + q.replace(/[%_]/g, '') + '%');
+    if (game) query = query.eq('game_name', game);
+    if (rank) query = query.eq('rank_name', rank);
+    if (region) query = query.eq('region', region);
+    const { data, error } = await query.order('rating', { ascending:false });
+    if (error) { console.error(error); body.innerHTML='<tr><td colspan="8">Не удалось загрузить игроков. Проверь SQL и RLS.</td></tr>'; return; }
+    body.innerHTML = (data || []).map(p => {
+      const name=escapeHtml(p.display_name || p.username), avatar=p.avatar_url ? '<img class="mini-avatar" src="'+escapeHtml(p.avatar_url)+'" alt="">' : '';
+      return '<tr><td>'+avatar+'<strong>'+name+'</strong><small style="display:block;color:var(--muted);">@'+escapeHtml(p.username)+'</small></td><td>'+escapeHtml(p.rank_name)+'</td><td>'+p.level+'</td><td>'+escapeHtml(p.game_name)+'</td><td>'+escapeHtml(p.region)+'</td><td>'+ (p.matches_played ? Math.round(p.wins*100/p.matches_played) : 0)+'%</td><td><strong>'+fmt(p.rating)+'</strong></td><td><button class="btn btn-ghost" onclick="addFriend(\''+p.id+'\')"><i class="fa-solid fa-user-plus"></i> Друг</button></td></tr>';
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Игроки не найдены</td></tr>';
   }
 
-  // NAVIGATION
   function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -1319,34 +1210,18 @@
   }
 
   // CHAT (имитация WebSocket)
-  function sendMessage() {
+  async function sendMessage() {
+    if (!currentUser) return requireAccount();
+    const receiverId = document.getElementById('chatRecipient')?.value;
     const input = document.getElementById('chatInput');
-    if (!input.value.trim()) return;
-    const messages = document.getElementById('chatMessages');
-    const msg = document.createElement('div');
-    msg.className = 'message own';
-    msg.innerHTML = `<div class="author">Вы</div>${input.value}`;
-    messages.appendChild(msg);
-    input.value = '';
-    messages.scrollTop = messages.scrollHeight;
-    setTimeout(() => {
-      const reply = document.createElement('div');
-      reply.className = 'message';
-      reply.innerHTML = `<div class="author">ShadowKiller</div>Принято! Подключаюсь`;
-      messages.appendChild(reply);
-      messages.scrollTop = messages.scrollHeight;
-    }, 1200);
+    const body = input?.value.trim();
+    if (!receiverId) return showNotification('Выбери друга для переписки.');
+    if (!body) return;
+    const { error } = await supabaseClient.from('direct_messages').insert({ sender_id:currentUser.id, receiver_id:receiverId, body });
+    if (error) { console.error(error); return showNotification('Не удалось отправить сообщение.'); }
+    input.value=''; await loadDirectMessages();
   }
 
-  // MATCHMAKING (алгоритм подбора + сканер)
-  const mmCandidates = [
-    { n: 'AceHunter',    i: 'AH', seed:'mm-ace',    r: 2890, role: 'Снайпер',  region: 'EU',   time: 'Вечер' },
-    { n: 'RedViper',     i: 'RV', seed:'mm-viper',  r: 2760, role: 'Саппорт', region: 'EU',   time: 'Вечер' },
-    { n: 'IronCaptain',  i: 'IC', seed:'mm-iron',   r: 2410, role: 'Капитан', region: 'EU',   time: 'Выходные' },
-    { n: 'NightRanger',  i: 'NR', seed:'mm-ranger', r: 3050, role: 'Снайпер',  region: 'NA',   time: 'Утро' },
-    { n: 'CrimsonSupport', i:'CS', seed:'mm-crimson',r:2905, role: 'Саппорт', region: 'EU',   time: 'Сейчас' },
-    { n: 'AshReaper',    i: 'AR', seed:'mm-ash',    r: 2688, role: 'Капитан', region: 'Asia', time: 'Вечер' }
-  ];
   function matchScore(p, ratingTol, role, region, time) {
     let s = 40;
     s += Math.max(0, 30 - Math.abs(p.r - 2847) / ratingTol * 30);
@@ -1355,41 +1230,19 @@
     if (p.time === time || time === 'Сейчас' && p.time === 'Вечер') s += 8;
     return Math.round(Math.min(99, Math.max(35, s)));
   }
-  function startMatchmaking() {
-    const sel = document.querySelectorAll('#matchmaking select');
-    const tolMap = { '± 500 рейтинга': 500, '± 250 рейтинга': 250, 'Точный ранг': 100 };
-    const tol = tolMap[sel[2].value] || 500;
-    const icon = document.getElementById('mmIcon'), title = document.getElementById('mmTitle');
-    const barWrap = document.getElementById('mmBarWrap'), bar = document.getElementById('mmBar');
-    const results = document.getElementById('matchmakingResults');
-    icon.classList.add('scanning');
-    title.textContent = 'СКАНИРУЕМ СЕКТОР… ПОДБИРАЕМ ИГРОКОВ ПО РЕЙТИНГУ, РОЛИ, РЕГИОНУ';
-    barWrap.style.display = 'block'; bar.style.width = '0%';
-    results.innerHTML = '';
-    let w = 0;
-    const t = setInterval(() => { w = Math.min(100, w + 7); bar.style.width = w + '%'; if (w >= 100) clearInterval(t); }, 90);
-    setTimeout(() => {
-      icon.classList.remove('scanning');
-      icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-      title.textContent = 'СИГНАЛ ПОЛУЧЕН! НАЙДЕНЫ ПОДХОДЯЩИЕ ИГРОКИ:';
-      const list = mmCandidates
-        .map(p => ({ ...p, score: matchScore(p, tol, sel[1].value, sel[3].value, sel[4].value) }))
-        .sort((a, b) => b.score - a.score).slice(0, 4);
-      results.innerHTML = `<div class="grid grid-2" style="margin-top:20px;">` + list.map(p => `
-        <div class="card"><div style="display:flex; gap:12px; align-items:center;">
-          <img class="mini-avatar" style="width:50px;height:50px;" src="https://picsum.photos/seed/${p.seed}/100/100" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'mini-avatar',textContent:'${p.i}'}))">
-          <div style="flex:1;"><strong>${p.n}</strong>
-            <div style="font-size:12px; color:var(--muted);">Рейтинг: ${p.r} • Роль: ${p.role} • ${p.region}</div>
-            <div class="progress" style="margin-top:6px;"><div class="progress-bar" style="width:${p.score}%"></div></div>
-          </div>
-          <div style="text-align:right;"><div style="font-weight:700; color:var(--red); font-size:18px; font-family:Oswald; text-shadow:var(--neon-soft);">${p.score}%</div><div style="font-size:11px; color:var(--muted); text-transform:uppercase;">совпадение</div></div>
-        </div>
-        <button class="btn btn-primary" style="margin-top:12px; width:100%;" onclick="showNotification('Приглашение отправлено игроку ${p.n}')"><i class="fa-solid fa-paper-plane"></i> Пригласить</button></div>`).join('') + `</div>`;
-      showNotification('Матчмейкинг завершён: найдено ' + list.length + ' кандидатов');
-    }, 1700);
+  async function startMatchmaking() {
+    if (!currentUser) return requireAccount();
+    const prefs={user_id:currentUser.id,game_name:document.getElementById('mmGame').value,role:document.getElementById('mmRole').value,rating_tolerance:document.getElementById('mmTolerance').value,region:document.getElementById('mmRegion').value,play_time:document.getElementById('mmPlayTime').value,language:document.getElementById('mmLanguage').value};
+    const {error}=await supabaseClient.from('matchmaking_preferences').upsert(prefs);
+    if(error){console.error(error);return showNotification('Не удалось сохранить параметры подбора.');}
+    const {data,error:searchError}=await supabaseClient.from('profiles').select('id,username,display_name,game_name,region,rank_name,rating,level').neq('id',currentUser.id).eq('game_name',prefs.game_name).eq('region',prefs.region).limit(12);
+    if(searchError){console.error(searchError);return showNotification('Не удалось выполнить поиск игроков.');}
+    document.getElementById('mmTitle').textContent='ИГРОКИ, ПОДХОДЯЩИЕ ПО ИГРЕ И РЕГИОНУ';
+    document.getElementById('mmBarWrap').style.display='block';document.getElementById('mmBar').style.width='100%';
+    document.getElementById('mmIcon').innerHTML='<i class="fa-solid fa-circle-check"></i>';
+    document.getElementById('matchmakingResults').innerHTML=(data||[]).map(p=>'<div class="card"><strong>'+escapeHtml(p.display_name||p.username)+'</strong><div class="subtitle">'+escapeHtml(p.game_name)+' • '+escapeHtml(p.region)+' • '+escapeHtml(p.rank_name)+' • '+p.rating+'</div><button class="btn btn-primary" onclick="addFriend(\''+p.id+'\')">Добавить в друзья</button></div>').join('')||'<p class="subtitle">Пока нет игроков с такими параметрами.</p>';
   }
 
-  // RANKING TABS
   function switchRankTab(tab) {
     ['players','teams','games'].forEach(t => {
       document.getElementById('rank' + t[0].toUpperCase() + t.slice(1)).style.display = t === tab ? 'block' : 'none';
@@ -1402,16 +1255,9 @@
 
   // RENDER ON LOAD
   document.getElementById('homeGames').innerHTML = games.slice(0,4).map(gameCard).join('');
-  document.getElementById('libraryGrid').innerHTML = library.map(l => `
-    <div class="card game-card">
-      <div class="game-img" style="height:100px;">
-        <span class="fallback-icon"><i class="fa-solid fa-gamepad"></i></span>
-        <img src="https://picsum.photos/seed/${l.seed}/400/200" alt="${l.name}" loading="lazy" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">
-      </div>
-      <div class="game-info"><h4>${l.name}</h4><div class="genre">${l.hours} часов</div><button class="btn btn-primary" style="width:100%; margin-top:10px;"><i class="fa-solid fa-play"></i> Играть</button></div>
-    </div>`).join('');
+  renderLibrary();
   renderGames();
-  filterPlayers();
+  document.getElementById('playersBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Войди, чтобы искать игроков.</td></tr>'; 
 
   // CHARTS
   window.addEventListener('load', () => {
@@ -1483,6 +1329,9 @@
   const SUPABASE_URL = 'https://vblunxderjsyudlrsrai.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_NqXL2IVq6GATI0qbTs5iDA_5bVLpzo8';
   let supabaseClient = null;
+  let currentUser = null;
+  let accountProfile = null;
+  let accountFriends = [];
 
   function authIsConfigured() {
     return !SUPABASE_URL.includes('YOUR_PROJECT_REF') &&
@@ -1558,6 +1407,216 @@
     }
   }
 
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const requireAccount = () => { showNotification('Войди в аккаунт, чтобы сохранить эти данные.'); openModal('loginModal'); };
+  const queryError = (label,error) => { if(error) console.error(label,error); return error; };
+
+  async function loadAccountData() {
+    if (!supabaseClient || !currentUser) return;
+    const uid=currentUser.id;
+    const [pr,st,lib,fr,teams,history,ach,posts,likes,prefs,regs,notifs,invites] = await Promise.all([
+      supabaseClient.from('profiles').select('*').eq('id',uid).maybeSingle(),
+      supabaseClient.from('user_settings').select('*').eq('user_id',uid).maybeSingle(),
+      supabaseClient.from('user_library').select('*').eq('user_id',uid).order('added_at'),
+      supabaseClient.from('friendships').select('*').or('requester_id.eq.'+uid+',addressee_id.eq.'+uid).order('created_at',{ascending:false}),
+      supabaseClient.from('team_members').select('role,teams(id,name,tag,game_name,region,description,owner_id)').eq('user_id',uid),
+      supabaseClient.from('activity_history').select('*').eq('user_id',uid).order('created_at',{ascending:false}).limit(30),
+      supabaseClient.from('achievements').select('id,title,description,icon,target,sort_order,user_achievements(progress,unlocked_at)').order('sort_order'),
+      supabaseClient.from('community_posts').select('id,user_id,body,created_at,community_post_likes(user_id)').order('created_at',{ascending:false}).limit(30),
+      supabaseClient.from('community_post_likes').select('post_id').eq('user_id',uid),
+      supabaseClient.from('matchmaking_preferences').select('*').eq('user_id',uid).maybeSingle(),
+      supabaseClient.from('tournament_registrations').select('tournament_id').eq('user_id',uid),
+      supabaseClient.from('notifications').select('*').eq('user_id',uid).order('created_at',{ascending:false}).limit(20),
+      supabaseClient.from('team_invites').select('id,team_id,inviter_id,invitee_id,status,teams(name,tag)').or('invitee_id.eq.'+uid+',inviter_id.eq.'+uid).eq('status','pending')
+    ]);
+    queryError('profile',pr.error);queryError('settings',st.error);queryError('library',lib.error);queryError('friendships',fr.error);queryError('teams',teams.error);queryError('history',history.error);queryError('achievements',ach.error);queryError('posts',posts.error);queryError('likes',likes.error);queryError('matchmaking',prefs.error);
+    accountProfile=pr.data; accountFriends=await loadFriendProfiles(fr.data||[]);
+    renderAccountProfile(accountProfile,st.data);
+    renderLibrary(lib.data||[]);
+    renderFriends(accountFriends);
+    renderTeams(teams.data||[]);renderTeamInvites(invites.data||[]);
+    renderHistory(history.data||[]);
+    renderAchievements(ach.data||[]);
+    const postRows=posts.data||[];
+    const postUserIds=[...new Set(postRows.map(p=>p.user_id))];
+    if(postUserIds.length){const {data:postProfiles}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',postUserIds);const profileMap=Object.fromEntries((postProfiles||[]).map(p=>[p.id,p]));postRows.forEach(p=>p.profiles=profileMap[p.user_id]);}
+    renderCommunity(postRows,new Set((likes.data||[]).map(x=>x.post_id)));
+    fillChatRecipients(accountFriends);
+    fillAccountSettings(accountProfile,st.data,prefs.data);
+    renderTournamentRegistrations((regs.data||[]).map(x=>x.tournament_id));
+    renderNotifications(notifs.data||[]);
+    if(document.getElementById('plName')) filterPlayers();
+  }
+
+  function renderAccountProfile(p,settings) {
+    if(!p)return;
+    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    set('profileDisplayName',p.display_name||p.username);set('profileLevel','Уровень '+p.level);
+    set('profileGameRank',(p.game_name||'CS2')+' • '+(p.rank_name||'Unranked'));
+    set('profileStatus','@'+p.username);
+    set('profileMatches',p.matches_played);set('profileWinRate',(p.matches_played?Math.round(p.wins*100/p.matches_played):0)+'%');
+    set('profileRating',fmt(p.rating));set('profileKd',Number(p.kd||0).toFixed(1));
+    set('profileStatsSummary','Профиль и игровая статистика аккаунта. История матчей появится после интеграции с игровыми сервисами.');
+    const avatar=document.getElementById('profileAvatar');if(avatar&&p.avatar_url)avatar.src=p.avatar_url;
+    if(document.getElementById('profileAchievementsCount')) document.getElementById('profileAchievementsCount').textContent='0';
+  }
+
+  function fillAccountSettings(p,s,prefs) {
+    if(!p)return;
+    document.getElementById('settingsDisplayName').value=p.display_name||'';
+    document.getElementById('settingsUsername').value=p.username||'';
+    document.getElementById('settingsEmail').value=currentUser?.email||'';
+    document.getElementById('settingsLanguage').value=p.language||'ru';
+    document.getElementById('settingsRegion').value=p.region||'EU';
+    document.getElementById('settingsGame').value=p.game_name||'CS2';
+    document.getElementById('settingsBio').value=p.bio||'';
+    const check=(id,key,fallback)=>{const e=document.getElementById(id);if(e)e.checked=s?s[key]:fallback;};
+    check('notifyMessages','notify_messages',true);check('notifyTeamInvites','notify_team_invites',true);
+    check('notifyTournaments','notify_tournaments',true);check('notifyMarketing','notify_marketing',false);
+    if(prefs){document.getElementById('mmGame').value=prefs.game_name;document.getElementById('mmRole').value=prefs.role;document.getElementById('mmTolerance').value=prefs.rating_tolerance;document.getElementById('mmRegion').value=prefs.region;document.getElementById('mmPlayTime').value=prefs.play_time;document.getElementById('mmLanguage').value=prefs.language;}
+  }
+
+  function renderLibrary(rows) {
+    const el=document.getElementById('libraryGrid');if(!el)return;
+    el.innerHTML=rows.map(r=>'<div class="card game-card"><div class="game-info"><h4>'+escapeHtml(r.game_name)+'</h4><div class="genre">'+r.hours_played+' часов</div><button class="btn btn-ghost" onclick="removeLibraryGame(\''+r.id+'\')"><i class="fa-solid fa-trash"></i> Удалить</button></div></div>').join('')||'<p class="subtitle">Добавь игры кнопкой «В библиотеку» в каталоге.</p>';
+  }
+  async function addGameToLibrary(name) {
+    if(!currentUser)return requireAccount();
+    const {error}=await supabaseClient.from('user_library').upsert({user_id:currentUser.id,game_name:name},{onConflict:'user_id,game_name'});
+    if(error){console.error(error);return showNotification('Не удалось добавить игру.');}
+    await loadAccountData();showNotification(name+' добавлена в библиотеку.');
+  }
+  async function removeLibraryGame(id) {
+    const {error}=await supabaseClient.from('user_library').delete().eq('id',id).eq('user_id',currentUser.id);
+    if(error)return showNotification('Не удалось удалить игру.');
+    await loadAccountData();
+  }
+  function renderFriends(rows) {
+    const el=document.getElementById('friendsGrid');if(!el)return;
+    el.innerHTML=rows.map(f=>{
+      const accepted=f.status==='accepted', other=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;
+      const p=f.friend_profile||{};
+      return '<div class="card"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong><p class="subtitle">@'+escapeHtml(p.username||'')+' • '+(accepted?'В друзьях':f.requester_id===currentUser.id?'Запрос отправлен':'Входящий запрос')+'</p>'+
+        (f.status==='pending'&&f.addressee_id===currentUser.id?'<button class="btn btn-primary" onclick="respondFriend(\''+f.id+'\',\'accepted\')">Принять</button>':'')+
+        (accepted?'<button class="btn btn-ghost" onclick="openChatWith(\''+other+'\')">Написать</button>':'')+'</div>';
+    }).join('')||'<p class="subtitle">Пока нет друзей и запросов.</p>';
+  }
+  async function loadFriendProfiles(rows) {
+    const ids=[...new Set(rows.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id))];
+    if(!ids.length)return rows;
+    const {data}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',ids);
+    const byId=Object.fromEntries((data||[]).map(p=>[p.id,p]));
+    return rows.map(f=>({...f,friend_profile:byId[f.requester_id===currentUser.id?f.addressee_id:f.requester_id]}));
+  }
+  function renderTeams(rows) {
+    const el=document.getElementById('teamsGrid');if(!el)return;
+    el.innerHTML=rows.map(r=>{const t=r.teams;if(!t)return '';return '<div class="card"><span class="badge badge-info">'+escapeHtml(r.role)+'</span><h3>'+escapeHtml(t.name)+' <small>'+escapeHtml(t.tag)+'</small></h3><p class="subtitle">'+escapeHtml(t.game_name)+' • '+escapeHtml(t.region)+'</p><p>'+escapeHtml(t.description)+'</p>'+(t.owner_id===currentUser.id?'<button class="btn btn-ghost" onclick="inviteToTeam(\''+t.id+'\')"><i class="fa-solid fa-user-plus"></i> Пригласить игрока</button>':'')+'</div>';}).join('')||'<p class="subtitle">Ты пока не состоишь в команде.</p>';
+  }
+  function renderTeamInvites(rows) {
+    const pending=rows.filter(x=>x.invitee_id===currentUser.id);
+    if(!pending.length)return;
+    const grid=document.getElementById('teamsGrid');
+    const html=pending.map(x=>'<div class="card"><span class="badge badge-warning">Приглашение</span><h3>'+escapeHtml(x.teams?.name||'Команда')+'</h3><button class="btn btn-primary" onclick="respondTeamInvite(\''+x.id+'\',\'accepted\')">Принять</button> <button class="btn btn-ghost" onclick="respondTeamInvite(\''+x.id+'\',\'declined\')">Отклонить</button></div>').join('');
+    grid.insertAdjacentHTML('afterbegin',html);
+  }
+  async function inviteToTeam(teamId) {
+    const username=prompt('Ник игрока в Squadra:');if(!username)return;
+    const {data:target,error:lookupError}=await supabaseClient.from('profiles').select('id,username').ilike('username',username.trim()).maybeSingle();
+    if(lookupError||!target)return showNotification('Игрок с таким ником не найден.');
+    const {error}=await supabaseClient.from('team_invites').insert({team_id:teamId,inviter_id:currentUser.id,invitee_id:target.id});
+    if(error){console.error(error);return showNotification('Не удалось отправить приглашение.');}
+    showNotification('Приглашение отправлено @'+target.username);
+  }
+  async function respondTeamInvite(id,status) {
+    const {error}=await supabaseClient.from('team_invites').update({status}).eq('id',id).eq('invitee_id',currentUser.id);
+    if(error){console.error(error);return showNotification('Не удалось обновить приглашение.');}
+    await loadAccountData();
+  }
+  function renderHistory(rows) {
+    const el=document.getElementById('historyBody');if(!el)return;
+    el.innerHTML=rows.map(r=>'<tr><td>'+new Date(r.created_at).toLocaleDateString('ru-RU')+'</td><td>'+escapeHtml(r.action)+'</td><td>'+escapeHtml(r.game_name)+'</td><td>'+escapeHtml(r.result)+'</td><td>'+(r.rating_delta??'—')+'</td></tr>').join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);">История появится после добавления игровых событий.</td></tr>';
+  }
+  function renderAchievements(rows) {
+    const card=a=>'<div class="card"><i class="fa-solid '+escapeHtml(a.icon)+'" style="color:var(--red)"></i><h3>'+escapeHtml(a.title)+'</h3><p class="subtitle">'+escapeHtml(a.description)+'</p><div class="progress"><div class="progress-bar" style="width:'+Math.min(100,Math.round((a.progress||0)*100/a.target))+'%"></div></div><small>'+a.progress+'/'+a.target+(a.unlocked_at?' • Получено':'')+'</small></div>';
+    const mapped=rows.map(a=>{const ua=Array.isArray(a.user_achievements)?a.user_achievements[0]:null;return {...a,progress:ua?.progress||0,unlocked_at:ua?.unlocked_at};});
+    document.getElementById('achievementsGrid').innerHTML=mapped.map(card).join('')||'<p class="subtitle">Достижения пока не настроены.</p>';
+    document.getElementById('profileAchievementsCount').textContent=mapped.filter(a=>a.unlocked_at).length;
+    document.getElementById('profileRecentAchievements').innerHTML=mapped.filter(a=>a.unlocked_at).slice(0,4).map(card).join('')||'<p class="subtitle">Пока нет открытых достижений.</p>';
+  }
+  function renderCommunity(rows,liked) {
+    const el=document.getElementById('communityPosts');if(!el)return;
+    el.innerHTML=rows.map(p=>'<article class="card" style="margin-bottom:14px"><strong>'+escapeHtml(p.profiles?.display_name||p.profiles?.username||'Игрок')+'</strong><small class="subtitle"> • '+new Date(p.created_at).toLocaleString('ru-RU')+'</small><p style="margin:14px 0;white-space:pre-wrap">'+escapeHtml(p.body)+'</p><button class="btn btn-ghost" onclick="togglePostLike(\''+p.id+'\', '+liked.has(p.id)+')"><i class="fa-solid fa-heart"></i> '+(p.community_post_likes?.length||0)+'</button></article>').join('')||'<p class="subtitle">Пока нет публикаций.</p>';
+  }
+  function fillChatRecipients(rows) {
+    const sel=document.getElementById('chatRecipient');if(!sel)return;
+    const selected=sel.value;
+    sel.innerHTML='<option value="">Выбери друга</option>'+rows.filter(f=>f.status==='accepted').map(f=>{const p=f.friend_profile||{};const id=f.requester_id===currentUser.id?f.addressee_id:f.requester_id;return '<option value="'+id+'">'+escapeHtml(p.display_name||p.username||'Друг')+'</option>';}).join('');
+    if(selected)sel.value=selected;
+  }
+  async function loadDirectMessages() {
+    const id=document.getElementById('chatRecipient')?.value, box=document.getElementById('chatMessages');
+    if(!id||!box)return;
+    const {data,error}=await supabaseClient.from('direct_messages').select('*').or('and(sender_id.eq.'+currentUser.id+',receiver_id.eq.'+id+'),and(sender_id.eq.'+id+',receiver_id.eq.'+currentUser.id+')').order('created_at').limit(100);
+    if(error){console.error(error);box.innerHTML='<p class="subtitle">Не удалось загрузить переписку.</p>';return;}
+    box.innerHTML=(data||[]).map(m=>'<div class="message '+(m.sender_id===currentUser.id?'own':'')+'"><div class="author">'+(m.sender_id===currentUser.id?'Вы':'Друг')+' • '+new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</div>'+escapeHtml(m.body)+'</div>').join('')||'<p class="subtitle">Начни переписку.</p>';
+    box.scrollTop=box.scrollHeight;
+  }
+  function openChatWith(id){showSection('messages');document.getElementById('chatRecipient').value=id;loadDirectMessages();}
+  async function addFriend(id) {
+    if(!currentUser)return requireAccount();
+    const {error}=await supabaseClient.from('friendships').insert({requester_id:currentUser.id,addressee_id:id});
+    if(error){console.error(error);return showNotification(error.code==='23505'?'Запрос уже существует.':'Не удалось отправить запрос в друзья.');}
+    showNotification('Запрос в друзья отправлен.');await loadAccountData();
+  }
+  async function respondFriend(id,status) {
+    const {error}=await supabaseClient.from('friendships').update({status}).eq('id',id).eq('addressee_id',currentUser.id);
+    if(error)return showNotification('Не удалось обновить запрос.');
+    await loadAccountData();
+  }
+  async function createTeam() {
+    if(!currentUser)return requireAccount();
+    const team={owner_id:currentUser.id,name:document.getElementById('teamName').value.trim(),tag:document.getElementById('teamTag').value.trim(),game_name:document.getElementById('teamGame').value,region:document.getElementById('teamRegion').value,description:document.getElementById('teamDescription').value.trim()};
+    const {error}=await supabaseClient.from('teams').insert(team);
+    if(error){console.error(error);return showNotification('Не удалось создать команду. Проверь название и SQL-схему.');}
+    closeModal('createTeamModal');await loadAccountData();showNotification('Команда создана.');
+  }
+  async function saveAccountSettings() {
+    if(!currentUser)return requireAccount();
+    const username=document.getElementById('settingsUsername').value.trim();
+    if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))return showNotification('Ник: 3–24 символа, латиница, цифры или _.');
+    const p={id:currentUser.id,username,display_name:document.getElementById('settingsDisplayName').value.trim(),bio:document.getElementById('settingsBio').value.trim(),language:document.getElementById('settingsLanguage').value,region:document.getElementById('settingsRegion').value,game_name:document.getElementById('settingsGame').value};
+    const st={user_id:currentUser.id,notify_messages:document.getElementById('notifyMessages').checked,notify_team_invites:document.getElementById('notifyTeamInvites').checked,notify_tournaments:document.getElementById('notifyTournaments').checked,notify_marketing:document.getElementById('notifyMarketing').checked};
+    const [a,b]=await Promise.all([supabaseClient.from('profiles').update(p).eq('id',currentUser.id),supabaseClient.from('user_settings').upsert(st)]);
+    if(a.error||b.error){console.error(a.error,b.error);return showNotification('Настройки не сохранены. Возможно, ник уже занят.');}
+    await loadAccountData();showNotification('Профиль и настройки сохранены.');
+  }
+  async function publishCommunityPost() {
+    if(!currentUser)return requireAccount();
+    const input=document.getElementById('communityPostBody'),body=input?.value.trim();if(!body)return;
+    const {error}=await supabaseClient.from('community_posts').insert({user_id:currentUser.id,body});
+    if(error){console.error(error);return showNotification('Не удалось опубликовать запись.');}
+    input.value='';await loadAccountData();
+  }
+  async function togglePostLike(id,wasLiked) {
+    if(!currentUser)return requireAccount();
+    const req=wasLiked?supabaseClient.from('community_post_likes').delete().eq('post_id',id).eq('user_id',currentUser.id):supabaseClient.from('community_post_likes').insert({post_id:id,user_id:currentUser.id});
+    const {error}=await req;if(error)console.error(error);await loadAccountData();
+  }
+  async function registerForTournament(id) {
+    if(!currentUser)return requireAccount();
+    const {error}=await supabaseClient.from('tournament_registrations').insert({tournament_id:id,user_id:currentUser.id});
+    if(error){console.error(error);return showNotification('Не удалось зарегистрироваться. Возможно, заявка уже есть.');}
+    showNotification('Регистрация сохранена.');await loadAccountData();
+  }
+  function renderTournamentRegistrations(ids) {
+    const map={'squadra-cup':'Squadra Cup','winter-league':'Winter League','spring-championship':'Spring Championship'};
+    document.querySelectorAll('[data-tournament-id]').forEach(b=>{const on=ids.includes(b.dataset.tournamentId);b.disabled=on;b.textContent=on?'Вы зарегистрированы':'Участвовать';});
+  }
+  function renderNotifications(rows) {
+    const unread=rows.filter(n=>!n.read_at).length;
+    const el=document.getElementById('notificationCount');if(el)el.textContent=unread?String(unread):'';
+  }
+
   function renderAuthState(user) {
     const actions = document.querySelector('.auth-buttons');
     if (!actions) return;
@@ -1597,10 +1656,15 @@
     if (!authIsConfigured() || !window.supabase?.createClient) return;
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const { data: { session } } = await supabaseClient.auth.getSession();
-    renderAuthState(session?.user || null);
+    currentUser=session?.user||null;
+    renderAuthState(currentUser);
+    if(currentUser) await loadAccountData();
     initGoogleIdentity();
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
-      renderAuthState(nextSession?.user || null);
+      currentUser=nextSession?.user||null;
+      if(currentUser) loadAccountData(); else {accountProfile=null;accountFriends=[];}
+      renderAuthState(currentUser);
+      if (event === 'SIGNED_OUT') { location.reload(); }
       if (event === 'SIGNED_IN') {
         closeModal('loginModal');
         closeModal('registerModal');
