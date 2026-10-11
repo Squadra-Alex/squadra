@@ -1910,10 +1910,7 @@
     const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,description,participant_limit,owner_id').order('created_at',{ascending:false}).limit(100);
     if(error){console.error('Could not load tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить турниры.</p>';return;}
     const ids=(data||[]).map(t=>t.id);
-    const [registrations,teams]=ids.length?await Promise.all([
-      supabaseClient.from('tournament_registrations').select('tournament_id,team_id,user_id').in('tournament_id',ids),
-      supabaseClient.from('teams').select('id,name,tag').in('id',(data||[]).length?[]:[''])
-    ]):[{data:[]},{data:[]}];
+    const registrations=ids.length?await supabaseClient.from('tournament_registrations').select('tournament_id,team_id,user_id').in('tournament_id',ids):{data:[]};
     const allTeamIds=[...new Set((registrations.data||[]).map(x=>x.team_id).filter(Boolean))];
     const teamResult=allTeamIds.length?await supabaseClient.from('teams').select('id,name,tag').in('id',allTeamIds):{data:[]};
     const teamMap=new Map((teamResult.data||[]).map(t=>[t.id,t]));
@@ -1946,12 +1943,23 @@
     teamIds.sort(()=>Math.random()-.5);
     let slots=1;while(slots<teamIds.length)slots*=2;
     const rows=[];let entrants=Array.from({length:slots},(_,i)=>teamIds[i]||null);
-    let round=1;let matchCount=Math.ceil(slots/2);
+    let round=1,matchCount=Math.ceil(slots/2),roundWinners=[];
     for(let i=0;i<matchCount;i++){
       const teamA=entrants[i*2]||null,teamB=entrants[i*2+1]||null;
-      rows.push({tournament_id:tournamentId,round_number:round,match_number:i+1,team_a_id:teamA,team_b_id:teamB,winner_id:teamA&&!teamB?teamA:null,status:teamA&&!teamB?'completed':'scheduled'});
+      const byeWinner=teamA&&!teamB?teamA:null;
+      rows.push({tournament_id:tournamentId,round_number:round,match_number:i+1,team_a_id:teamA,team_b_id:teamB,winner_id:byeWinner,status:byeWinner?'completed':'scheduled'});
+      roundWinners.push(byeWinner);
     }
-    while(matchCount>1){round++;matchCount=Math.ceil(matchCount/2);for(let i=0;i<matchCount;i++)rows.push({tournament_id:tournamentId,round_number:round,match_number:i+1,status:'scheduled'});}
+    while(matchCount>1){
+      const previousWinners=roundWinners;
+      round++;matchCount=Math.ceil(matchCount/2);roundWinners=[];
+      for(let i=0;i<matchCount;i++){
+        const a=previousWinners[i*2]||null,b=previousWinners[i*2+1]||null;
+        const byeWinner=a&&!b?a:null;
+        rows.push({tournament_id:tournamentId,round_number:round,match_number:i+1,team_a_id:a,team_b_id:b,winner_id:byeWinner,status:byeWinner?'completed':'scheduled'});
+        roundWinners.push(byeWinner);
+      }
+    }
     const {error:saveError}=await supabaseClient.from('tournament_matches').insert(rows);
     if(saveError){console.error(saveError);return showNotification('Не удалось создать сетку. Проверь права доступа.');}
     showNotification('Турнирная сетка создана.');await loadTournamentBracket(tournamentId);await loadCreatedTournaments();
