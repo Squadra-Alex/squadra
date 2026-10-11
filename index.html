@@ -1498,6 +1498,7 @@
   let isAdmin = false;
   let accountProfile = null;
   let accountFriends = [];
+  let accountMatchmakingPrefs = null;
   let communityMediaFile = null;
   let pendingTournamentId = null;
 
@@ -1671,7 +1672,7 @@
       supabaseClient.from('community_post_comments').select('id,post_id,user_id,body,created_at').order('created_at',{ascending:true}).limit(300)
     ]);
     queryError('profile',pr.error);queryError('settings',st.error);queryError('library',lib.error);queryError('friendships',fr.error);queryError('teams',teams.error);queryError('history',history.error);queryError('achievements',ach.error);queryError('posts',posts.error);queryError('likes',likes.error);queryError('matchmaking',prefs.error);
-    accountProfile=pr.data; accountFriends=await loadFriendProfiles(fr.data||[]);
+    accountProfile=pr.data; accountMatchmakingPrefs=prefs.data; accountFriends=await loadFriendProfiles(fr.data||[]);
     renderAccountProfile(accountProfile,st.data);
     renderLibrary(lib.data||[]);
     renderFriends(accountFriends);
@@ -2132,6 +2133,19 @@
     const {data:profiles}=currentUser?await supabaseClient.from('profiles').select('game_name'):{data:[]};
     const counts=new Map();(profiles||[]).forEach(p=>counts.set(p.game_name,(counts.get(p.game_name)||0)+1));
     games=data.map(g=>({...old.get(g.name),name:g.name,genre:g.genre,sort_order:g.sort_order,playerCount:counts.get(g.name)||0}));
+    const populate=(id,allowAny,fallback)=>{
+      const el=document.getElementById(id);if(!el)return;
+      const selected=el.value, options=games.map(g=>'<option value="'+escapeHtml(g.name)+'">'+escapeHtml(g.name)+'</option>').join('');
+      el.innerHTML=(allowAny?'<option value="">'+(id==='plGame'?'Любая':'Выбери игру')+'</option>':'')+options;
+      const next=selected&&games.some(g=>g.name===selected)?selected:fallback&&games.some(g=>g.name===fallback)?fallback:allowAny?'':'';
+      el.value=next;
+    };
+    const genres=[...new Set(games.map(g=>g.genre).filter(Boolean))],genreSelect=document.getElementById('gameGenre'),genreValue=genreSelect?.value||'';
+    if(genreSelect)genreSelect.innerHTML='<option value="">Все жанры</option>'+genres.map(g=>'<option value="'+escapeHtml(g)+'">'+escapeHtml(g)+'</option>').join('');
+    if(genreSelect&&genres.includes(genreValue))genreSelect.value=genreValue;
+    populate('settingsGame',false,accountProfile?.game_name||'CS2');
+    populate('mmGame',false,accountMatchmakingPrefs?.game_name||accountProfile?.game_name||'CS2');
+    populate('plGame',true,'');
     renderGames();
     const home=document.getElementById('homeGames');if(home)home.innerHTML=games.slice(0,4).map(gameCard).join('');
   }
