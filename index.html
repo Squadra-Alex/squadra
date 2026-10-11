@@ -942,6 +942,15 @@
       <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTeamModal')"><i class="fa-solid fa-plus"></i> Создать команду</button>
 
       <div class="grid grid-2" id="teamsGrid"><p class="subtitle">Войди, чтобы увидеть команды.</p></div>
+      <h2 style="margin-top:30px;"><i class="fa-solid fa-magnifying-glass"></i>Найти команду</h2>
+      <div class="grid grid-3" style="margin:14px 0;">
+        <input id="teamDirectorySearch" placeholder="Название команды или тег" oninput="loadTeamDirectory()">
+        <select id="teamDirectoryGame" onchange="loadTeamDirectory()"><option value="">Все игры</option></select>
+        <select id="teamDirectoryRegion" onchange="loadTeamDirectory()"><option value="">Все регионы</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select>
+      </div>
+      <div class="grid grid-2" id="teamDirectory"><p class="subtitle">Войди, чтобы искать команды.</p></div>
+      <h2 style="margin-top:30px;"><i class="fa-solid fa-inbox"></i>Заявки в мои команды</h2>
+      <div class="grid grid-2" id="teamJoinRequests"><p class="subtitle">Заявки появятся здесь.</p></div>
     </section>
 
     <!-- TOURNAMENTS -->
@@ -1676,7 +1685,7 @@
     fillAccountSettings(accountProfile,st.data,prefs.data);
     accountTournamentIds=(regs.data||[]).map(x=>x.tournament_id);
     renderTournamentRegistrations(accountTournamentIds);
-    await Promise.all([loadCreatedTournaments(),loadCommunityGroups()]);
+    await Promise.all([loadCreatedTournaments(),loadCommunityGroups(),loadTeamDirectory()]);
     renderNotifications(notifs.data||[]);await Promise.all([loadPendingMatches(),loadGameCatalog(),loadLeaderboards(),loadPlatformEvents(),loadHomeTournaments()]);
     if(document.getElementById('plName')) filterPlayers();
   }
@@ -1815,6 +1824,53 @@
     if(error)return showNotification('Не удалось обновить запрос.');
     await loadAccountData();
   }
+  async function loadTeamDirectory() {
+    if(!supabaseClient)return;
+    const gameSelect=document.getElementById('teamDirectoryGame');
+    if(gameSelect&&gameSelect.options.length<=1){
+      const {data:games}=await supabaseClient.from('games').select('name').eq('is_active',true).order('name');
+      gameSelect.innerHTML='<option value="">Все игры</option>'+(games||[]).map(g=>'<option value="'+escapeHtml(g.name)+'">'+escapeHtml(g.name)+'</option>').join('');
+    }
+    const search=(document.getElementById('teamDirectorySearch')?.value||'').trim();
+    let query=supabaseClient.from('teams').select('id,owner_id,name,tag,game_name,region,description,rating,matches_played,wins').order('rating',{ascending:false}).limit(100);
+    const game=gameSelect?.value,region=document.getElementById('teamDirectoryRegion')?.value;
+    if(game)query=query.eq('game_name',game);if(region)query=query.eq('region',region);if(search)query=query.or('name.ilike.%'+search.replace(/[%_,]/g,'').replace(/\./g,'')+'%,tag.ilike.%'+search.replace(/[%_,]/g,'').replace(/\./g,'')+'%');
+    const [teamResult,memberResult,myMemberResult,requestResult]=await Promise.all([
+      query,
+      supabaseClient.from('team_members').select('team_id,user_id'),
+      currentUser?supabaseClient.from('team_members').select('team_id').eq('user_id',currentUser.id):Promise.resolve({data:[]}),
+      currentUser?supabaseClient.from('team_join_requests').select('id,team_id,user_id,message,created_at,teams(name,tag)').eq('status','pending'):Promise.resolve({data:[]})
+    ]);
+    const el=document.getElementById('teamDirectory'),requestEl=document.getElementById('teamJoinRequests');
+    if(teamResult.error){console.error(teamResult.error);if(el)el.innerHTML='<p class="subtitle">Не удалось загрузить команды.</p>';return;}
+    const counts=new Map();(memberResult.data||[]).forEach(m=>counts.set(m.team_id,(counts.get(m.team_id)||0)+1));
+    const myTeams=new Set((myMemberResult.data||[]).map(m=>m.team_id));
+    const ownRequests=(requestResult.data||[]).filter(r=>r.user_id===currentUser?.id);
+    const pendingForMyTeams=(requestResult.data||[]).filter(r=>myTeams.has(r.team_id)&&r.user_id!==currentUser?.id);
+    const pendingByTeam=new Set(ownRequests.map(r=>r.team_id));
+    if(el)el.innerHTML=(teamResult.data||[]).map(t=>'<article class="card"><span class="badge badge-info">'+escapeHtml(t.region)+'</span><h3>'+escapeHtml(t.name)+(t.tag?' <small>['+escapeHtml(t.tag)+']</small>':'')+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+' • '+(counts.get(t.id)||0)+' участников • рейтинг '+fmt(t.rating||0)+'</p><p>'+escapeHtml(t.description||'')+'</p>'+(myTeams.has(t.id)?'<span class="badge badge-info">Ты в составе</span>':pendingByTeam.has(t.id)?'<span class="badge badge-warning">Заявка отправлена</span>':!currentUser?'<button class="btn btn-primary" onclick="requireAccount()">Войди, чтобы подать заявку</button>':'<button class="btn btn-primary" onclick="sendTeamJoinRequest(&quot;'+t.id+'&quot;)">Запросить вступление</button>')+'</article>').join('')||'<p class="subtitle">Команд по этим фильтрам пока нет.</p>';
+    if(requestEl)requestEl.innerHTML=pendingForMyTeams.map(r=>'<article class="card"><span class="badge badge-warning">Новая заявка</span><h3>'+escapeHtml(r.teams?.name||'Команда')+'</h3><p>'+escapeHtml(r.message||'Игрок хочет вступить в команду.')+'</p><small class="subtitle">'+new Date(r.created_at).toLocaleString('ru-RU')+'</small><div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" onclick="reviewTeamJoinRequest(&quot;'+r.id+'&quot;,&quot;accepted&quot;)">Принять</button><button class="btn btn-ghost" onclick="reviewTeamJoinRequest(&quot;'+r.id+'&quot;,&quot;declined&quot;)">Отклонить</button></div></article>').join('')||ownRequests.map(r=>'<article class="card"><span class="badge badge-warning">Заявка отправлена</span><h3>'+escapeHtml(r.teams?.name||'Команда')+'</h3><p>'+escapeHtml(r.message||'Ожидает решения владельца.')+'</p><button class="btn btn-ghost" onclick="cancelTeamJoinRequest(&quot;'+r.id+'&quot;)">Отозвать</button></article>').join('')||'<p class="subtitle">Новых заявок нет.</p>';
+  }
+  async function sendTeamJoinRequest(teamId) {
+    if(!currentUser)return requireAccount();
+    const message=prompt('Коротко расскажи владельцу, почему хочешь вступить (необязательно):')||'';
+    const {error}=await supabaseClient.from('team_join_requests').insert({team_id:teamId,user_id:currentUser.id,message:message.slice(0,500)});
+    if(error){console.error(error);return showNotification('Не удалось отправить заявку. Возможно, она уже отправлена.');}
+    showNotification('Заявка отправлена владельцу команды.');await loadTeamDirectory();
+  }
+  async function reviewTeamJoinRequest(id,status) {
+    if(!currentUser)return requireAccount();
+    const {error}=await supabaseClient.from('team_join_requests').update({status}).eq('id',id).eq('status','pending');
+    if(error){console.error(error);return showNotification('Не удалось обработать заявку.');}
+    showNotification(status==='accepted'?'Игрок добавлен в команду.':'Заявка отклонена.');
+    await loadTeamDirectory();await loadAccountData();
+  }
+  async function cancelTeamJoinRequest(id) {
+    const {error}=await supabaseClient.from('team_join_requests').delete().eq('id',id);
+    if(error){console.error(error);return showNotification('Не удалось отозвать заявку.');}
+    await loadTeamDirectory();
+  }
+
   async function createTeam() {
     if(!currentUser)return requireAccount();
     const team={owner_id:currentUser.id,name:document.getElementById('teamName').value.trim(),tag:document.getElementById('teamTag').value.trim(),game_name:document.getElementById('teamGame').value,region:document.getElementById('teamRegion').value,description:document.getElementById('teamDescription').value.trim()};
