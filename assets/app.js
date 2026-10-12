@@ -58,7 +58,7 @@
   async function filterPlayers(){const body=document.getElementById('playersBody');if(!body)return;if(!supabaseClient||!currentUser){body.innerHTML='<tr><td colspan="8" class="subtitle">Войди, чтобы искать игроков.</td></tr>';return;}let q=supabaseClient.from('profiles').select('id,username,display_name,avatar_url,game_name,region,rank_name,rating,level,matches_played,wins,kd,verified_color').neq('id',currentUser.id).limit(100);const name=(document.getElementById('plName')?.value||'').trim(),game=document.getElementById('plGame')?.value,rank=document.getElementById('plRank')?.value,region=document.getElementById('plRegion')?.value;if(name)q=q.ilike('username','%'+name.replace(/[%_]/g,'')+'%');if(game)q=q.eq('game_name',game);if(rank)q=q.eq('rank_name',rank);if(region)q=q.eq('region',region);const {data,error}=await q.order('rating',{ascending:false});if(error){console.error(error);body.innerHTML='<tr><td colspan="8">Не удалось загрузить игроков.</td></tr>';return;}const ids=(data||[]).map(x=>x.id),rr=ids.length?await supabaseClient.from('user_roles').select('user_id,role').in('user_id',ids).in('role',['admin','moderator']):{data:[]},roles=new Map();(rr.data||[]).forEach(x=>roles.set(x.user_id,[...(roles.get(x.user_id)||[]),x.role]));body.innerHTML=(data||[]).map(p=>{const badge=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'"></i>':'',role=(roles.get(p.id)||[]).includes('admin')?'<span class="staff-badge admin">Администратор</span>':(roles.get(p.id)||[]).includes('moderator')?'<span class="staff-badge moderator">Модератор</span>':'';return '<tr><td><button class="player-profile-link" onclick="openPlayerProfile(\''+p.id+'\')"><strong>'+escapeHtml(p.display_name||p.username)+'</strong>'+badge+role+'<small style="display:block;color:var(--muted)">@'+escapeHtml(p.username)+'</small></button></td><td>'+escapeHtml(p.rank_name||'—')+'</td><td>'+p.level+'</td><td>'+escapeHtml(p.game_name||'—')+'</td><td>'+escapeHtml(p.region||'—')+'</td><td>'+(p.matches_played?Math.round(p.wins*100/p.matches_played):0)+'%</td><td>'+fmt(p.rating||0)+'</td><td><button class="btn btn-ghost" onclick="addFriend(\''+p.id+'\')">Друг</button><button class="btn btn-ghost" onclick="toggleFollow(\''+p.id+'\')">Подписаться</button><button class="btn btn-ghost" onclick="reportMatch(\''+p.id+'\',\''+escapeHtml(p.game_name||'')+'\')">Результат</button></td></tr>';}).join('')||'<tr><td colspan="8" class="subtitle">Игроки не найдены.</td></tr>';}
   const sectionRoutes={home:'/',games:'/games',players:'/players',teams:'/teams',tournaments:'/tournaments',community:'/community',ranking:'/ranking',profile:'/profile',library:'/library',friends:'/friends',messages:'/messages',achievements:'/achievements',history:'/history',notifications:'/notifications',settings:'/settings',matchmaking:'/matchmaking',events:'/events',admin:'/admin'};
   function routeSection(path){const p=(path||'/').replace(/\/+$/,'')||'/';if(/^\/players\/[0-9a-f-]{36}$/i.test(p))return{section:'playerProfile',id:p.split('/').pop()};if(/^\/groups\/[0-9a-f-]{36}$/i.test(p))return{section:'groupPage',id:p.split('/').pop()};return{section:Object.keys(sectionRoutes).find(k=>sectionRoutes[k]===p)||'home'};}
-  function applyLocationRoute(){const r=routeSection(location.pathname);if(r.section==='admin'&&!isModerator){if(currentUser&&!isAdmin){showNotification('Панель доступна только администраторам.');showSection('home',{replace:true});}else if(!currentUser){showSection('home',{replace:true});openModal('loginModal');}return;}showSection(r.section,{fromLocation:true,profileId:r.id});}
+  function applyLocationRoute(){const r=routeSection(location.pathname);if(r.section==='admin'&&!authInitialized)return;if(r.section==='admin'&&!isModerator){if(currentUser&&!isAdmin){showNotification('Панель доступна только администраторам.');showSection('home',{replace:true});}else if(!currentUser){showSection('home',{replace:true});openModal('loginModal');}return;}showSection(r.section,{fromLocation:true,profileId:r.id});}
   function showSection(id,options={}){if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events')loadPlatformEvents();if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);window.scrollTo({top:0,behavior:'smooth'});}
   window.addEventListener('popstate',applyLocationRoute);
   function toggleNavigation(force){const open=typeof force==='boolean'?force:!document.body.classList.contains('nav-open');document.body.classList.toggle('nav-open',open);const b=document.getElementById('menuToggle');if(b){b.setAttribute('aria-expanded',String(open));b.innerHTML='<i class="fa-solid '+(open?'fa-xmark':'fa-bars')+'"></i>';}}
@@ -69,8 +69,23 @@
     if(id==='loginModal') initGoogleIdentity('googleLoginButton');
     if(id==='registerModal') initGoogleIdentity('googleSignupButton');
   }
-  function openPlayerProfile(id){if(id)showSection('playerProfile',{profileId:id,path:'/players/'+id});}
-  async function loadPlayerProfile(id){const host=document.getElementById('publicPlayerCard');if(!host)return;if(!currentUser){host.innerHTML='<div class="empty-state"><p>Войди, чтобы посмотреть профиль игрока.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">Войти</button></div>';return;}const {data:p,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url,bio,game_name,region,rank_name,rating,matches_played,wins,kd,level,verified_color').eq('id',id).maybeSingle();if(error||!p){host.innerHTML='<p class="subtitle">Профиль не найден или недоступен.</p>';return;}const {data:roles}=await supabaseClient.from('user_roles').select('role').eq('user_id',id).in('role',['admin','moderator']);const role=(roles||[]).some(r=>r.role==='admin')?'<span class="staff-badge admin">Администратор</span>':(roles||[]).some(r=>r.role==='moderator')?'<span class="staff-badge moderator">Модератор</span>':'';const verified=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'" title="Проверенный аккаунт"></i>':'';host.innerHTML='<div class="public-profile-hero"><img class="public-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div><span class="eyebrow">ПРОФИЛЬ ИГРОКА</span><h1>'+escapeHtml(p.display_name||p.username)+' '+verified+' '+role+'</h1><p class="subtitle">@'+escapeHtml(p.username)+' • '+escapeHtml(p.region||'—')+' • '+escapeHtml(p.game_name||'—')+'</p><p>'+escapeHtml(p.bio||'Игрок Squadra.')+'</p></div><div class="profile-actions"><button class="btn btn-primary" onclick="addFriend(\''+p.id+'\')">В друзья</button><button class="btn btn-ghost" onclick="openChatWith(\''+p.id+'\')">Написать</button></div></div><div class="stats-grid"><div class="stat-box"><div class="value">'+fmt(p.rating||0)+'</div><div class="label">Рейтинг</div></div><div class="stat-box"><div class="value">'+fmt(p.level||1)+'</div><div class="label">Уровень</div></div><div class="stat-box"><div class="value">'+fmt(p.matches_played||0)+'</div><div class="label">Матчей</div></div><div class="stat-box"><div class="value">'+(p.matches_played?Math.round(100*p.wins/p.matches_played):0)+'%</div><div class="label">Побед</div></div></div><div class="card rating-how"><h3>Как повысить рейтинг</h3><p>Сыграй матч и внеси результат. После подтверждения соперником рейтинг пересчитывается по Elo: победа над игроком с высоким рейтингом даёт больше очков.</p></div>';}
+  function openPlayerProfile(id){if(!id)return;const host=document.getElementById('publicPlayerCard');if(host){host.dataset.profileId=String(id);host.setAttribute('aria-busy','true');host.innerHTML='<div class="profile-skeleton" role="status" aria-label="Загрузка профиля"><div class="profile-skeleton-hero"><span class="skeleton-avatar"></span><div class="skeleton-lines"><i></i><i></i><i></i></div></div><div class="profile-skeleton-stats"><i></i><i></i><i></i><i></i></div></div>';}showSection('playerProfile',{profileId:id,path:'/players/'+id});}
+  async function loadPlayerProfile(id){
+    const host=document.getElementById('publicPlayerCard');if(!host)return;
+    const requestId=String(id||''),sequence=playerProfileRequest=(playerProfileRequest||0)+1;
+    host.dataset.profileId=requestId;host.setAttribute('aria-busy','true');
+    if(!currentUser){host.innerHTML='<div class="empty-state"><p>Войди, чтобы посмотреть профиль игрока.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">Войти</button></div>';host.removeAttribute('aria-busy');return;}
+    host.innerHTML='<div class="profile-skeleton" role="status" aria-label="Загрузка профиля"><div class="profile-skeleton-hero"><span class="skeleton-avatar"></span><div class="skeleton-lines"><i></i><i></i><i></i></div></div><div class="profile-skeleton-stats"><i></i><i></i><i></i><i></i></div></div>';
+    const {data:p,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url,bio,game_name,region,rank_name,rating,matches_played,wins,kd,level,verified_color').eq('id',id).maybeSingle();
+    if(sequence!==playerProfileRequest||host.dataset.profileId!==requestId)return;
+    if(error||!p){host.innerHTML='<p class="subtitle">Профиль не найден или недоступен.</p>';host.removeAttribute('aria-busy');return;}
+    const {data:roles}=await supabaseClient.from('user_roles').select('role').eq('user_id',id).in('role',['admin','moderator']);
+    if(sequence!==playerProfileRequest||host.dataset.profileId!==requestId)return;
+    const role=(roles||[]).some(r=>r.role==='admin')?'<span class="staff-badge admin">Администратор</span>':(roles||[]).some(r=>r.role==='moderator')?'<span class="staff-badge moderator">Модератор</span>':'';
+    const verified=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'" title="Проверенный аккаунт"></i>':'';
+    host.innerHTML='<div class="public-profile-hero"><img class="public-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div><span class="eyebrow">ПРОФИЛЬ ИГРОКА</span><h1>'+escapeHtml(p.display_name||p.username)+' '+verified+' '+role+'</h1><p class="subtitle">@'+escapeHtml(p.username)+' • '+escapeHtml(p.region||'—')+' • '+escapeHtml(p.game_name||'—')+'</p><p>'+escapeHtml(p.bio||'Игрок Squadra.')+'</p></div><div class="profile-actions"><button class="btn btn-primary" onclick="addFriend(\''+p.id+'\')">В друзья</button><button class="btn btn-ghost" onclick="openChatWith(\''+p.id+'\')">Написать</button></div></div><div class="stats-grid"><div class="stat-box"><div class="value">'+fmt(p.rating||0)+'</div><div class="label">Рейтинг</div></div><div class="stat-box"><div class="value">'+fmt(p.level||1)+'</div><div class="label">Уровень</div></div><div class="stat-box"><div class="value">'+fmt(p.matches_played||0)+'</div><div class="label">Матчей</div></div><div class="stat-box"><div class="value">'+(p.matches_played?Math.round(100*p.wins/p.matches_played):0)+'%</div><div class="label">Побед</div></div></div><div class="card rating-how"><h3>Как повысить рейтинг</h3><p>Сыграй матч и внеси результат. После подтверждения соперником рейтинг пересчитывается по Elo: победа над игроком с высоким рейтингом даёт больше очков.</p></div>';
+    host.removeAttribute('aria-busy');
+  }
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
   document.querySelectorAll('.modal').forEach(m => {
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
@@ -143,7 +158,7 @@
     });
   }
 
-function initCustomSelects(root=document){root.querySelectorAll('select').forEach(select=>{if(select.dataset.customReady)return;select.dataset.customReady='1';select.classList.add('custom-select-source');select.tabIndex=-1;select.setAttribute('aria-hidden','true');const shell=document.createElement('div');shell.className='custom-select-shell';select.parentNode.insertBefore(shell,select);shell.appendChild(select);const trigger=document.createElement('button');trigger.type='button';trigger.className='custom-select-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');const value=document.createElement('span'),icon=document.createElement('i');icon.className='fa-solid fa-chevron-down';trigger.append(value,icon);const label=select.id?document.querySelector('label[for="'+select.id+'"]'):null;if(label){trigger.setAttribute('aria-label',label.textContent.trim());label.addEventListener('click',e=>{e.preventDefault();trigger.click();});}const menu=document.createElement('div');menu.className='custom-select-menu';menu.setAttribute('role','listbox');menu.hidden=true;shell.append(trigger,menu);const render=()=>{const selected=select.options[select.selectedIndex];value.textContent=selected?.textContent||'Выбрать';menu.innerHTML=[...select.options].map((o,i)=>'<button type="button" class="custom-select-option" role="option" aria-selected="'+(i===select.selectedIndex)+'" data-index="'+i+'">'+escapeHtml(o.textContent)+'</button>').join('');};const open=state=>{menu.hidden=!state;trigger.setAttribute('aria-expanded',String(state));};const native=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');try{Object.defineProperty(select,'value',{configurable:true,get(){return native.get.call(this)},set(v){native.set.call(this,v);render()}})}catch{}trigger.onclick=()=>open(menu.hidden);trigger.onkeydown=e=>{if(['ArrowDown','Enter',' '].includes(e.key)){e.preventDefault();open(true);menu.querySelector('.custom-select-option')?.focus()}};menu.onkeydown=e=>{if(e.key==='Escape'){open(false);trigger.focus()}};menu.onclick=e=>{const b=e.target.closest('[data-index]');if(!b)return;select.selectedIndex=Number(b.dataset.index);select.dispatchEvent(new Event('change',{bubbles:true}));render();open(false);trigger.focus()};select.addEventListener('change',render);new MutationObserver(render).observe(select,{childList:true,subtree:true,attributes:true,characterData:true});document.addEventListener('click',e=>{if(!shell.contains(e.target))open(false)});render()})}
+function initCustomSelects(root=document){root.querySelectorAll('select').forEach(select=>{if(select.dataset.customReady)return;select.dataset.customReady='1';select.classList.add('custom-select-source');select.tabIndex=-1;select.setAttribute('aria-hidden','true');const shell=document.createElement('div');shell.className='custom-select-shell';select.parentNode.insertBefore(shell,select);shell.appendChild(select);const trigger=document.createElement('button');trigger.type='button';trigger.className='custom-select-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');const value=document.createElement('span'),icon=document.createElement('i');icon.className='fa-solid fa-chevron-down';trigger.append(value,icon);const label=select.id?document.querySelector('label[for="'+select.id+'"]'):null;if(label){trigger.setAttribute('aria-label',label.textContent.trim());label.addEventListener('click',e=>{e.preventDefault();trigger.click();});}const menu=document.createElement('div');menu.className='custom-select-menu';menu.setAttribute('role','listbox');menu.hidden=true;shell.append(trigger,menu);const render=()=>{const selected=select.options[select.selectedIndex];value.textContent=selected?.textContent||'Выбрать';menu.innerHTML=[...select.options].map((o,i)=>'<button type="button" class="custom-select-option" role="option" aria-selected="'+(i===select.selectedIndex)+'" data-index="'+i+'">'+escapeHtml(o.textContent)+'</button>').join('');};const close=()=>{menu.hidden=true;shell.classList.remove('opens-upward');trigger.setAttribute('aria-expanded','false');};const open=state=>{if(!state){close();return;}const rect=trigger.getBoundingClientRect(),below=window.innerHeight-rect.bottom-12,above=rect.top-12,up=below<Math.min(220,menu.scrollHeight)&&above>below;shell.classList.toggle('opens-upward',up);menu.style.maxHeight=Math.max(120,Math.min(280,(up?above:below)-8))+'px';menu.hidden=false;trigger.setAttribute('aria-expanded','true');};const native=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');try{Object.defineProperty(select,'value',{configurable:true,get(){return native.get.call(this)},set(v){native.set.call(this,v);render()}})}catch{}trigger.onclick=()=>open(menu.hidden);trigger.onkeydown=e=>{if(['ArrowDown','Enter',' '].includes(e.key)){e.preventDefault();open(true);menu.querySelector('.custom-select-option')?.focus()}};menu.onkeydown=e=>{if(e.key==='Escape'){close();trigger.focus()}};menu.onclick=e=>{const option=e.target.closest('[data-index]');if(!option)return;select.selectedIndex=Number(option.dataset.index);select.dispatchEvent(new Event('change',{bubbles:true}));render();close();trigger.focus()};select.addEventListener('change',render);new MutationObserver(render).observe(select,{childList:true,subtree:true,attributes:true,characterData:true});document.addEventListener('click',e=>{if(!shell.contains(e.target))close()});window.addEventListener('resize',()=>{if(!menu.hidden)open(true)},{passive:true});render()})}
     // RENDER ON LOAD
   try {
     document.getElementById('homeGames').innerHTML = games.slice(0,4).map(gameCard).join('');
@@ -161,7 +176,9 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_NqXL2IVq6GATI0qbTs5iDA_5bVLpzo8';
   let supabaseClient = null;
   let currentUser = null;
+  let playerProfileRequest=0;
   let isAdmin = false;
+  let authInitialized=false;
   let isModerator = false;
   let accountProfile = null;
   let accountGameStats=[];
@@ -564,27 +581,35 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
   }
   async function saveAccountSettings() {
     if(!currentUser)return requireAccount();
-    const username=document.getElementById('settingsUsername').value.trim(),displayName=document.getElementById('settingsDisplayName').value.trim();
-    if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))return showNotification('Ник: 3–24 символа, латиница, цифры или _.');
-    const identityChanged=username!==accountProfile?.username||displayName!==accountProfile?.display_name;
-    if(accountProfile?.verified_color&&identityChanged&&!await askConfirm('Изменение имени или ника автоматически снимет значок проверки. Продолжить?'))return;
-    let avatar_url=accountProfile?.avatar_url||null;
-    const avatarInput=document.getElementById('settingsAvatarFile'),avatarFile=avatarInput?.files?.[0];
-    if(avatarFile){
-      if(!['image/jpeg','image/png','image/webp','image/gif'].includes(avatarFile.type)||avatarFile.size>5*1024*1024)return showNotification('Аватар: JPG, PNG, WEBP или GIF до 5 МБ.');
-      const ext=avatarFile.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g,'')||'img';
-      const path=currentUser.id+'/avatar-'+crypto.randomUUID()+'.'+ext;
-      const {error:uploadError}=await supabaseClient.storage.from('squadra-community').upload(path,avatarFile,{cacheControl:'3600',upsert:false,contentType:avatarFile.type});
-      if(uploadError){console.error('Avatar upload failed:',uploadError);return showNotification('Не удалось загрузить аватар.');}
-      avatar_url=supabaseClient.storage.from('squadra-community').getPublicUrl(path).data.publicUrl;
-    }
-    const p={username,display_name,bio:document.getElementById('settingsBio').value.trim(),language:document.getElementById('settingsLanguage').value,region:document.getElementById('settingsRegion').value,game_name:document.getElementById('settingsGame').value,avatar_url};
-    const st={user_id:currentUser.id,notify_messages:document.getElementById('notifyMessages').checked,notify_team_invites:document.getElementById('notifyTeamInvites').checked,notify_tournaments:document.getElementById('notifyTournaments').checked,notify_marketing:document.getElementById('notifyMarketing').checked,theme:document.getElementById('settingsTheme').value};
-    const [a,b]=await Promise.all([supabaseClient.from('profiles').update(p).eq('id',currentUser.id),supabaseClient.from('user_settings').upsert(st)]);
-    if(a.error||b.error){console.error(a.error,b.error);return showNotification(a.error?.code==='23505'?'Этот ник уже занят.':'Настройки не сохранены. Проверь введённые данные.');}setTheme(st.theme);
-    if(avatarInput)avatarInput.value='';
-    await loadAccountData();showNotification('Профиль и настройки сохранены.');
+    const button=document.querySelector('#settings button[onclick*="saveAccountSettings"]');
+    if(button?.disabled)return;
+    if(button){button.disabled=true;button.dataset.originalHtml=button.innerHTML;button.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Сохраняю…';}
+    try {
+      const username=document.getElementById('settingsUsername').value.trim(),displayName=document.getElementById('settingsDisplayName').value.trim();
+      if(!/^[a-zA-Z0-9_]{3,24}$/.test(username)){showNotification('Ник: 3–24 символа, латиница, цифры или _.');return;}
+      const identityChanged=username!==accountProfile?.username||displayName!==accountProfile?.display_name;
+      if(accountProfile?.verified_color&&identityChanged&&!await askConfirm('Изменение имени или ника автоматически снимет значок проверки. Продолжить?'))return;
+      let avatar_url=accountProfile?.avatar_url||null;
+      const avatarInput=document.getElementById('settingsAvatarFile'),avatarFile=avatarInput?.files?.[0];
+      if(avatarFile){
+        if(!['image/jpeg','image/png','image/webp','image/gif'].includes(avatarFile.type)||avatarFile.size>5*1024*1024){showNotification('Аватар: JPG, PNG, WEBP или GIF до 5 МБ.');return;}
+        const ext=avatarFile.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g,'')||'img',path=currentUser.id+'/avatar-'+crypto.randomUUID()+'.'+ext;
+        const {error:uploadError}=await supabaseClient.storage.from('squadra-community').upload(path,avatarFile,{cacheControl:'3600',upsert:false,contentType:avatarFile.type});
+        if(uploadError){console.error('Avatar upload failed:',uploadError);showNotification('Не удалось загрузить аватар.');return;}
+        avatar_url=supabaseClient.storage.from('squadra-community').getPublicUrl(path).data.publicUrl;
+      }
+      const p={username,display_name:displayName,bio:document.getElementById('settingsBio').value.trim(),language:document.getElementById('settingsLanguage').value,region:document.getElementById('settingsRegion').value,game_name:document.getElementById('settingsGame').value,avatar_url};
+      const st={user_id:currentUser.id,notify_messages:document.getElementById('notifyMessages').checked,notify_team_invites:document.getElementById('notifyTeamInvites').checked,notify_tournaments:document.getElementById('notifyTournaments').checked,notify_marketing:document.getElementById('notifyMarketing').checked,theme:document.getElementById('settingsTheme').value};
+      const [a,b]=await Promise.all([supabaseClient.from('profiles').update(p).eq('id',currentUser.id),supabaseClient.from('user_settings').upsert(st)]);
+      if(a.error||b.error){console.error('Settings save failed:',a.error||b.error);showNotification(a.error?.code==='23505'?'Этот ник уже занят.':'Настройки не сохранены. Проверь введённые данные.');return;}
+      setTheme(st.theme);if(avatarInput)avatarInput.value='';
+      const fileName=document.getElementById('avatarFileName');if(fileName)fileName.textContent='Файл не выбран';
+      await loadAccountData();showNotification('Профиль и настройки сохранены.');
+    } catch(error){console.error('Settings save failed:',error);showNotification('Не удалось сохранить профиль. Проверь соединение и попробуй ещё раз.');}
+    finally{if(button){button.disabled=false;button.innerHTML=button.dataset.originalHtml||'<i class="fa-solid fa-floppy-disk"></i> Сохранить профиль';delete button.dataset.originalHtml;}}
   }
+  function updateAvatarFileName(input){const name=document.getElementById('avatarFileName');if(name)name.textContent=input?.files?.[0]?.name||'Файл не выбран';}
+
   function selectCommunityMedia(type) {
     if(!currentUser)return requireAccount();
     const input=document.getElementById('communityMediaFile');
@@ -1130,8 +1155,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       supabaseClient.from('matches').select('id',{count:'exact',head:true})
     ]);
     const errors=[users,teams,tournaments,posts,profiles,feed,reports].filter(r=>r.error);
-    if(userDirectory.error) errors.push(userDirectory);
-    if(errors.length){console.error('Admin dashboard query failed:',errors.map(r=>r.error));if(status)status.textContent='Не удалось загрузить часть данных. Проверь подключение и обнови страницу.';}
+    if(userDirectory.error||userDirectory.data?.error) errors.push(userDirectory);
+    if(errors.length){const details=errors.map(r=>r.error?.message||r.data?.error||'Ошибка запроса');console.error('Admin dashboard query failed:',details);if(status)status.textContent='Часть данных не загрузилась: '+details.join(' • ');}else if(status)status.textContent='Панель обновлена.';
     const count=(r)=>r.count??'—';
     document.getElementById('adminUsersCount').textContent=count(users);
     document.getElementById('adminTeamsCount').textContent=count(teams);
@@ -1285,11 +1310,12 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
-    if (!authIsConfigured()) { applyLocationRoute(); return; }
+    if (!authIsConfigured()) { authInitialized=true; applyLocationRoute(); return; }
     try {
       supabaseClient = await ensureSupabaseClient();
     } catch (error) {
       console.error('Supabase Auth could not initialize:', error);
+      authInitialized=true;applyLocationRoute();
       showNotification('Не удалось загрузить авторизацию. Обнови страницу и попробуй ещё раз.');
       return;
     }
@@ -1364,6 +1390,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     } else {
       await Promise.allSettled([loadGameCatalog(),loadHomeTournaments(),loadCreatedTournaments(),loadPlatformEvents()]);
     }
+    authInitialized=true;
     applyLocationRoute();
   }
 
@@ -1371,5 +1398,5 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   window.addEventListener('load', () => { if (location.pathname !== '/') applyLocationRoute(); }, { once: true });
   initSupabaseAuth().catch(error => {
     console.error('Supabase Auth initialization failed:', error);
-    showNotification('Авторизация не загрузилась. Обнови страницу и попробуй ещё раз.');
+    authInitialized=true;applyLocationRoute();showNotification('Авторизация не загрузилась. Обнови страницу и попробуй ещё раз.');
   });
