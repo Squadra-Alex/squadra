@@ -1196,3 +1196,30 @@ textarea{resize:none!important;min-height:2.8em;max-width:100%;white-space:pre-w
   .feed-switch>small{flex-basis:100%;margin-top:2px}
   #communityPostBody{min-height:96px;padding:12px 14px}
 }
+
+.post-comment{
+  margin:10px 0;padding:12px 14px;border:1px solid var(--border);
+  border-radius:14px;background:color-mix(in srgb,var(--panel) 88%,var(--red) 2%);
+  box-shadow:0 4px 14px rgba(0,0,0,.08)
+}
+.comment-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.comment-author{
+  display:inline-flex;align-items:center;gap:10px;min-width:0;padding:0;border:0;
+  background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer
+}
+.comment-author:hover strong{color:var(--red)}
+.comment-avatar{
+  display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;
+  border:1px solid color-mix(in srgb,var(--red) 32%,var(--border));
+  border-radius:11px;background:color-mix(in srgb,var(--red) 12%,var(--panel));color:var(--red)
+}
+.comment-author-meta{display:grid;gap:2px;min-width:0}
+.comment-author-meta strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comment-author-meta small,.comment-head time{color:var(--muted);font-size:11px}
+.comment-head time{flex:0 0 auto}
+.comment-body{margin:10px 0 0 44px;color:var(--text);line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:420px){
+  .post-comment{padding:10px}
+  .comment-head{align-items:flex-start}
+  .comment-body{margin-left:0}
+}
