@@ -1128,6 +1128,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
 
   let realtimeChannel=null;
+  let directMessagesChannel=null;
   let realtimeUserId=null;
   let realtimeRetryTimer=null;
   let realtimeRetryDelay=3000;
@@ -1137,10 +1138,11 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   function stopRealtime() {
     realtimeGeneration++;
     if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=null;}
-    const channel=realtimeChannel;
+    const channels=[realtimeChannel,directMessagesChannel].filter(Boolean);
     realtimeChannel=null;
+    directMessagesChannel=null;
     realtimeUserId=null;
-    if(channel&&supabaseClient)supabaseClient.removeChannel(channel);
+    if(supabaseClient)channels.forEach(channel=>supabaseClient.removeChannel(channel));
   }
   function scheduleRealtimeReconnect(uid,generation) {
     if(realtimeRetryTimer)return;
@@ -1149,24 +1151,38 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     realtimeRetryTimer=setTimeout(()=>{
       realtimeRetryTimer=null;
       if(generation!==realtimeGeneration||currentUser?.id!==uid)return;
-      const channel=realtimeChannel;
-      realtimeChannel=null;
-      realtimeUserId=null;
-      if(channel)supabaseClient.removeChannel(channel);
+      stopRealtime();
       setupRealtime();
     },delay);
+  }
+  function setupDirectMessagesRealtime(uid,generation) {
+    if(!supabaseClient||!uid||directMessagesChannel)return;
+    directMessagesChannel=supabaseClient.channel('squadra-dm-'+uid)
+      .on('postgres_changes',{event:'*',schema:'public',table:'direct_messages'},payload=>{
+        const row=payload?.new||payload?.old;
+        if(!row||(row.sender_id!==uid&&row.receiver_id!==uid))return;
+        const peerId=row.sender_id===uid?row.receiver_id:row.sender_id;
+        loadChatList();
+        if(document.getElementById('chatRecipient')?.value===peerId)loadDirectMessages();
+      })
+      .subscribe((status,error)=>{
+        if(generation!==realtimeGeneration)return;
+        if(status==='SUBSCRIBED'){realtimeRetryDelay=3000;return;}
+        if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+          console.warn('Squadra direct-message Realtime disconnected:',status,error||'');
+          scheduleRealtimeReconnect(uid,generation);
+        }
+      });
   }
   function setupRealtime() {
     if(!supabaseClient||!currentUser)return;
     const uid=currentUser.id;
-    if(realtimeChannel&&realtimeUserId===uid)return;
-    if(realtimeChannel)stopRealtime();
+    if(realtimeChannel&&realtimeUserId===uid){if(!directMessagesChannel)setupDirectMessagesRealtime(uid,realtimeGeneration);return;}
+    if(realtimeChannel||directMessagesChannel)stopRealtime();
     const generation=++realtimeGeneration;
     realtimeUserId=uid;
+    setupDirectMessagesRealtime(uid,generation);
     realtimeChannel=supabaseClient.channel('squadra-live-'+uid)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'receiver_id=eq.'+uid},()=>{loadDirectMessages();loadChatList();})
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'sender_id=eq.'+uid},()=>{loadDirectMessages();loadChatList();})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'direct_messages',filter:'receiver_id=eq.'+uid},()=>loadDirectMessages())
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'friendships',filter:'requester_id=eq.'+uid},()=>loadAccountData())
        .on('postgres_changes',{event:'INSERT',schema:'public',table:'friendships',filter:'addressee_id=eq.'+uid},()=>loadAccountData())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'friendships',filter:'requester_id=eq.'+uid},()=>loadAccountData())
@@ -1207,7 +1223,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);
   });
   window.addEventListener('online',()=>{
-    if(currentUser&&!realtimeChannel)setupRealtime();
+    if(currentUser&&(!realtimeChannel||!directMessagesChannel))setupRealtime();
   });
   async function openGroupChat(groupId,options={}) {
     if(!currentUser)return requireAccount();activeCommunityGroup=groupId;
