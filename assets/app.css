@@ -1415,3 +1415,8 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 
 /* Admin editor preference controls */
 .admin-edit-preferences label{display:flex;align-items:center;gap:9px;margin:9px 0;color:var(--muted);font-size:13px}.admin-edit-preferences input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent,#ef3340)}
+
+
+/* Admin editor: touch-sized preferences and stacked nested dialogs */
+.admin-edit-preferences label:not(:first-child){min-height:48px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-2);cursor:pointer}
+.admin-edit-preferences input[type=checkbox]{width:24px!important;height:24px!important;min-width:24px;flex:0 0 24px;margin:0 4px 0 0;cursor:pointer;accent-color:var(--accent,#a855f7)}

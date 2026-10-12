@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const action = body.action;
-  const moderationActions = new Set(["post-update", "post-delete", "comment-update", "comment-delete"]);
+  const moderationActions = new Set(["post-update", "post-delete", "comment-update", "comment-delete", "report-update", "report-delete"]);
   if (!callerIsAdmin && (!callerIsModerator || !moderationActions.has(String(action)))) return response({ error: "Forbidden" }, 403);
   if (action === "users") {
     if (!callerIsAdmin) return response({ error: "Forbidden" }, 403);
@@ -61,6 +61,26 @@ Deno.serve(async (req: Request) => {
         isAnonymous: !!u.is_anonymous,
       })),
     });
+  }
+
+  if (action === "report-update" || action === "report-delete") {
+    const reportId = typeof body.reportId === "string" ? body.reportId : "";
+    if (!/^[0-9a-f-]{36}$/i.test(reportId)) return response({ error: "Invalid report id" }, 400);
+    if (action === "report-update") {
+      const status = typeof body.status === "string" ? body.status : "";
+      if (!["reviewing", "resolved", "dismissed"].includes(status)) return response({ error: "Invalid report status" }, 400);
+      const { data, error } = await admin.from("community_reports")
+        .update({ status, reviewed_by: callerId, reviewed_at: new Date().toISOString() })
+        .eq("id", reportId).select("id,status").maybeSingle();
+      if (error) { console.error("Could not update report:", error); return response({ error: "Could not update report" }, 500); }
+      if (!data) return response({ error: "Report not found" }, 404);
+      return response({ ok: true, report: data });
+    }
+    const { data, error } = await admin.from("community_reports")
+      .delete().eq("id", reportId).select("id").maybeSingle();
+    if (error) { console.error("Could not delete report:", error); return response({ error: "Could not delete report" }, 500); }
+    if (!data) return response({ error: "Report not found" }, 404);
+    return response({ ok: true, deleted: data.id });
   }
 
   const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId : "";

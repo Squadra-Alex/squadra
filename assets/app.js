@@ -65,6 +65,9 @@
   function openModal(id){
     const modal=document.getElementById(id);
     if(!modal)return;
+    const activeModals=[...document.querySelectorAll('.modal.active')];
+    const topZ=activeModals.reduce((max,item)=>Math.max(max,Number(item.style.zIndex)||2000),1998);
+    modal.style.zIndex=String(topZ+2);
     modal.classList.add('active');
     enhanceFields(modal);
     if(id==='loginModal') initGoogleIdentity('googleLoginButton');
@@ -995,10 +998,17 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
 
   async function reviewCommunityReport(reportId,status) {
-    if(!isModerator)return;
-    const {error}=await supabaseClient.from('community_reports').update({status,reviewed_by:currentUser.id,reviewed_at:new Date().toISOString()}).eq('id',reportId);
-    if(error){console.error(error);return showNotification('Не удалось обновить статус жалобы.');}
+    if(!isModerator||!supabaseClient)return;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-update',reportId,status}});
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось обновить статус жалобы.');console.error('Report review failed:',error||data);showNotification(message);return;}
+    showNotification(({reviewing:'Жалоба взята в работу.',resolved:'Жалоба отмечена как решённая.',dismissed:'Жалоба отклонена.'})[status]||'Статус жалобы обновлён.');
     await loadAdminPanel();
+  }
+  async function adminDeleteReport(reportId) {
+    if(!isModerator||!supabaseClient||!await askConfirm('Удалить жалобу из очереди модерации без возможности восстановления?'))return;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-delete',reportId}});
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось удалить жалобу.');console.error('Report delete failed:',error||data);showNotification(message);return;}
+    closeModal('adminDetailModal');showNotification('Жалоба удалена.');await loadAdminPanel();
   }
 
   async function loadPlatformEvents() {
@@ -1247,7 +1257,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const reportsEl=document.getElementById('adminReportsList');
     const reportStatusLabel={open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'};
     const reportReasonLabel={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'};
-    if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="admin-entry admin-report-entry"><div class="admin-entry-header"><div><strong>'+escapeHtml(reportReasonLabel[r.reason]||r.reason)+'</strong><div class="subtitle">'+new Date(r.created_at).toLocaleString('ru-RU')+' • Жалобу подал: '+escapeHtml(reportUserLabel(r.reporter_id))+'</div></div><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(reportStatusLabel[r.status]||r.status)+'</span></div><p class="admin-report-summary">'+escapeHtml(r.details||'Пользователь не добавил описание.')+'</p><div class="admin-entry-footer"><span class="subtitle">На пользователя: '+escapeHtml(r.reported_user_id?reportUserLabel(r.reported_user_id):'не указан')+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectReport(&quot;'+r.id+'&quot;)">Открыть жалобу</button>'+(r.status!=='reviewing'?'<button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button>':'')+(r.status!=='resolved'?'<button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button>':'')+(r.status!=='dismissed'?'<button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button>':'')+'</div></div></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
+    if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="admin-entry admin-report-entry"><div class="admin-entry-header"><div><strong>'+escapeHtml(reportReasonLabel[r.reason]||r.reason)+'</strong><div class="subtitle">'+new Date(r.created_at).toLocaleString('ru-RU')+' • Жалобу подал: '+escapeHtml(reportUserLabel(r.reporter_id))+'</div></div><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(reportStatusLabel[r.status]||r.status)+'</span></div><p class="admin-report-summary">'+escapeHtml(r.details||'Пользователь не добавил описание.')+'</p><div class="admin-entry-footer"><span class="subtitle">На пользователя: '+escapeHtml(r.reported_user_id?reportUserLabel(r.reported_user_id):'не указан')+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectReport(&quot;'+r.id+'&quot;)">Открыть жалобу</button>'+(r.status!=='reviewing'?'<button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button>':'')+(r.status!=='resolved'?'<button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button>':'')+(r.status!=='dismissed'?'<button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button>':'')+'<button class="btn btn-danger" onclick="adminDeleteReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить жалобу</button>'+'</div></div></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
     if(status){const summary='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';status.textContent=summary+(errors.length?' Не загрузилась часть данных: '+errorDetails.join(' • '):'');}
     await loadAdminGames();await loadAdminTeamsAndTournaments();await loadAdminRegistrationChart();
   }
@@ -1335,13 +1345,19 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       bio:document.getElementById('adminEditBio').value.trim(),
       verified_color:document.getElementById('adminEditVerified').value||null
     };
+    const settings={
+      theme:document.getElementById('adminEditTheme').value,
+      notify_messages:document.getElementById('adminEditNotifyMessages').checked,
+      notify_team_invites:document.getElementById('adminEditNotifyTeamInvites').checked,
+      notify_tournaments:document.getElementById('adminEditNotifyTournaments').checked,
+      notify_marketing:document.getElementById('adminEditNotifyMarketing').checked,
+      discoverable:document.getElementById('adminEditDiscoverable').checked
+    };
     if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return showNotification('Укажи корректный email для входа.');
     const priorEmail=(adminSelectedUserData.user?.email||'').toLowerCase();
     if(p.email&&p.email!==priorEmail&&!await askConfirm('Изменить email для входа на '+p.email+'? Это поменяет адрес аккаунта.'))return;
     if(!p.display_name||p.display_name.length>32)return showNotification('Имя должно содержать от 1 до 32 символов.');
     if(!/^[A-Za-z0-9_]{3,24}$/.test(p.username))return showNotification('Юзернейм: 3–24 символа, только латиница, цифры и _.');
-    const oldEmail=(adminSelectedUserData.user?.email||'').trim().toLowerCase();
-    if(p.email&&p.email!==oldEmail&&!await askConfirm('Изменить email для входа на '+p.email+'? Это изменит адрес авторизации пользователя.'))return;
     if(p.bio.length>400||p.game_name.length>60||p.region.length>40||p.rank_name.length>40)return showNotification('Проверь ограничения длины полей.');
     if(!Number.isInteger(p.level)||p.level<1||p.level>100||!Number.isInteger(p.rating)||p.rating<0||p.rating>100000)return showNotification('Уровень или рейтинг вне допустимого диапазона.');
     const saveButton=document.querySelector('#adminUserEditModal .admin-edit-actions .btn-primary');if(saveButton){saveButton.disabled=true;saveButton.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Сохраняю…';}
@@ -1364,9 +1380,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     ]);
     const byId=new Map((profiles.data||[]).map(p=>[p.id,p]));
     const player=userId=>{const p=byId.get(userId);return userId?'<button class="player-profile-link" onclick="closeModal(&quot;adminDetailModal&quot;);openPlayerProfile(&quot;'+userId+'&quot;)"><strong>'+escapeHtml(p?.display_name||p?.username||'Игрок')+'</strong><small>'+(p?.username?'@'+escapeHtml(p.username):escapeHtml(userId))+'</small></button>':'<span class="subtitle">Не указан</span>';};
-    const postMarkup=post.data?'<section class="admin-detail-section"><div class="admin-entry-header"><h3>Связанная публикация</h3><button class="btn btn-ghost" onclick="closeModal(&quot;adminDetailModal&quot;);adminInspectPost(&quot;'+post.data.id+'&quot;)">Открыть пост</button></div><p class="admin-detail-bio">'+escapeHtml(post.data.body||'Публикация без текста')+'</p>'+(post.data.media_url?post.data.media_type==='video'?'<video class="admin-post-media" controls src="'+escapeHtml(post.data.media_url)+'"></video>':'<img class="admin-post-media" src="'+escapeHtml(post.data.media_url)+'" alt="Медиа публикации">':'')+'<p class="subtitle">Автор: '+player(post.data.user_id)+'</p></section>':r.post_id?'<p class="subtitle">Связанный пост удалён или недоступен.</p>':'<p class="subtitle">Жалоба не привязана к публикации.</p>';
+    const postMarkup=post.data?'<section class="admin-detail-section"><div class="admin-entry-header"><h3>Связанная публикация</h3><button class="btn btn-ghost" onclick="closeModal(&quot;adminDetailModal&quot;);adminInspectPost(&quot;'+post.data.id+'&quot;)">Открыть пост</button><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+post.data.id+'&quot;)">Удалить публикацию</button></div><p class="admin-detail-bio">'+escapeHtml(post.data.body||'Публикация без текста')+'</p>'+(post.data.media_url?post.data.media_type==='video'?'<video class="admin-post-media" controls src="'+escapeHtml(post.data.media_url)+'"></video>':'<img class="admin-post-media" src="'+escapeHtml(post.data.media_url)+'" alt="Медиа публикации">':'')+'<p class="subtitle">Автор: '+player(post.data.user_id)+'</p></section>':r.post_id?'<p class="subtitle">Связанный пост удалён или недоступен.</p>':'<p class="subtitle">Жалоба не привязана к публикации.</p>';
     const reason={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'}[r.reason]||r.reason;
-    const html='<div class="admin-detail-grid">'+adminDetailField('Категория',reason)+adminDetailField('Статус',({open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'})[r.status]||r.status)+adminDetailField('Создана',adminFormatDate(r.created_at))+adminDetailField('Обработана',adminFormatDate(r.reviewed_at))+adminDetailField('ID жалобы',r.id)+'</div><section class="admin-detail-section"><h3>Кто отправил</h3>'+player(r.reporter_id)+'</section><section class="admin-detail-section"><h3>На кого жалуются</h3>'+player(r.reported_user_id)+'</section><section class="admin-detail-section"><h3>Подробности жалобы</h3><p class="admin-detail-bio">'+escapeHtml(r.details||'Заявитель не добавил описание.')+'</p></section>'+postMarkup+'<section class="admin-detail-section"><h3>Решение модерации</h3><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решена</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button></div></section>';
+    const html='<div class="admin-detail-grid">'+adminDetailField('Категория',reason)+adminDetailField('Статус',({open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'})[r.status]||r.status)+adminDetailField('Создана',adminFormatDate(r.created_at))+adminDetailField('Обработана',adminFormatDate(r.reviewed_at))+adminDetailField('ID жалобы',r.id)+'</div><section class="admin-detail-section"><h3>Кто отправил</h3>'+player(r.reporter_id)+'</section><section class="admin-detail-section"><h3>На кого жалуются</h3>'+player(r.reported_user_id)+'</section><section class="admin-detail-section"><h3>Подробности жалобы</h3><p class="admin-detail-bio">'+escapeHtml(r.details||'Заявитель не добавил описание.')+'</p></section>'+postMarkup+'<section class="admin-detail-section"><h3>Решение модерации</h3><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решена</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button><button class="btn btn-danger" onclick="adminDeleteReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить жалобу</button></div></section>';
     adminDetailShell('Разбор жалобы',html);
   }
   async function adminInspectPost(id) {
