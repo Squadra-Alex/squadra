@@ -921,3 +921,5 @@ table{font-size:14px}
 /* Keep the fixed menu drawer outside header clipping. */
 header{overflow:visible!important}
 header::after{display:none!important;pointer-events:none!important}
+
+header{backdrop-filter:none!important}
