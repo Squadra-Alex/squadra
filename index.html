@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=auth-repair-20261012">
+<link rel="stylesheet" href="/assets/app.css?v=auth-final-20261012">
 </head>
 <body>
 
@@ -445,7 +445,8 @@
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
     <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
-    <div id="googleLoginButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div>
+    <div id="googleLoginButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div></div>
+    <p style="text-align:center;margin:6px 0 0;font-size:12px;"><a style="color:var(--red);" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&amp;redirect_to=https%3A%2F%2Fsquadra.forum%2F">Если окно не открылось — резервный вход через Google</a></p>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
 </div>
@@ -455,7 +456,8 @@
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
     <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
-    <div id="googleSignupButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div>
+    <div id="googleSignupButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div></div>
+    <p style="text-align:center;margin:6px 0 0;font-size:12px;"><a style="color:var(--red);" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&amp;redirect_to=https%3A%2F%2Fsquadra.forum%2F">Если окно не открылось — резервный вход через Google</a></p>
   </div>
 </div>
 
