@@ -87,10 +87,39 @@
     host.innerHTML='<div class="public-profile-hero"><img class="public-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div><span class="eyebrow">ПРОФИЛЬ ИГРОКА</span><h1>'+escapeHtml(p.display_name||p.username)+' '+verified+' '+role+'</h1><p class="subtitle">@'+escapeHtml(p.username)+' • '+escapeHtml(p.region||'—')+' • '+escapeHtml(p.game_name||'—')+'</p><p>'+escapeHtml(p.bio||'Игрок Squadra.')+'</p></div><div class="profile-actions"><button class="btn btn-primary" onclick="addFriend(\''+p.id+'\')">В друзья</button><button class="btn btn-ghost" onclick="openChatWith(\''+p.id+'\')">Написать</button></div></div><div class="stats-grid"><div class="stat-box"><div class="value">'+fmt(p.rating||0)+'</div><div class="label">Рейтинг</div></div><div class="stat-box"><div class="value">'+fmt(p.level||1)+'</div><div class="label">Уровень</div></div><div class="stat-box"><div class="value">'+fmt(p.matches_played||0)+'</div><div class="label">Матчей</div></div><div class="stat-box"><div class="value">'+(p.matches_played?Math.round(100*p.wins/p.matches_played):0)+'%</div><div class="label">Побед</div></div></div><div class="card rating-how"><h3>Как повысить рейтинг</h3><p>Сыграй матч и внеси результат. После подтверждения соперником рейтинг пересчитывается по Elo: победа над игроком с высоким рейтингом даёт больше очков.</p></div>';
     host.removeAttribute('aria-busy');
   }
-  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+  let actionDialogResolver=null,actionDialogNeedsInput=false;
+  function finishActionDialog(value) {
+    const modal=document.getElementById('actionDialogModal');
+    if(modal)modal.classList.remove('active');
+    const resolve=actionDialogResolver;actionDialogResolver=null;
+    if(resolve)resolve(value);
+  }
+  function cancelActionDialog(){finishActionDialog(null);}
+  function submitActionDialog(event){
+    event?.preventDefault();
+    const value=actionDialogNeedsInput?document.getElementById('actionDialogInput')?.value??'':true;
+    finishActionDialog(value);
+  }
+  function openActionDialog(message,{input=false,value='',confirmText='Подтвердить',eyebrow='ПОДТВЕРЖДЕНИЕ'}={}){
+    if(actionDialogResolver)finishActionDialog(null);
+    actionDialogNeedsInput=input;
+    const inputEl=document.getElementById('actionDialogInput');
+    document.getElementById('actionDialogMessage').textContent=String(message||'');
+    document.getElementById('actionDialogSubmit').textContent=confirmText;
+    document.getElementById('actionDialogEyebrow').textContent=eyebrow;
+    inputEl.hidden=!input;inputEl.value=input?String(value||''):'';
+    return new Promise(resolve=>{actionDialogResolver=resolve;openModal('actionDialogModal');if(input){inputEl.focus();inputEl.select();}});
+  }
+  function askConfirm(message){return openActionDialog(message).then(Boolean);}
+  function askInput(message,defaultValue=''){return openActionDialog(message,{input:true,value:defaultValue,confirmText:'Продолжить',eyebrow:'ВВОД ДАННЫХ'});}
+  function closeModal(id) {
+    if(id==='actionDialogModal'&&actionDialogResolver){finishActionDialog(null);return;}
+    document.getElementById(id)?.classList.remove('active');
+  }
   document.querySelectorAll('.modal').forEach(m => {
-    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+    m.addEventListener('click', e => { if (e.target === m) { if(m.id==='actionDialogModal')cancelActionDialog();else m.classList.remove('active'); } });
   });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&actionDialogResolver)cancelActionDialog();});
 
   // NOTIFICATIONS
   function showNotification(text) {
@@ -1213,7 +1242,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(feedEl) feedEl.innerHTML=(feed.data||[]).map(p=>{
       const author=authors.get(p.user_id)||{};
       const media=p.media_url?(p.media_type==='video'?'<video class="admin-post-media" controls preload="metadata" src="'+escapeHtml(p.media_url)+'"></video>':'<img class="admin-post-media" loading="lazy" src="'+escapeHtml(p.media_url)+'" alt="Медиа публикации">'):'';
-      return '<article class="admin-entry admin-post-entry"><div class="admin-entry-header"><div><button class="player-profile-link" onclick="openPlayerProfile(&quot;'+p.user_id+'&quot;)"><strong>'+escapeHtml(author.display_name||author.username||'Игрок')+'</strong><small>@'+escapeHtml(author.username||'игрок')+'</small></button><div class="subtitle">'+new Date(p.created_at).toLocaleString('ru-RU')+(p.updated_at&&p.updated_at!==p.created_at?' • изменено '+new Date(p.updated_at).toLocaleString('ru-RU'):'')+'</div></div><span class="badge badge-info">'+(p.media_type?escapeHtml(p.media_type==='video'?'Видео':'Фото'):'Публикация')+'</span></div><p class="admin-post-preview">'+escapeHtml(p.body||'Без текста')+'</p>'+media+'<div class="admin-entry-footer"><span class="subtitle">♥ '+(likeCounts.get(p.id)||0)+' • Комментарии '+(commentCounts.get(p.id)||0)+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectPost(&quot;'+p.id+'&quot;)">Подробнее</button><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить</button></div></div></article>';
+      return '<article class="admin-entry admin-post-entry"><div class="admin-entry-header"><div><button class="player-profile-link" onclick="openPlayerProfile(&quot;'+p.user_id+'&quot;)"><strong>'+escapeHtml(author.display_name||author.username||'Игрок')+'</strong><small>@'+escapeHtml(author.username||'игрок')+'</small></button><div class="subtitle">'+new Date(p.created_at).toLocaleString('ru-RU')+(p.updated_at&&p.updated_at!==p.created_at?' • изменено '+new Date(p.updated_at).toLocaleString('ru-RU'):'')+'</div></div><span class="badge badge-info">'+(p.media_type?escapeHtml(p.media_type==='video'?'Видео':'Фото'):'Публикация')+'</span></div><p class="admin-post-preview">'+escapeHtml(p.body||'Без текста')+'</p>'+media+'<div class="admin-entry-footer"><span class="subtitle">♥ '+(likeCounts.get(p.id)||0)+' • Комментарии '+(commentCounts.get(p.id)||0)+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectPost(&quot;'+p.id+'&quot;)">Подробнее</button><button class="btn btn-ghost" onclick="adminEditPost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-pen"></i> Редактировать</button><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить</button></div></div></article>';
     }).join('')||'<p class="subtitle">Публикаций пока нет.</p>';
     const reportsEl=document.getElementById('adminReportsList');
     const reportStatusLabel={open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'};
@@ -1258,7 +1287,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const u=data.user||{},p=data.profile||{},st=data.settings||{},roles=(data.roles||[]).map(r=>r.role==='admin'?'Администратор':r.role==='moderator'?'Модератор':r.role).join(', ')||'Игрок';
     const banned=u.bannedUntil&&new Date(u.bannedUntil)>new Date()?'Заблокирован до '+adminFormatDate(u.bannedUntil):'Активен';
     const roleSet=(data.roles||[]).map(x=>x.role),isSelf=id===currentUser?.id,banAction=banned.startsWith('Заблокирован')?'unban':'ban';
-    const controls='<div class="admin-user-control-actions">'+(isSelf?'<span class="subtitle">Текущий аккаунт</span>':'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+banAction+'&quot;)">'+(banAction==='unban'?'Разблокировать':'Заблокировать')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('moderator')?'revoke_role':'grant_role')+'&quot;,&quot;moderator&quot;)">'+(roleSet.includes('moderator')?'Снять модератора':'Выдать модератора')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('admin')?'revoke_role':'grant_role')+'&quot;,&quot;admin&quot;)">'+(roleSet.includes('admin')?'Снять администратора':'Выдать администратора')+'</button>')+'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='blue'?'':'blue')+'&quot;)">'+(p.verified_color==='blue'?'Снять синюю галочку':'Выдать синюю галочку')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='green'?'':'green')+'&quot;)">'+(p.verified_color==='green'?'Снять зелёную галочку':'Выдать зелёную галочку')+'</button></div>';
+    const controls='<div class="admin-user-control-actions">'+(isSelf?'<span class="subtitle">Текущий аккаунт</span>':'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+banAction+'&quot;)">'+(banAction==='unban'?'Разблокировать':'Заблокировать')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('moderator')?'revoke_role':'grant_role')+'&quot;,&quot;moderator&quot;)">'+(roleSet.includes('moderator')?'Снять модератора':'Выдать модератора')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('admin')?'revoke_role':'grant_role')+'&quot;,&quot;admin&quot;)">'+(roleSet.includes('admin')?'Снять администратора':'Выдать администратора')+'</button>')+'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='blue'?'':'blue')+'&quot;)">'+(p.verified_color==='blue'?'Снять синюю галочку':'Выдать синюю галочку')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='green'?'':'green')+'&quot;)">'+(p.verified_color==='green'?'Снять зелёную галочку':'Выдать зелёную галочку')+'</button>'+(isSelf?'':'<button class="btn btn-danger" onclick="adminDeleteUser(&quot;'+id+'&quot;)"><i class="fa-solid fa-user-xmark"></i> Удалить аккаунт</button>')+'</div>';
     const values='<div class="admin-user-detail-toolbar"><span class="admin-user-id">ID: '+escapeHtml(u.id||id)+'</span><button class="btn btn-primary" onclick="adminOpenUserEditor()"><i class="fa-solid fa-pen-to-square"></i> Редактировать профиль</button></div>'+controls+'<div class="admin-detail-grid">'+adminDetailField('Имя профиля',p.display_name)+adminDetailField('Юзернейм',p.username?'@'+p.username:'—')+adminDetailField('Email',u.email)+adminDetailField('ID пользователя',u.id)+adminDetailField('Роль',roles)+adminDetailField('Статус аккаунта',banned)+adminDetailField('Провайдер входа',(u.providers||[]).join(', ')||'—')+adminDetailField('Зарегистрирован',adminFormatDate(u.createdAt))+adminDetailField('Последний вход',adminFormatDate(u.lastSignInAt))+adminDetailField('Email подтверждён',adminFormatDate(u.emailConfirmedAt))+adminDetailField('Создан профиль',adminFormatDate(p.created_at))+adminDetailField('Профиль обновлён',adminFormatDate(p.updated_at))+adminDetailField('Игра',p.game_name)+adminDetailField('Регион',p.region)+adminDetailField('Ранг',p.rank_name)+adminDetailField('Уровень',p.level)+adminDetailField('Рейтинг',p.rating)+adminDetailField('Матчи / победы',String(p.matches_played||0)+' / '+String(p.wins||0))+adminDetailField('K/D',p.kd)+adminDetailField('Проверка',p.verified_color?(p.verified_color==='blue'?'Синяя':'Зелёная')+' • '+adminFormatDate(p.verified_at):'Нет')+adminDetailField('Друзья',data.friendCount)+adminDetailField('Публикации',data.communityPostCount)+adminDetailField('Тема интерфейса',st.theme)+adminDetailField('Язык / регион',String(st.language||p.language||'—')+' / '+String(st.region||p.region||'—'))+adminDetailField('Профиль виден в поиске',st.discoverable===false?'Нет':'Да')+'</div><section class="admin-detail-section"><h3>О себе</h3><p class="admin-detail-bio">'+escapeHtml(p.bio||'Описание не заполнено.')+'</p></section><section class="admin-detail-section"><h3>Команды</h3>'+((data.teams||[]).map(x=>'<p>'+escapeHtml(x.teams?.name||'Команда')+(x.teams?.tag?' ['+escapeHtml(x.teams.tag)+']':'')+' • '+escapeHtml(x.role||'участник')+' • '+escapeHtml(x.teams?.game_name||'')+'</p>').join('')||'<p class="subtitle">Не состоит в командах.</p>')+'</section><section class="admin-detail-section"><h3>Последние матчи</h3>'+((data.matches||[]).map(m=>'<article class="admin-detail-row"><strong>'+escapeHtml(m.game_id||'Игра')+' • '+escapeHtml(m.status||'')+'</strong><span>'+escapeHtml(m.score_a??'—')+' : '+escapeHtml(m.score_b??'—')+' • '+adminFormatDate(m.played_at)+'</span></article>').join('')||'<p class="subtitle">Матчей пока нет.</p>')+'</section><section class="admin-detail-section"><h3>История активности</h3>'+adminActivityMarkup(data.activity)+'</section><section class="admin-detail-section"><h3>Настройки уведомлений</h3><p>'+['notify_messages','notify_team_invites','notify_tournaments','notify_marketing'].map((key,i)=>['Сообщения','Приглашения в команды','Турниры','Новости платформы'][i]+': '+(st[key]?'включены':'выключены')).join(' • ')+'</p></section>';
     adminDetailShell('Профиль игрока',values);
   }
@@ -1268,10 +1297,19 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
   function adminOpenUserEditor() {
     if(!isAdmin||!adminSelectedUserData)return;
-    const u=adminSelectedUserData.user||{},p=adminSelectedUserData.profile||{};
+    const u=adminSelectedUserData.user||{},p=adminSelectedUserData.profile||{},st=adminSelectedUserData.settings||{};
     document.getElementById('adminUserEditIdentity').textContent=(p.display_name||p.username||'Пользователь')+' • '+(u.email||'без email');
+    document.getElementById('adminEditEmail').value=u.email||'';
     document.getElementById('adminEditDisplayName').value=p.display_name||'';
     document.getElementById('adminEditUsername').value=p.username||'';
+    document.getElementById('adminEditAvatar').value=p.avatar_url||'';
+    document.getElementById('adminEditLanguage').value=p.language||'ru';
+    document.getElementById('adminEditTheme').value=st.theme||'default';
+    document.getElementById('adminEditNotifyMessages').checked=st.notify_messages!==false;
+    document.getElementById('adminEditNotifyTeamInvites').checked=st.notify_team_invites!==false;
+    document.getElementById('adminEditNotifyTournaments').checked=st.notify_tournaments!==false;
+    document.getElementById('adminEditNotifyMarketing').checked=!!st.notify_marketing;
+    document.getElementById('adminEditDiscoverable').checked=st.discoverable!==false;
     document.getElementById('adminEditGame').value=p.game_name||'';
     document.getElementById('adminEditRegion').value=p.region||'';
     document.getElementById('adminEditRank').value=p.rank_name||'';
@@ -1284,8 +1322,11 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   async function adminSaveUserEdit() {
     if(!isAdmin||!supabaseClient||!adminSelectedUserData)return;
     const p={
+      email:document.getElementById('adminEditEmail').value.trim().toLowerCase(),
       display_name:document.getElementById('adminEditDisplayName').value.trim(),
       username:document.getElementById('adminEditUsername').value.trim().replace(/^@/,''),
+      avatar_url:document.getElementById('adminEditAvatar').value.trim(),
+      language:document.getElementById('adminEditLanguage').value,
       game_name:document.getElementById('adminEditGame').value.trim(),
       region:document.getElementById('adminEditRegion').value.trim(),
       rank_name:document.getElementById('adminEditRank').value.trim(),
@@ -1294,15 +1335,20 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       bio:document.getElementById('adminEditBio').value.trim(),
       verified_color:document.getElementById('adminEditVerified').value||null
     };
+    if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return showNotification('Укажи корректный email для входа.');
+    const priorEmail=(adminSelectedUserData.user?.email||'').toLowerCase();
+    if(p.email&&p.email!==priorEmail&&!await askConfirm('Изменить email для входа на '+p.email+'? Это поменяет адрес аккаунта.'))return;
     if(!p.display_name||p.display_name.length>32)return showNotification('Имя должно содержать от 1 до 32 символов.');
     if(!/^[A-Za-z0-9_]{3,24}$/.test(p.username))return showNotification('Юзернейм: 3–24 символа, только латиница, цифры и _.');
+    const oldEmail=(adminSelectedUserData.user?.email||'').trim().toLowerCase();
+    if(p.email&&p.email!==oldEmail&&!await askConfirm('Изменить email для входа на '+p.email+'? Это изменит адрес авторизации пользователя.'))return;
     if(p.bio.length>400||p.game_name.length>60||p.region.length>40||p.rank_name.length>40)return showNotification('Проверь ограничения длины полей.');
     if(!Number.isInteger(p.level)||p.level<1||p.level>100||!Number.isInteger(p.rating)||p.rating<0||p.rating>100000)return showNotification('Уровень или рейтинг вне допустимого диапазона.');
     const saveButton=document.querySelector('#adminUserEditModal .admin-edit-actions .btn-primary');if(saveButton){saveButton.disabled=true;saveButton.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Сохраняю…';}
-    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'user-update',targetUserId:adminSelectedUserData.user?.id,profile:p}});
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'user-update',targetUserId:adminSelectedUserData.user?.id,profile:p,settings}});
     if(saveButton){saveButton.disabled=false;saveButton.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Сохранить изменения';}
-    if(error||data?.error){console.error('Admin profile update failed:',error||data);showNotification(data?.error==='Username already taken'?'Этот юзернейм уже занят.':data?.error||'Не удалось сохранить профиль.');return;}
-    closeModal('adminUserEditModal');showNotification(data.identityChanged?'Профиль сохранён. Верификация снята после изменения имени.':'Профиль пользователя обновлён.');
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось сохранить профиль.');console.error('Admin profile update failed:',error||data);showNotification(message==='Username already taken'?'Этот юзернейм уже занят.':message);return;}
+    closeModal('adminUserEditModal');showNotification(data.identityChanged?'Профиль сохранён. Верификация снята после изменения имени/юзернейма.':(data.emailChanged?'Профиль и email аккаунта обновлены.':'Профиль пользователя обновлён.'));
     await loadAdminPanel();await adminInspectUser(adminSelectedUserData.user.id);
   }
 
@@ -1338,10 +1384,22 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const commentProfiles=commentIds.length?await supabaseClient.from('profiles').select('id,username,display_name').in('id',commentIds):{data:[]};
     const commentNames=new Map((commentProfiles.data||[]).map(x=>[x.id,x]));
     const authorData=author.data||{},media=p.media_url?(p.media_type==='video'?'<video class="admin-post-media" controls src="'+escapeHtml(p.media_url)+'"></video>':'<img class="admin-post-media" src="'+escapeHtml(p.media_url)+'" alt="Медиа публикации">'):'<p class="subtitle">Медиа нет</p>';
-    const commentHtml=(comments.data||[]).map(c=>{const profile=commentNames.get(c.user_id)||{};return '<article class="admin-detail-row"><button class="player-profile-link" onclick="closeModal(&quot;adminDetailModal&quot;);openPlayerProfile(&quot;'+c.user_id+'&quot;)"><strong>'+escapeHtml(profile.display_name||profile.username||'Игрок')+'</strong><small>@'+escapeHtml(profile.username||'игрок')+'</small></button><span class="subtitle">'+adminFormatDate(c.created_at)+'</span><p class="admin-detail-bio">'+escapeHtml(c.body)+'</p></article>';}).join('')||'<p class="subtitle">Комментариев пока нет.</p>';
+    const commentHtml=(comments.data||[]).map(c=>{const profile=commentNames.get(c.user_id)||{};return '<article class="admin-detail-row admin-comment-row"><div class="admin-comment-head"><button class="player-profile-link" onclick="closeModal(&quot;adminDetailModal&quot;);openPlayerProfile(&quot;'+c.user_id+'&quot;)"><strong>'+escapeHtml(profile.display_name||profile.username||'Игрок')+'</strong><small>@'+escapeHtml(profile.username||'игрок')+'</small></button><span class="subtitle">'+adminFormatDate(c.created_at)+'</span></div><p class="admin-detail-bio">'+escapeHtml(c.body)+'</p><div class="admin-comment-actions"><button class="btn btn-ghost" onclick="adminEditComment(&quot;'+c.id+'&quot;,&quot;'+id+'&quot;)"><i class="fa-solid fa-pen"></i> Изменить</button><button class="btn btn-danger" onclick="adminDeleteComment(&quot;'+c.id+'&quot;,&quot;'+id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить</button></div></article>';}).join('')||'<p class="subtitle">Комментариев пока нет.</p>';
     const reportHtml=(reports.data||[]).map(r=>'<article class="admin-detail-row"><strong>'+escapeHtml(({spam:'Спам',abuse:'Оскорбления',cheating:'Читы',other:'Другое'})[r.reason]||r.reason)+'</strong><span class="subtitle"> • '+escapeHtml(({open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'})[r.status]||r.status)+' • '+adminFormatDate(r.created_at)+'</span><p>'+escapeHtml(r.details||'Без описания')+'</p><button class="btn btn-ghost" onclick="closeModal(&quot;adminDetailModal&quot;);adminInspectReport(&quot;'+r.id+'&quot;)">Разобрать жалобу</button></article>').join('')||'<p class="subtitle">Жалоб на эту публикацию нет.</p>';
-    const html='<div class="admin-entry-header"><div><button class="player-profile-link" onclick="closeModal(&quot;adminDetailModal&quot;);openPlayerProfile(&quot;'+p.user_id+'&quot;)"><strong>'+escapeHtml(authorData.display_name||authorData.username||'Игрок')+'</strong><small>@'+escapeHtml(authorData.username||'игрок')+'</small></button><div class="subtitle">Опубликовано '+adminFormatDate(p.created_at)+(p.updated_at&&p.updated_at!==p.created_at?' • изменено '+adminFormatDate(p.updated_at):'')+'</div></div>'+adminDetailField('ID поста',p.id)+'</div><section class="admin-detail-section"><h3>Полный текст публикации</h3><p class="admin-detail-bio">'+escapeHtml(p.body||'Публикация без текста')+'</p>'+media+'</section><div class="admin-detail-grid">'+adminDetailField('Лайки',(likes.data||[]).length)+adminDetailField('Комментарии',(comments.data||[]).length)+adminDetailField('Жалобы',(reports.data||[]).length)+'</div><section class="admin-detail-section"><h3>Комментарии</h3>'+commentHtml+'</section><section class="admin-detail-section"><h3>Жалобы по посту</h3>'+reportHtml+'</section><div class="admin-entry-actions"><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить публикацию</button></div>';
+    const html='<div class="admin-entry-header"><div><button class="player-profile-link" onclick="closeModal(&quot;adminDetailModal&quot;);openPlayerProfile(&quot;'+p.user_id+'&quot;)"><strong>'+escapeHtml(authorData.display_name||authorData.username||'Игрок')+'</strong><small>@'+escapeHtml(authorData.username||'игрок')+'</small></button><div class="subtitle">Опубликовано '+adminFormatDate(p.created_at)+(p.updated_at&&p.updated_at!==p.created_at?' • изменено '+adminFormatDate(p.updated_at):'')+'</div></div>'+adminDetailField('ID поста',p.id)+'</div><section class="admin-detail-section"><h3>Полный текст публикации</h3><p class="admin-detail-bio">'+escapeHtml(p.body||'Публикация без текста')+'</p>'+media+'</section><div class="admin-detail-grid">'+adminDetailField('Лайки',(likes.data||[]).length)+adminDetailField('Комментарии',(comments.data||[]).length)+adminDetailField('Жалобы',(reports.data||[]).length)+'</div><section class="admin-detail-section"><h3>Комментарии</h3>'+commentHtml+'</section><section class="admin-detail-section"><h3>Жалобы по посту</h3>'+reportHtml+'</section><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminEditPost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-pen"></i> Редактировать публикацию</button><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить публикацию</button></div>';
     adminDetailShell('Публикация сообщества',html);
+  }
+
+  async function adminDeleteUser(targetUserId) {
+    if(!isAdmin||!supabaseClient||!adminSelectedUserData)return;
+    const target=adminSelectedUserData.user||{},label=target.email||adminSelectedUserData.profile?.display_name||'этот пользователь';
+    if(targetUserId===currentUser?.id)return showNotification('Нельзя удалить собственный аккаунт из админки.');
+    const typed=await askInput('Удаление аккаунта '+label+' необратимо. Введи email пользователя точно, чтобы подтвердить удаление.', '');
+    if(typed===null)return;
+    if(typed.trim().toLowerCase()!==(target.email||'').toLowerCase()||!target.email)return showNotification('Email не совпал. Аккаунт не удалён.');
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'user-delete',targetUserId,confirmEmail:typed.trim()}});
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось удалить аккаунт.');console.error('Account delete failed:',error||data);showNotification(message);return;}
+    closeModal('adminDetailModal');closeModal('adminUserEditModal');showNotification('Аккаунт пользователя удалён.');await loadAdminPanel();
   }
 
   async function adminUserAction(targetUserId,action,role,color) {
@@ -1353,7 +1411,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       days=Math.max(1,Math.min(365,parseInt(answer,10)||7));
     } else if(!await askConfirm('Подтвердить действие с аккаунтом?')) return;
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action,targetUserId,role,days,color:color||null}});
-    if(error||data?.error){console.error('Admin user action failed:',error||data);showNotification(data?.error||'Не удалось изменить аккаунт.');return;}
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось изменить аккаунт.');console.error('Admin user action failed:',error||data);showNotification(message);return;}
     showNotification(action==='ban'?'Аккаунт заблокирован.':action==='unban'?'Аккаунт разблокирован.':action==='grant_role'?'Роль назначена.':action==='verify'?(color?'Значок проверки выдан.':'Значок проверки снят.'):'Роль снята.');
     await loadAdminPanel();await adminInspectUser(targetUserId);
   }
@@ -1421,12 +1479,55 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     await loadAdminGames();await loadGameCatalog();await loadLeaderboards();
   }
 
+  let adminContentEditContext=null;
+  async function adminFunctionError(error,data,fallback='Не удалось выполнить действие.') {
+    if(data?.error)return data.error;
+    try{const response=error?.context;if(response?.clone){const payload=await response.clone().json();if(payload?.error)return payload.error;}}catch{}
+    return error?.message||fallback;
+  }
+  function adminOpenContentEditor(type,id,postId,body) {
+    adminContentEditContext={type,id,postId};
+    const isPost=type==='post',field=document.getElementById('adminContentEditBody');
+    document.getElementById('adminContentEditTitle').textContent=isPost?'Редактировать публикацию':'Редактировать комментарий';
+    document.getElementById('adminContentEditHint').textContent=isPost?'Изменение будет видно всем пользователям.':'Изменение комментария будет видно всем пользователям.';
+    field.maxLength=isPost?5000:2000;field.value=body||'';openModal('adminContentEditModal');field.focus();
+  }
+  async function adminEditPost(postId) {
+    if(!isAdmin||!supabaseClient)return;
+    const {data,error}=await supabaseClient.from('community_posts').select('id,body').eq('id',postId).maybeSingle();
+    if(error||!data){console.error('Could not load post to edit:',error);showNotification('Не удалось открыть публикацию для редактирования.');return;}
+    adminOpenContentEditor('post',postId,postId,data.body);
+  }
+  async function adminEditComment(commentId,postId) {
+    if(!isAdmin||!supabaseClient)return;
+    const {data,error}=await supabaseClient.from('community_post_comments').select('id,body').eq('id',commentId).maybeSingle();
+    if(error||!data){console.error('Could not load comment to edit:',error);showNotification('Не удалось открыть комментарий для редактирования.');return;}
+    adminOpenContentEditor('comment',commentId,postId,data.body);
+  }
+  async function adminSaveContentEdit() {
+    if(!isAdmin||!supabaseClient||!adminContentEditContext)return;
+    const body=document.getElementById('adminContentEditBody').value.trim(),{type,id,postId}=adminContentEditContext;
+    const max=type==='post'?5000:2000;
+    if(!body||body.length>max)return showNotification('Текст должен содержать от 1 до '+max+' символов.');
+    const button=document.querySelector('#adminContentEditModal .admin-edit-actions .btn-primary');
+    if(button){button.disabled=true;button.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Сохраняю…';}
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:type==='post'?'post-update':'comment-update',contentId:id,body}});
+    if(button){button.disabled=false;button.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Сохранить';}
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось сохранить текст.');console.error('Content edit failed:',error||data);showNotification(message);return;}
+    closeModal('adminContentEditModal');showNotification(type==='post'?'Публикация обновлена.':'Комментарий обновлён.');
+    await loadAdminPanel();await adminInspectPost(postId);
+  }
+  async function adminDeleteComment(commentId,postId) {
+    if(!isAdmin||!supabaseClient||!await askConfirm('Удалить этот комментарий? Это действие сразу скроет его для всех пользователей.'))return;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'comment-delete',contentId:commentId}});
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось удалить комментарий.');console.error('Comment delete failed:',error||data);showNotification(message);return;}
+    showNotification('Комментарий удалён.');await loadAdminPanel();await adminInspectPost(postId);
+  }
   async function adminDeletePost(postId) {
-    if(!isModerator||!supabaseClient||!await askConfirm('Удалить эту публикацию для всех пользователей?')) return;
-    const {error}=await supabaseClient.from('community_posts').delete().eq('id',postId);
-    if(error){console.error('Could not remove community post:',error);showNotification('Не удалось удалить публикацию.');return;}
-    showNotification('Публикация удалена.');
-    await loadAdminPanel();
+    if(!isAdmin||!supabaseClient||!await askConfirm('Удалить эту публикацию и все её комментарии для всех пользователей?')) return;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'post-delete',contentId:postId}});
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось удалить публикацию.');console.error('Could not remove community post:',error||data);showNotification(message);return;}
+    closeModal('adminDetailModal');showNotification('Публикация и связанные комментарии удалены.');await loadAdminPanel();
   }
 
   function renderAuthState(user) {

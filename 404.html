@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=admin-control-20261012">
+<link rel="stylesheet" href="/assets/app.css?v=admin-functional-20261012">
 </head>
 <body>
 
@@ -477,19 +477,37 @@
     <button class="modal-close" type="button" aria-label="Закрыть" onclick="closeModal('adminUserEditModal')"><i class="fa-solid fa-xmark"></i></button>
     <p class="admin-eyebrow">ТОЧЕЧНОЕ РЕДАКТИРОВАНИЕ</p><h2 id="adminUserEditTitle">Настройки пользователя</h2><p id="adminUserEditIdentity" class="subtitle"></p>
     <div class="admin-edit-grid">
+      <div class="form-group"><label for="adminEditEmail">Email для входа</label><input id="adminEditEmail" type="email" maxlength="254" autocomplete="off"></div>
       <div class="form-group"><label for="adminEditDisplayName">Отображаемое имя</label><input id="adminEditDisplayName" maxlength="32" oninput="updateAdminEditWarning()"></div>
       <div class="form-group"><label for="adminEditUsername">Юзернейм</label><input id="adminEditUsername" maxlength="24" oninput="updateAdminEditWarning()"></div>
+      <div class="form-group"><label for="adminEditAvatar">Ссылка на аватар</label><input id="adminEditAvatar" type="url" maxlength="2048" placeholder="https://…"></div>
+      <div class="form-group"><label for="adminEditLanguage">Язык</label><select id="adminEditLanguage"><option value="ru">Русский</option><option value="en">English</option></select></div>
       <div class="form-group"><label for="adminEditGame">Основная игра</label><input id="adminEditGame" maxlength="60"></div>
       <div class="form-group"><label for="adminEditRegion">Регион</label><input id="adminEditRegion" maxlength="40"></div>
       <div class="form-group"><label for="adminEditRank">Ранг</label><input id="adminEditRank" maxlength="40"></div>
       <div class="form-group"><label for="adminEditLevel">Уровень</label><input id="adminEditLevel" type="number" min="1" max="100" step="1"></div>
       <div class="form-group"><label for="adminEditRating">Рейтинг</label><input id="adminEditRating" type="number" min="0" max="100000" step="1"></div>
       <div class="form-group"><label for="adminEditVerified">Значок верификации</label><select id="adminEditVerified"><option value="">Без значка</option><option value="blue">Синяя галочка</option><option value="green">Зелёная галочка</option></select></div>
+      <div class="form-group"><label for="adminEditTheme">Тема интерфейса</label><select id="adminEditTheme"><option value="default">Squadra</option><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="green">Зелёная</option><option value="blue">Синяя</option><option value="purple">Фиолетовая</option><option value="yellow">Жёлтая</option></select></div>
+      <div class="form-group admin-edit-preferences"><label>Настройки аккаунта</label><label><input id="adminEditNotifyMessages" type="checkbox"> Уведомления о сообщениях</label><label><input id="adminEditNotifyTeamInvites" type="checkbox"> Приглашения в команды</label><label><input id="adminEditNotifyTournaments" type="checkbox"> Уведомления о турнирах</label><label><input id="adminEditNotifyMarketing" type="checkbox"> Новости платформы</label><label><input id="adminEditDiscoverable" type="checkbox"> Показывать в поиске</label></div>
       <div class="form-group admin-edit-bio"><label for="adminEditBio">О себе</label><textarea id="adminEditBio" maxlength="400" rows="4"></textarea><small class="subtitle">До 400 символов</small></div>
     </div>
     <p id="adminEditVerificationWarning" class="admin-edit-warning" hidden><i class="fa-solid fa-circle-exclamation"></i> Изменение имени или юзернейма снимет значок верификации.</p>
     <div class="admin-edit-actions"><button class="btn btn-ghost" onclick="closeModal('adminUserEditModal')">Отмена</button><button class="btn btn-primary" onclick="adminSaveUserEdit()"><i class="fa-solid fa-floppy-disk"></i> Сохранить изменения</button></div>
   </div>
+</div>
+<div id="adminContentEditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminContentEditTitle">
+  <div class="modal-content admin-content-edit-modal"><button class="modal-close" type="button" aria-label="Закрыть" onclick="closeModal('adminContentEditModal')"><i class="fa-solid fa-xmark"></i></button>
+    <p class="admin-eyebrow">РЕДАКТИРОВАНИЕ КОНТЕНТА</p><h2 id="adminContentEditTitle">Изменить публикацию</h2><p id="adminContentEditHint" class="subtitle"></p>
+    <textarea id="adminContentEditBody" maxlength="5000" rows="8"></textarea><div class="admin-edit-actions"><button class="btn btn-ghost" type="button" onclick="closeModal('adminContentEditModal')">Отмена</button><button class="btn btn-primary" type="button" onclick="adminSaveContentEdit()"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button></div>
+  </div>
+</div>
+<div id="actionDialogModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="actionDialogTitle">
+  <form class="modal-content admin-action-dialog" onsubmit="submitActionDialog(event)">
+    <p class="admin-eyebrow" id="actionDialogEyebrow">ПОДТВЕРЖДЕНИЕ</p><h2 id="actionDialogTitle">Подтверди действие</h2><p id="actionDialogMessage" class="subtitle"></p>
+    <input id="actionDialogInput" type="text" maxlength="4000" autocomplete="off" hidden>
+    <div class="admin-edit-actions"><button class="btn btn-ghost" type="button" onclick="cancelActionDialog()">Отмена</button><button id="actionDialogSubmit" class="btn btn-primary" type="submit">Подтвердить</button></div>
+  </form>
 </div>
 <div id="adminDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminDetailTitle">
   <div class="modal-content admin-detail-modal">
@@ -549,7 +567,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=admin-control-20261012"></script>
+<script src="/assets/app.js?v=admin-functional-20261012"></script>
 
 <script>
 (function () {
