@@ -35,6 +35,21 @@
 
   const fmt = n => n.toLocaleString('ru-RU');
 
+  const gameLogoSlugs = {
+    'standoff 2': 'standoff2', 'cs2': 'counterstrike', 'counter-strike 2': 'counterstrike',
+    'dota 2': 'dota2', 'valorant': 'valorant', 'league of legends': 'leagueoflegends',
+    'lol': 'leagueoflegends', 'apex legends': 'apexlegends', 'fortnite': 'fortnite',
+    'rocket league': 'rocketleague', 'pubg': 'pubg', 'pubg: battlegrounds': 'pubg'
+  };
+  function gameLogoUrl(name) {
+    const slug = gameLogoSlugs[String(name || '').trim().toLowerCase()];
+    return slug ? 'https://cdn.simpleicons.org/' + slug + '/ffffff' : '';
+  }
+  function gameInitials(name) {
+    const words = String(name || 'GG').trim().split(/\\s+/).filter(Boolean);
+    return (words.length > 1 ? words.slice(0, 2).map(word => word[0]).join('') : words[0].slice(0, 2)).toUpperCase();
+  }
+
   function gameCard(g) {
     const name=escapeHtml(g.name),genre=escapeHtml(g.genre),arg=JSON.stringify(g.name).replace(/"/g,'&quot;'),logo=gameLogoUrl(g.name),icon=logo?'<img src="'+logo+'" alt="" loading="lazy" onerror="this.parentElement.classList.add(\'no-logo\')">':'';
     return '<article class="card game-card"><div class="game-img game-brand-icon '+(logo?'':'no-logo')+'">'+icon+'<span class="fallback-icon" aria-hidden="true">'+escapeHtml(gameInitials(g.name))+'</span></div><div class="game-info"><h4>'+name+'</h4><div class="genre">'+genre+'</div><div class="online">'+fmt(g.playerCount||0)+' игроков на Squadra</div><button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="addGameToLibrary('+arg+')"><i class="fa-solid fa-plus"></i> В библиотеку</button></div></article>';
@@ -239,7 +254,7 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           nonce: hashedNonce,
-          use_fedcm_for_button: true,
+          use_fedcm_for_button: false,
           callback: handleGoogleCredential
         });
         googleIdentityInitialized = true;
@@ -1332,7 +1347,6 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
 
     currentUser=session?.user||null;
     renderAuthState(currentUser);
-    if(currentUser) { await loadAccountData(); await loadAdminAccess(); setupRealtime(); await loadChatList(); } else { await Promise.all([loadGameCatalog(),loadHomeTournaments(),loadCreatedTournaments(),loadPlatformEvents()]); }applyLocationRoute();
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
       if(currentUser) { loadAccountData(); loadAdminAccess(); setupRealtime(); } else {if(realtimeChannel)supabaseClient.removeChannel(realtimeChannel);realtimeChannel=null;activeCommunityGroup=null;isAdmin=false;const adminNav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
@@ -1344,6 +1358,13 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
         showNotification('Ты вошёл в Squadra. Добро пожаловать!');
       }
     });
+    if(currentUser) {
+      const tasks=[loadAccountData(),loadAdminAccess(),(async()=>{setupRealtime();await loadChatList();})()];
+      await Promise.allSettled(tasks);
+    } else {
+      await Promise.allSettled([loadGameCatalog(),loadHomeTournaments(),loadCreatedTournaments(),loadPlatformEvents()]);
+    }
+    applyLocationRoute();
   }
 
   applyLocationRoute();
