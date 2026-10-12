@@ -1302,6 +1302,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     identity.setAttribute('aria-label', 'Открыть профиль');
     const signOut = document.createElement('button');
     signOut.className = 'btn btn-ghost';
+    signOut.setAttribute('aria-label', 'Выйти из аккаунта');
+    signOut.title = 'Выйти из аккаунта';
     signOut.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i><span>Выйти</span>';
     signOut.onclick = async () => {
       const { error } = await supabaseClient.auth.signOut();
