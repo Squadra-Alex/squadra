@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
         user_id: currentReport.reporter_id, kind: "report_update", body: notice,
         source_type: "community_report", source_id: reportId, actor_id: callerId,
       });
-      if (noticeError) { console.error("Could not notify reporter before report deletion:", noticeError); return response({ error: "Could not notify report author; report was not deleted" }, 500); }
+      if (noticeError) console.error("Could not notify reporter before deletion; continuing with requested deletion:", noticeError);
     }
     const { data, error } = await admin.from("community_reports").delete().eq("id", reportId).select("id").maybeSingle();
     if (error) { console.error("Could not delete report:", error); return response({ error: "Could not delete report" }, 500); }
