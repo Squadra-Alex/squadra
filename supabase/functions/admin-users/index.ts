@@ -64,6 +64,17 @@ Deno.serve(async (req: Request) => {
     return response({ error: "You cannot remove your own access" }, 400);
   }
 
+  if (action === "verify") {
+    const color = body.color === "blue" || body.color === "green" ? body.color : null;
+    const { error } = await admin.from("profiles").update({
+      verified_color: color,
+      verified_at: color ? new Date().toISOString() : null,
+      verified_by: color ? callerId : null,
+    }).eq("id", targetUserId);
+    if (error) return response({ error: "Could not update verification badge" }, 500);
+    return response({ ok: true, color });
+  }
+
   if (action === "ban" || action === "unban") {
     const { data: targetRoles } = await admin.from("user_roles").select("role").eq("user_id", targetUserId);
     if ((targetRoles || []).some((r) => r.role === "admin")) {
