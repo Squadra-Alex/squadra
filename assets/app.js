@@ -1322,6 +1322,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     });
   }
 
+  applyLocationRoute();
   initSupabaseAuth().catch(error => {
     console.error('Supabase Auth initialization failed:', error);
     showNotification('Авторизация не загрузилась. Обнови страницу и попробуй ещё раз.');
