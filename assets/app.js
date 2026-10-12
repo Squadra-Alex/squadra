@@ -132,7 +132,6 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
     // RENDER ON LOAD
   try {
     document.getElementById('homeGames').innerHTML = games.slice(0,4).map(gameCard).join('');
-    renderLibrary([]);
     renderGames();
     document.getElementById('playersBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Войди, чтобы искать игроков.</td></tr>';
   } catch (error) {
