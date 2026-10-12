@@ -1265,7 +1265,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
-    if (!authIsConfigured()) return;
+    if (!authIsConfigured()) { applyLocationRoute(); return; }
     try {
       supabaseClient = await ensureSupabaseClient();
     } catch (error) {
