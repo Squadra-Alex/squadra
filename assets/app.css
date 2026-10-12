@@ -1481,3 +1481,33 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 .admin-activity-disclosure[open]>summary:after{content:"−"}
 .admin-activity-entries{max-height:min(48dvh,560px);overflow:auto;padding:0 16px 16px;overscroll-behavior:contain}
 .admin-activity-entries .admin-detail-row{margin-top:10px}
+
+
+/* Mobile conversation view: keep the whole chat inside the viewport. */
+@media(max-width:760px){
+  body:has(#messages.chat-open){overflow:hidden!important}
+  body:has(#messages.chat-open) footer{display:none!important}
+  #messages.chat-open{
+    position:fixed!important;z-index:1100!important;
+    inset:68px 0 0!important;width:100vw!important;height:auto!important;
+    min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;
+    overflow:hidden!important;background:var(--bg-2)!important;
+  }
+  #messages.chat-open .messenger{
+    position:relative!important;inset:auto!important;
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;max-width:none!important;height:100%!important;
+    min-height:0!important;max-height:none!important;margin:0!important;
+    border:0!important;border-radius:0!important;overflow:hidden!important;
+  }
+  #messages.chat-open .chat-main{width:100%!important;min-width:0!important;height:100%!important}
+  #messages.chat-open .chat-header{width:100%;min-width:0;overflow:hidden;gap:8px;padding:8px 10px}
+  #messages.chat-open .chat-header .mini-avatar{width:38px;height:38px;flex:0 0 38px}
+  #messages.chat-open .chat-header .player-profile-link{min-width:0;max-width:none;flex:1 1 auto;overflow:hidden}
+  #messages.chat-open .chat-header .player-profile-link strong,
+  #messages.chat-open .chat-header .player-profile-link small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #messages.chat-open .chat-header>.btn{flex:0 0 auto;padding:8px 10px;font-size:12px;white-space:nowrap}
+  #messages.chat-open .chat-messages{width:100%;min-width:0;overflow-x:hidden!important;overflow-y:auto!important;padding:12px 10px}
+  #messages.chat-open .message{width:fit-content;max-width:min(88%,480px)!important;min-width:0;overflow-wrap:anywhere}
+  #messages.chat-open .chat-input{width:100%;min-width:0}
+}
