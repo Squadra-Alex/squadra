@@ -168,7 +168,7 @@
   .btn-primary:hover { box-shadow:var(--neon); transform:translateY(-1px); filter:brightness(1.12); }
   .btn-ghost { border-color:color-mix(in srgb, var(--red) 35%, transparent); color:var(--red); background:color-mix(in srgb, var(--red) 4%, transparent); }
   .btn-ghost:hover { background:color-mix(in srgb, var(--red) 12%, transparent); box-shadow:var(--neon-soft); }
-  .btn-danger { background:#1a0a0d; border-color:var(--red-dark); color:#ff8a90; }
+  .btn-danger { background:#1a0a0d; border-color:var(--red-dark); color:var(--red); }
   .btn-danger:hover { background:var(--red-dark); color:#fff; box-shadow:var(--neon-soft); }
 
   /* ===== STATS ===== */
@@ -303,7 +303,7 @@
   .message { max-width:70%; padding:10px 14px; border-radius:10px 10px 10px 2px; background:var(--bg-3); font-size:14px; border:1px solid rgba(255,255,255,.05); }
   .message.own { margin-left:auto; border-radius:10px 10px 2px 10px; background:linear-gradient(135deg, var(--red-dark), #4d0a10); border-color:var(--border-hi); box-shadow:var(--neon-soft); }
   .message .author { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:4px; }
-  .message.own .author { color:#ff9aa0; }
+  .message.own .author { color:var(--red); }
   .chat-input { display:flex; gap:10px; padding:14px; border-top:1px solid var(--border); }
   ::-webkit-scrollbar { width:8px; height:8px; }
   ::-webkit-scrollbar-track { background:var(--bg-2); }
@@ -677,7 +677,7 @@
   input,select,textarea { border-radius:9px; background:#111114; border-color:rgba(255,255,255,.11); }
   input:focus,select:focus,textarea:focus { border-color:var(--red); box-shadow:0 0 0 3px color-mix(in srgb, var(--red) 12%, transparent); }
   table { border-radius:13px; border-color:var(--border); background:#121215; }
-  th { color:#fa555d; background:color-mix(in srgb, var(--red) 7%, transparent); border-bottom-color:color-mix(in srgb, var(--red) 18%, transparent); }
+  th { color:var(--red); background:color-mix(in srgb, var(--red) 7%, transparent); border-bottom-color:color-mix(in srgb, var(--red) 18%, transparent); }
   td { color:#d0ccce; }
   .badge { border-radius:6px; }
   .game-card { border-radius:14px; }
@@ -760,7 +760,7 @@ input,textarea,select {min-height:44px;padding:12px 14px;font-size:15px}
 .player-profile-link {display:inline-flex;align-items:center;gap:8px;text-align:left;background:none;border:0;color:inherit;cursor:pointer;font:inherit}
 .player-profile-link:hover {color:var(--red)}
 .staff-badge,.verified-badge {display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:700;vertical-align:middle}
-.staff-badge.admin {color:#ff6670;background:color-mix(in srgb, var(--red) 14%, transparent);border:1px solid color-mix(in srgb, var(--red) 30%, transparent)}
+.staff-badge.admin {color:var(--red);background:color-mix(in srgb, var(--red) 14%, transparent);border:1px solid color-mix(in srgb, var(--red) 30%, transparent)}
 .staff-badge.moderator {color:#ffc44d;background:rgba(255,176,32,.13);border:1px solid rgba(255,176,32,.3)}
 .verified-badge.blue {color:#54a8ff}.verified-badge.green {color:#3ddc84}
 .profile-badges {display:flex;gap:7px;margin-top:8px}
@@ -1061,3 +1061,22 @@ body[data-theme="light"]{--red-glow:color-mix(in srgb,var(--red) 28%,transparent
  .admin-actions>.btn,.admin-user-actions>.btn{flex:1 1 130px}
 }
 @media(max-width:400px){header .logo{font-size:16px!important}.section{padding:13px!important}.profile-skeleton-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+@media(max-width:760px){
+ header{flex-wrap:nowrap!important}
+ header .auth-buttons{flex:0 0 auto!important;width:auto!important}
+ header .account-chip{width:38px!important;max-width:38px!important;height:38px;justify-content:center;padding:0!important;border-radius:12px!important}
+ header .account-chip span,header .auth-buttons .btn-ghost span{display:none!important}
+ header .auth-buttons .btn-ghost{width:38px;min-width:38px;height:38px;padding:0!important;justify-content:center;border-radius:12px!important}
+ header .auth-buttons .btn-primary{min-width:38px;width:38px;height:38px;padding:0!important}
+ .hero{display:grid!important;grid-template-columns:52px minmax(0,1fr);align-items:start!important;gap:13px!important;padding:18px!important}
+ .hero-emblem{width:52px!important;height:52px!important;flex:0 0 52px!important;font-size:23px!important;border-radius:13px!important}
+ .hero-body{min-width:0!important;width:auto!important}
+ .hero-body .eyebrow{font-size:9px;letter-spacing:.11em}
+ .hero-body h2{font-size:22px!important;line-height:1.15;overflow-wrap:anywhere}
+ .hero-body p{font-size:14px;line-height:1.55}
+ .hero-actions{grid-column:1/-1;display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%;gap:8px!important;margin-top:2px}
+ .hero-actions>.btn{width:100%;min-width:0}
+ .home-pathways{grid-template-columns:minmax(0,1fr)!important;gap:9px!important;margin:16px 0 24px!important}
+ .pathway-card{min-height:72px;padding:12px!important}
+}
