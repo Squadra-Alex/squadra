@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=admin-details-20261012">
+<link rel="stylesheet" href="/assets/app.css?v=admin-control-20261012">
 </head>
 <body>
 
@@ -393,43 +393,71 @@
     </section>
 
     <!-- ADMIN -->
-    <section id="admin" class="section">
-      <h1><i class="fa-solid fa-shield-halved"></i>Панель администратора</h1>
-      <p class="subtitle">Данные платформы и модерация сообщества</p>
-      <div class="stats-grid" id="adminStatsGrid">
-        <div class="stat-box"><div class="value" id="adminUsersCount">—</div><div class="label">Игроков</div></div>
-        <div class="stat-box"><div class="value" id="adminTeamsCount">—</div><div class="label">Команд</div></div>
-        <div class="stat-box"><div class="value" id="adminTournamentsCount">—</div><div class="label">Турниров</div></div>
-        <div class="stat-box"><div class="value" id="adminPostsCount">—</div><div class="label">Публикаций</div></div><div class="stat-box"><div class="value" id="adminMatchesCount">—</div><div class="label">Матчей</div></div>
+    <section id="admin" class="section admin-page">
+      <div class="admin-topbar">
+        <div class="admin-topbar-brand"><span class="admin-mark"><i class="fa-solid fa-shield-halved"></i></span><div><strong>Squadra Control</strong><small>Управление платформой</small></div></div>
+        <button class="btn btn-ghost" onclick="loadAdminPanel()"><i class="fa-solid fa-rotate"></i><span>Обновить данные</span></button>
       </div>
-      <div id="adminChartCard" class="card" style="margin-top:24px;"><h2><i class="fa-solid fa-chart-column"></i>Регистрации игроков за 7 дней</h2><div id="adminRegistrationChart" class="grid" style="grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:160px;"><p class="subtitle">Загружаем график…</p></div></div>
-      <div id="adminTeamsCard" class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-users-gear"></i>Команды платформы</h2></div><div id="adminTeamsList"><p class="subtitle">Загрузка команд…</p></div></div>
-      <div id="adminTournamentsCard" class="card" style="margin-top:24px;"><div class="section-heading"><h2><i class="fa-solid fa-trophy"></i>Турниры платформы</h2></div><div id="adminTournamentsList"><p class="subtitle">Загрузка турниров…</p></div></div>
-      <div id="adminGamesCard" class="card" style="margin-top:24px;">
-        <div class="section-heading"><h2><i class="fa-solid fa-gamepad"></i>Каталог игр</h2></div>
-        <div class="grid grid-3" style="align-items:end;">
-          <div class="form-group"><label for="adminGameName">Название</label><input id="adminGameName" maxlength="60" placeholder="Название игры"></div>
-          <div class="form-group"><label for="adminGameGenre">Жанр</label><input id="adminGameGenre" maxlength="40" placeholder="Жанр"></div>
-          <div class="form-group"><button class="btn btn-primary" onclick="adminCreateGame()">Добавить игру</button></div>
+      <div class="admin-shell">
+        <aside class="admin-sidebar" aria-label="Разделы панели администратора">
+          <p class="admin-sidebar-label">ПАНЕЛЬ</p>
+          <button class="admin-nav-item active" data-admin-tab="overview" onclick="adminNavigate('overview',this)"><i class="fa-solid fa-chart-pie"></i><span>Обзор</span></button>
+          <button class="admin-nav-item" data-admin-tab="users" onclick="adminNavigate('users',this)"><i class="fa-solid fa-users"></i><span>Пользователи</span><span class="admin-nav-count" id="adminUsersNavCount">—</span></button>
+          <p class="admin-sidebar-label">МОДЕРАЦИЯ</p>
+          <button class="admin-nav-item" data-admin-tab="reports" onclick="adminNavigate('reports',this)"><i class="fa-solid fa-triangle-exclamation"></i><span>Жалобы</span></button>
+          <button class="admin-nav-item" data-admin-tab="posts" onclick="adminNavigate('posts',this)"><i class="fa-solid fa-flag"></i><span>Публикации</span></button>
+          <p class="admin-sidebar-label">ПЛАТФОРМА</p>
+          <button class="admin-nav-item" data-admin-tab="platform" onclick="adminNavigate('platform',this)"><i class="fa-solid fa-trophy"></i><span>Команды и турниры</span></button>
+          <button class="admin-nav-item" data-admin-tab="games" onclick="adminNavigate('games',this)"><i class="fa-solid fa-gamepad"></i><span>Каталог игр</span></button>
+          <div class="admin-sidebar-foot"><i class="fa-solid fa-lock"></i><span>Доступ администратора</span></div>
+        </aside>
+        <div class="admin-workspace">
+          <div class="admin-workspace-heading"><div><p class="admin-eyebrow">SQUADRA / CONTROL</p><h1 id="adminWorkspaceTitle">Обзор платформы</h1><p class="subtitle" id="adminWorkspaceDescription">Ключевые показатели и последние изменения</p></div><span class="admin-live"><i></i> Система активна</span></div>
+          <p id="adminStatus" class="admin-status subtitle">Загружаю данные…</p>
+          <section class="admin-workspace-section active" id="adminTab-overview">
+            <div class="stats-grid admin-stats-grid" id="adminStatsGrid">
+              <div class="stat-box admin-stat"><div class="admin-stat-icon"><i class="fa-solid fa-users"></i></div><div class="value" id="adminUsersCount">—</div><div class="label">Пользователи</div></div>
+              <div class="stat-box admin-stat"><div class="admin-stat-icon"><i class="fa-solid fa-people-group"></i></div><div class="value" id="adminTeamsCount">—</div><div class="label">Команды</div></div>
+              <div class="stat-box admin-stat"><div class="admin-stat-icon"><i class="fa-solid fa-trophy"></i></div><div class="value" id="adminTournamentsCount">—</div><div class="label">Турниры</div></div>
+              <div class="stat-box admin-stat"><div class="admin-stat-icon"><i class="fa-solid fa-bolt"></i></div><div class="value" id="adminMatchesCount">—</div><div class="label">Матчи</div></div>
+            </div>
+            <div id="adminChartCard" class="card admin-card admin-chart-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">АКТИВНОСТЬ</p><h2>Регистрации за неделю</h2></div><span class="admin-card-icon"><i class="fa-solid fa-chart-column"></i></span></div><div id="adminRegistrationChart" class="grid admin-registration-chart" style="grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:160px;"><p class="subtitle">Загружаем график…</p></div></div>
+            <div class="admin-quick-grid">
+              <button class="admin-quick-card" onclick="adminNavigate('users',document.querySelector('[data-admin-tab=users]'))"><i class="fa-solid fa-user-gear"></i><span><strong>Управление аккаунтами</strong><small>Профиль, роль, доступ и верификация</small></span><i class="fa-solid fa-arrow-right"></i></button>
+              <button class="admin-quick-card" onclick="adminNavigate('reports',document.querySelector('[data-admin-tab=reports]'))"><i class="fa-solid fa-shield"></i><span><strong>Центр модерации</strong><small>Жалобы и публикации сообщества</small></span><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+          </section>
+          <section class="admin-workspace-section" id="adminTab-users">
+            <div id="adminUsersCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">АККАУНТЫ И ДОСТУП</p><h2>Пользователи</h2></div><span class="admin-card-icon"><i class="fa-solid fa-users"></i></span></div>
+              <p id="adminUsersSummary" class="subtitle"></p>
+              <div class="admin-toolbar"><input id="adminUsersSearch" maxlength="100" placeholder="Поиск по нику, email, игре или региону…" oninput="filterAdminList(&quot;adminUsersBody&quot;,this.value)" aria-label="Поиск пользователей"></div>
+              <div class="admin-table-wrap"><table><thead><tr><th>Игрок</th><th>Игра</th><th>Регион</th><th>Ранг</th><th>Уровень</th><th>Рейтинг</th><th>Создан</th><th>Управление аккаунтом</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
+            </div>
+          </section>
+          <section class="admin-workspace-section" id="adminTab-reports">
+            <div class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">ЦЕНТР МОДЕРАЦИИ</p><h2>Жалобы</h2></div><span class="admin-card-icon"><i class="fa-solid fa-triangle-exclamation"></i></span></div>
+              <div class="admin-toolbar admin-report-filters"><input id="adminReportsSearch" maxlength="100" placeholder="Поиск по жалобе, игроку или описанию…" oninput="filterAdminReports()" aria-label="Поиск жалоб"><select id="adminReportsStatus" aria-label="Фильтр по статусу" onchange="filterAdminReports()"><option value="">Все статусы</option><option value="open">Новые</option><option value="reviewing">В работе</option><option value="resolved">Решены</option><option value="dismissed">Отклонены</option></select></div>
+              <div id="adminReportsList"><p class="subtitle">Загружаю жалобы…</p></div>
+            </div>
+          </section>
+          <section class="admin-workspace-section" id="adminTab-posts">
+            <div class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">КОНТЕНТ СООБЩЕСТВА</p><h2>Публикации</h2></div><span class="admin-card-icon"><i class="fa-solid fa-flag"></i></span></div>
+              <p class="subtitle">Проверяй публикации и открывай полную карточку автора.</p>
+              <div class="admin-toolbar"><input id="adminPostsSearch" maxlength="100" placeholder="Поиск по тексту, автору или типу медиа…" oninput="filterAdminList(&quot;adminPostsList&quot;,this.value)" aria-label="Поиск публикаций"></div>
+              <div id="adminPostsList"><p class="subtitle">Загружаю публикации…</p></div>
+            </div>
+          </section>
+          <section class="admin-workspace-section" id="adminTab-platform">
+            <div id="adminTeamsCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">СОСТАВЫ И СООБЩЕСТВА</p><h2>Команды платформы</h2></div><span class="admin-card-icon"><i class="fa-solid fa-people-group"></i></span></div><div id="adminTeamsList"><p class="subtitle">Загрузка команд…</p></div></div>
+            <div id="adminTournamentsCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">СОРЕВНОВАНИЯ</p><h2>Турниры платформы</h2></div><span class="admin-card-icon"><i class="fa-solid fa-trophy"></i></span></div><div id="adminTournamentsList"><p class="subtitle">Загрузка турниров…</p></div></div>
+          </section>
+          <section class="admin-workspace-section" id="adminTab-games">
+            <div id="adminGamesCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">КАТАЛОГ</p><h2>Игры</h2></div><span class="admin-card-icon"><i class="fa-solid fa-gamepad"></i></span></div>
+              <div class="grid grid-3 admin-game-form" style="align-items:end;"><div class="form-group"><label for="adminGameName">Название</label><input id="adminGameName" maxlength="60" placeholder="Название игры"></div><div class="form-group"><label for="adminGameGenre">Жанр</label><input id="adminGameGenre" maxlength="40" placeholder="Жанр"></div><div class="form-group"><button class="btn btn-primary" onclick="adminCreateGame()">Добавить игру</button></div></div>
+              <div id="adminGamesList"></div>
+            </div>
+          </section>
         </div>
-        <div id="adminGamesList"></div>
-      </div>
-      <div id="adminUsersCard" class="card" style="margin-top:24px;">
-        <div class="section-heading"><h2><i class="fa-solid fa-user-gear"></i>Игроки</h2><button class="btn btn-ghost" onclick="loadAdminPanel()"><i class="fa-solid fa-rotate"></i> Обновить</button></div>
-        <p id="adminStatus" class="subtitle">Загружаю данные…</p>
-        <div class="admin-toolbar"><input id="adminUsersSearch" maxlength="100" placeholder="Поиск: ник, email, игра, регион…" oninput="filterAdminList(&quot;adminUsersBody&quot;,this.value)" aria-label="Поиск пользователей"></div>
-        <div style="overflow-x:auto;"><table><thead><tr><th>Игрок</th><th>Игра</th><th>Регион</th><th>Ранг</th><th>Уровень</th><th>Рейтинг</th><th>Создан</th><th>Доступ и действия</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
-      </div>
-      <div class="card" style="margin-top:24px;">
-        <div class="section-heading"><h2><i class="fa-solid fa-triangle-exclamation"></i>Жалобы</h2><button class="btn btn-ghost" onclick="loadAdminPanel()">Обновить</button></div>
-        <div class="admin-toolbar admin-report-filters"><input id="adminReportsSearch" maxlength="100" placeholder="Поиск по жалобе, игроку или описанию…" oninput="filterAdminReports()" aria-label="Поиск жалоб"><select id="adminReportsStatus" aria-label="Фильтр по статусу" onchange="filterAdminReports()"><option value="">Все статусы</option><option value="open">Новые</option><option value="reviewing">В работе</option><option value="resolved">Решены</option><option value="dismissed">Отклонены</option></select></div>
-        <div id="adminReportsList"><p class="subtitle">Загружаю жалобы…</p></div>
-      </div>
-      <div class="card" style="margin-top:24px;">
-        <div class="section-heading"><h2><i class="fa-solid fa-flag"></i>Публикации сообщества</h2></div>
-        <p class="subtitle">Удаление публикации сразу скрывает её для всех игроков.</p>
-        <div class="admin-toolbar"><input id="adminPostsSearch" maxlength="100" placeholder="Поиск по тексту, автору или типу медиа…" oninput="filterAdminList(&quot;adminPostsList&quot;,this.value)" aria-label="Поиск публикаций"></div>
-        <div id="adminPostsList"><p class="subtitle">Загружаю публикации…</p></div>
       </div>
     </section>
 
@@ -444,6 +472,25 @@
 </footer>
 
 <!-- MODALS -->
+<div id="adminUserEditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminUserEditTitle">
+  <div class="modal-content admin-user-edit-modal">
+    <button class="modal-close" type="button" aria-label="Закрыть" onclick="closeModal('adminUserEditModal')"><i class="fa-solid fa-xmark"></i></button>
+    <p class="admin-eyebrow">ТОЧЕЧНОЕ РЕДАКТИРОВАНИЕ</p><h2 id="adminUserEditTitle">Настройки пользователя</h2><p id="adminUserEditIdentity" class="subtitle"></p>
+    <div class="admin-edit-grid">
+      <div class="form-group"><label for="adminEditDisplayName">Отображаемое имя</label><input id="adminEditDisplayName" maxlength="32" oninput="updateAdminEditWarning()"></div>
+      <div class="form-group"><label for="adminEditUsername">Юзернейм</label><input id="adminEditUsername" maxlength="24" oninput="updateAdminEditWarning()"></div>
+      <div class="form-group"><label for="adminEditGame">Основная игра</label><input id="adminEditGame" maxlength="60"></div>
+      <div class="form-group"><label for="adminEditRegion">Регион</label><input id="adminEditRegion" maxlength="40"></div>
+      <div class="form-group"><label for="adminEditRank">Ранг</label><input id="adminEditRank" maxlength="40"></div>
+      <div class="form-group"><label for="adminEditLevel">Уровень</label><input id="adminEditLevel" type="number" min="1" max="100" step="1"></div>
+      <div class="form-group"><label for="adminEditRating">Рейтинг</label><input id="adminEditRating" type="number" min="0" max="100000" step="1"></div>
+      <div class="form-group"><label for="adminEditVerified">Значок верификации</label><select id="adminEditVerified"><option value="">Без значка</option><option value="blue">Синяя галочка</option><option value="green">Зелёная галочка</option></select></div>
+      <div class="form-group admin-edit-bio"><label for="adminEditBio">О себе</label><textarea id="adminEditBio" maxlength="400" rows="4"></textarea><small class="subtitle">До 400 символов</small></div>
+    </div>
+    <p id="adminEditVerificationWarning" class="admin-edit-warning" hidden><i class="fa-solid fa-circle-exclamation"></i> Изменение имени или юзернейма снимет значок верификации.</p>
+    <div class="admin-edit-actions"><button class="btn btn-ghost" onclick="closeModal('adminUserEditModal')">Отмена</button><button class="btn btn-primary" onclick="adminSaveUserEdit()"><i class="fa-solid fa-floppy-disk"></i> Сохранить изменения</button></div>
+  </div>
+</div>
 <div id="adminDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminDetailTitle">
   <div class="modal-content admin-detail-modal">
     <button class="modal-close" type="button" aria-label="Закрыть" onclick="closeModal('adminDetailModal')"><i class="fa-solid fa-xmark"></i></button>
@@ -502,7 +549,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=admin-details-20261012"></script>
+<script src="/assets/app.js?v=admin-control-20261012"></script>
 
 <script>
 (function () {

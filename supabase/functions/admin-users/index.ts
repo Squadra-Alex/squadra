@@ -60,6 +60,62 @@ Deno.serve(async (req: Request) => {
 
   const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId : "";
   if (!/^[0-9a-f-]{36}$/i.test(targetUserId)) return response({ error: "Invalid target user" }, 400);
+  if (action === "user-update") {
+    const input = body.profile && typeof body.profile === "object" ? body.profile as Record<string, unknown> : null;
+    if (!input) return response({ error: "Invalid profile data" }, 400);
+    const displayName = typeof input.display_name === "string" ? input.display_name.trim() : "";
+    const username = typeof input.username === "string" ? input.username.trim().replace(/^@/, "").toLowerCase() : "";
+    const gameName = typeof input.game_name === "string" ? input.game_name.trim() : "";
+    const region = typeof input.region === "string" ? input.region.trim() : "";
+    const rankName = typeof input.rank_name === "string" ? input.rank_name.trim() : "";
+    const bio = typeof input.bio === "string" ? input.bio.trim() : "";
+    const level = Number(input.level);
+    const rating = Number(input.rating);
+    const requestedColor = input.verified_color === "" ? null : input.verified_color;
+    if (!displayName || displayName.length > 32) return response({ error: "Display name must be 1–32 characters" }, 400);
+    if (!/^[a-z0-9_]{3,24}$/.test(username)) return response({ error: "Username must be 3–24 characters using letters, numbers, and underscores" }, 400);
+    if (gameName.length > 60 || region.length > 40 || rankName.length > 40 || bio.length > 400) return response({ error: "One or more fields exceed their character limit" }, 400);
+    if (!Number.isInteger(level) || level < 1 || level > 100 || !Number.isInteger(rating) || rating < 0 || rating > 100000) return response({ error: "Level or rating is outside the allowed range" }, 400);
+    if (requestedColor !== null && requestedColor !== "blue" && requestedColor !== "green") return response({ error: "Invalid verification color" }, 400);
+
+    const { data: currentProfile, error: currentProfileError } = await admin
+      .from("profiles")
+      .select("display_name,username")
+      .eq("id", targetUserId)
+      .maybeSingle();
+    if (currentProfileError) return response({ error: "Could not load profile before update" }, 500);
+    if (!currentProfile) return response({ error: "Profile not found" }, 404);
+    const identityChanged = (currentProfile.display_name || "") !== displayName || (currentProfile.username || "") !== username;
+    const nextColor = identityChanged ? null : requestedColor;
+    const profileUpdate: Record<string, unknown> = {
+      display_name: displayName,
+      username,
+      game_name: gameName,
+      region,
+      rank_name: rankName,
+      level,
+      rating,
+      bio,
+      verified_color: nextColor,
+      verified_at: nextColor ? new Date().toISOString() : null,
+      verified_by: nextColor ? callerId : null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data: updatedProfile, error: updateError } = await admin
+      .from("profiles")
+      .update(profileUpdate)
+      .eq("id", targetUserId)
+      .select("id,display_name,username,verified_color")
+      .maybeSingle();
+    if (updateError) {
+      if (updateError.code === "23505") return response({ error: "Username already taken" }, 409);
+      console.error("Could not update admin-managed profile:", updateError);
+      return response({ error: "Could not update profile" }, 500);
+    }
+    if (!updatedProfile) return response({ error: "Profile not found" }, 404);
+    return response({ ok: true, profile: updatedProfile, identityChanged });
+  }
+
   if (targetUserId === callerId && (action === "ban" || action === "revoke_role")) {
     return response({ error: "You cannot remove your own access" }, 400);
   }
