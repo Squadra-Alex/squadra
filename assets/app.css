@@ -917,3 +917,7 @@ table{font-size:14px}
  .hero{gap:16px}
  #loginModal .modal-content,#registerModal .modal-content{padding:24px 20px}
 }
+
+/* Keep the fixed menu drawer outside header clipping. */
+header{overflow:visible!important}
+header::after{display:none!important;pointer-events:none!important}
