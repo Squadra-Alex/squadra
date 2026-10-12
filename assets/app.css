@@ -1434,3 +1434,6 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
   background:color-mix(in srgb,#54a8ff 14%,transparent);
   filter:drop-shadow(0 0 7px color-mix(in srgb,#54a8ff 45%,transparent));
 }
+
+
+.my-reports-panel{margin-top:24px}.my-report-card{padding:16px;margin:12px 0;background:var(--bg-2)}.my-report-card header{display:flex;align-items:center;justify-content:space-between;gap:12px}.my-report-card>p{margin:10px 0}.my-report-reply{margin-top:12px;padding:12px 14px;border-left:3px solid var(--accent,var(--red));border-radius:8px;background:color-mix(in srgb,var(--accent,var(--red)) 9%,var(--bg-2))}.my-report-reply p{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}.admin-detail-section #adminReportReply{display:block;width:100%;min-height:100px;max-height:220px;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font:500 14px/1.5 'Inter',system-ui,sans-serif}

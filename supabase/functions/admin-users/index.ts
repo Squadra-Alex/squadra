@@ -66,21 +66,47 @@ Deno.serve(async (req: Request) => {
   if (action === "report-update" || action === "report-delete") {
     const reportId = typeof body.reportId === "string" ? body.reportId : "";
     if (!/^[0-9a-f-]{36}$/i.test(reportId)) return response({ error: "Invalid report id" }, 400);
+    const { data: currentReport, error: reportReadError } = await admin.from("community_reports")
+      .select("id,reporter_id,status,moderator_reply").eq("id", reportId).maybeSingle();
+    if (reportReadError) return response({ error: "Could not load report" }, 500);
+    if (!currentReport) return response({ error: "Report not found" }, 404);
+    const statusLabels: Record<string,string> = { open: "новая", reviewing: "в работе", resolved: "решена", dismissed: "отклонена" };
     if (action === "report-update") {
       const status = typeof body.status === "string" ? body.status : "";
       if (!["reviewing", "resolved", "dismissed"].includes(status)) return response({ error: "Invalid report status" }, 400);
-      const { data, error } = await admin.from("community_reports")
-        .update({ status, reviewed_by: callerId, reviewed_at: new Date().toISOString() })
-        .eq("id", reportId).select("id,status").maybeSingle();
+      const hasReply = Object.prototype.hasOwnProperty.call(body, "reply");
+      const reply = hasReply && typeof body.reply === "string" ? body.reply.trim() : "";
+      if (hasReply && (typeof body.reply !== "string" || reply.length > 1000)) return response({ error: "Reply must be up to 1000 characters" }, 400);
+      const replyChanged = hasReply && reply !== (currentReport.moderator_reply || "");
+      const update: Record<string, unknown> = { status, reviewed_by: callerId, reviewed_at: new Date().toISOString() };
+      if (hasReply) update.moderator_reply = reply || null;
+      const { data, error } = await admin.from("community_reports").update(update)
+        .eq("id", reportId).select("id,status,moderator_reply").maybeSingle();
       if (error) { console.error("Could not update report:", error); return response({ error: "Could not update report" }, 500); }
       if (!data) return response({ error: "Report not found" }, 404);
+      if (currentReport.reporter_id && (status !== currentReport.status || replyChanged)) {
+        const notice = "Жалоба: статус «" + (statusLabels[status] || status) + "»." + (replyChanged && reply ? " Ответ модерации: " + reply : "");
+        const { error: noticeError } = await admin.from("notifications").insert({
+          user_id: currentReport.reporter_id, kind: "report_update", body: notice,
+          source_type: "community_report", source_id: reportId, actor_id: callerId,
+        });
+        if (noticeError) console.error("Report updated but reporter notification failed:", noticeError);
+      }
       return response({ ok: true, report: data });
     }
-    const { data, error } = await admin.from("community_reports")
-      .delete().eq("id", reportId).select("id").maybeSingle();
+    const notice = "Жалоба удалена из очереди после рассмотрения. Итоговый статус: «" +
+      (statusLabels[currentReport.status] || currentReport.status) + "»." +
+      (currentReport.moderator_reply ? " Ответ модерации: " + currentReport.moderator_reply : "");
+    if (currentReport.reporter_id) {
+      const { error: noticeError } = await admin.from("notifications").insert({
+        user_id: currentReport.reporter_id, kind: "report_update", body: notice,
+        source_type: "community_report", source_id: reportId, actor_id: callerId,
+      });
+      if (noticeError) { console.error("Could not notify reporter before report deletion:", noticeError); return response({ error: "Could not notify report author; report was not deleted" }, 500); }
+    }
+    const { data, error } = await admin.from("community_reports").delete().eq("id", reportId).select("id").maybeSingle();
     if (error) { console.error("Could not delete report:", error); return response({ error: "Could not delete report" }, 500); }
-    if (!data) return response({ error: "Report not found" }, 404);
-    return response({ ok: true, deleted: data.id });
+    return response({ ok: true, deleted: data?.id || reportId });
   }
 
   const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId : "";

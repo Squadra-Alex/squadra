@@ -418,7 +418,7 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
     accountTournamentIds=(regs.data||[]).map(x=>x.tournament_id);
     renderTournamentRegistrations(accountTournamentIds);
     await Promise.all([loadCreatedTournaments(),loadCommunityGroups(),loadTeamDirectory()]);
-    accountNotifications=notifs.data||[];renderNotifications(accountNotifications);loadChatList();await Promise.all([loadPendingMatches(),loadGameCatalog(),loadLeaderboards(),loadPlatformEvents(),loadHomeTournaments()]);
+    accountNotifications=notifs.data||[];renderNotifications(accountNotifications);const {data:myReports,error:myReportsError}=await supabaseClient.from('community_reports').select('id,reason,details,status,created_at,reviewed_at,moderator_reply,post_id').eq('reporter_id',uid).order('created_at',{ascending:false}).limit(50);if(myReportsError)console.error('Could not load own reports:',myReportsError);renderMyCommunityReports(myReports||[]);loadChatList();await Promise.all([loadPendingMatches(),loadGameCatalog(),loadLeaderboards(),loadPlatformEvents(),loadHomeTournaments()]);
     if(document.getElementById('plName')) filterPlayers();
   }
 
@@ -893,12 +893,18 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
     document.querySelectorAll('[data-tournament-id]').forEach(b=>{const on=ids.includes(b.dataset.tournamentId);b.disabled=on;b.textContent=on?'Вы зарегистрированы':'Участвовать';});
   }
 function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-people-group',group_message:'fa-comments',follow:'fa-user-plus',friend:'fa-user-group',comment:'fa-comment',match_confirmation:'fa-flag-checkered',match:'fa-chart-line',team_match_result:'fa-ranking-star'}[k]||'fa-bell');}
-  async function openNotification(id){const n=accountNotifications.find(x=>x.id===id);if(!n)return;await markNotificationRead(id);if(n.source_type==='message'&&n.actor_id)return openChatWith(n.actor_id);if(n.source_type==='group'&&n.source_id)return openGroupChat(n.source_id);if(n.source_type==='player'&&(n.actor_id||n.source_id))return openPlayerProfile(n.actor_id||n.source_id);if(n.source_type==='team'){showSection('teams');return;}if(n.source_type==='post'){showSection('community');if(n.source_id)setTimeout(()=>document.getElementById('community-post-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}if(n.source_type==='match'){showSection('history');if(n.source_id)setTimeout(()=>document.getElementById('activity-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}showSection(({message:'messages',team_invite:'teams',group_message:'community',follow:'players',friend:'friends',comment:'community',match_confirmation:'history',match:'history',team_match_result:'teams'}[n.kind]||'notifications'));}
+  async function openNotification(id){const n=accountNotifications.find(x=>x.id===id);if(!n)return;await markNotificationRead(id);if(n.source_type==='community_report'){showSection('notifications');setTimeout(()=>document.getElementById('my-report-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),200);return;}if(n.source_type==='message'&&n.actor_id)return openChatWith(n.actor_id);if(n.source_type==='group'&&n.source_id)return openGroupChat(n.source_id);if(n.source_type==='player'&&(n.actor_id||n.source_id))return openPlayerProfile(n.actor_id||n.source_id);if(n.source_type==='team'){showSection('teams');return;}if(n.source_type==='post'){showSection('community');if(n.source_id)setTimeout(()=>document.getElementById('community-post-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}if(n.source_type==='match'){showSection('history');if(n.source_id)setTimeout(()=>document.getElementById('activity-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}showSection(({message:'messages',team_invite:'teams',group_message:'community',follow:'players',friend:'friends',comment:'community',match_confirmation:'history',match:'history',team_match_result:'teams'}[n.kind]||'notifications'));}
   function renderNotifications(rows) {
     const unread=rows.filter(n=>!n.read_at).length,badge=document.getElementById('notificationCount');
     if(badge){badge.textContent=unread?String(unread):'';badge.hidden=!unread;}
     const list=document.getElementById('notificationsList');
     if(list)list.innerHTML=rows.map(n=>'<article class="card notification-card '+(n.read_at?'is-read':'')+'" onclick="openNotification(\''+n.id+'\')"><div class="notification-icon"><i class="fa-solid '+notificationIcon(n.source_type||n.kind)+'"></i></div><div class="notification-copy"><p>'+escapeHtml(n.body||'У тебя новое обновление.')+'</p><small class="subtitle">'+new Date(n.created_at).toLocaleString('ru-RU')+'</small></div><button class="btn btn-ghost" onclick="event.stopPropagation();markNotificationRead(\''+n.id+'\')">'+(n.read_at?'Открыть':'Прочитано')+'</button></article>').join('')||'<div class="empty-state"><i class="fa-regular fa-bell-slash"></i><p>Новых уведомлений пока нет.</p></div>';
+  }
+  function renderMyCommunityReports(rows) {
+    const host=document.getElementById('myCommunityReportsList');if(!host)return;
+    const statuses={open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'};
+    const reasons={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'};
+    host.innerHTML=rows.map(r=>'<article class="card my-report-card" id="my-report-'+escapeHtml(r.id)+'"><header><strong>'+escapeHtml(reasons[r.reason]||r.reason)+'</strong><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(statuses[r.status]||r.status)+'</span></header><p class="subtitle">Отправлена '+new Date(r.created_at).toLocaleString('ru-RU')+(r.reviewed_at?' • Обновлена '+new Date(r.reviewed_at).toLocaleString('ru-RU'):'')+'</p><p>'+escapeHtml(r.details||'Без дополнительного описания')+'</p>'+(r.moderator_reply?'<div class="my-report-reply"><strong>Ответ модерации</strong><p>'+escapeHtml(r.moderator_reply)+'</p></div>':'<p class="subtitle">Ответ модерации пока не добавлен.</p>')+'</article>').join('')||'<div class="empty-state"><p>Ты ещё не отправлял жалобы.</p></div>';
   }
   async function markNotificationRead(id) {
     const {error}=await supabaseClient.from('notifications').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
@@ -997,12 +1003,19 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     showNotification('Жалоба передана модераторам.');
   }
 
-  async function reviewCommunityReport(reportId,status) {
-    if(!isModerator||!supabaseClient)return;
-    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-update',reportId,status}});
-    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось обновить статус жалобы.');console.error('Report review failed:',error||data);showNotification(message);return;}
-    showNotification(({reviewing:'Жалоба взята в работу.',resolved:'Жалоба отмечена как решённая.',dismissed:'Жалоба отклонена.'})[status]||'Статус жалобы обновлён.');
-    await loadAdminPanel();
+  async function reviewCommunityReport(reportId,status,reply) {
+    if(!isModerator||!supabaseClient)return false;
+    const body={action:'report-update',reportId,status};if(reply!==undefined)body.reply=reply;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body});
+    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось обновить жалобу.');console.error('Report review failed:',error||data);showNotification(message);return false;}
+    showNotification(reply!==undefined?'Ответ отправлен автору жалобы.':({reviewing:'Жалоба взята в работу.',resolved:'Жалоба отмечена как решённая.',dismissed:'Жалоба отклонена.'})[status]||'Статус жалобы обновлён.');
+    await loadAdminPanel();if(reply!==undefined)await adminInspectReport(reportId);return true;
+  }
+  async function adminReplyToReport(reportId,status) {
+    const field=document.getElementById('adminReportReply'),reply=field?.value.trim()||'';
+    if(!reply)return showNotification('Напиши ответ перед отправкой.');
+    if(reply.length>1000)return showNotification('Ответ ограничен 1000 символами.');
+    await reviewCommunityReport(reportId,status==='open'?'reviewing':status,reply);
   }
   async function adminDeleteReport(reportId) {
     if(!isModerator||!supabaseClient||!await askConfirm('Удалить жалобу из очереди модерации без возможности восстановления?'))return;
@@ -1118,6 +1131,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
        .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_events'},()=>{loadPlatformEvents();})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'community_reports',filter:'reporter_id=eq.'+uid},()=>loadAccountData())
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{const el=document.getElementById('notificationCount');if(el){el.textContent=String((Number(el.textContent)||0)+1);el.hidden=false;}loadAccountData();if(payload.new?.body)showNotification(payload.new.body);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);})
       .subscribe();
@@ -1371,7 +1385,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   async function adminInspectReport(id) {
     if(!isAdmin||!supabaseClient)return;
     adminDetailShell('Загружаю жалобу…','<div class="admin-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> Загружаю связанные данные</div>');
-    const {data:r,error}=await supabaseClient.from('community_reports').select('id,reporter_id,post_id,reported_user_id,reason,details,status,reviewed_by,created_at,reviewed_at').eq('id',id).maybeSingle();
+    const {data:r,error}=await supabaseClient.from('community_reports').select('id,reporter_id,post_id,reported_user_id,reason,details,status,reviewed_by,created_at,reviewed_at,moderator_reply').eq('id',id).maybeSingle();
     if(error||!r){adminDetailShell('Жалоба недоступна','<p class="subtitle">Не удалось загрузить жалобу.</p>');return;}
     const ids=[r.reporter_id,r.reported_user_id,r.reviewed_by].filter(Boolean);
     const [profiles,post]=await Promise.all([
@@ -1382,7 +1396,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const player=userId=>{const p=byId.get(userId);return userId?'<button class="player-profile-link" onclick="closeModal(&quot;adminDetailModal&quot;);openPlayerProfile(&quot;'+userId+'&quot;)"><strong>'+escapeHtml(p?.display_name||p?.username||'Игрок')+'</strong><small>'+(p?.username?'@'+escapeHtml(p.username):escapeHtml(userId))+'</small></button>':'<span class="subtitle">Не указан</span>';};
     const postMarkup=post.data?'<section class="admin-detail-section"><div class="admin-entry-header"><h3>Связанная публикация</h3><button class="btn btn-ghost" onclick="closeModal(&quot;adminDetailModal&quot;);adminInspectPost(&quot;'+post.data.id+'&quot;)">Открыть пост</button><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+post.data.id+'&quot;)">Удалить публикацию</button></div><p class="admin-detail-bio">'+escapeHtml(post.data.body||'Публикация без текста')+'</p>'+(post.data.media_url?post.data.media_type==='video'?'<video class="admin-post-media" controls src="'+escapeHtml(post.data.media_url)+'"></video>':'<img class="admin-post-media" src="'+escapeHtml(post.data.media_url)+'" alt="Медиа публикации">':'')+'<p class="subtitle">Автор: '+player(post.data.user_id)+'</p></section>':r.post_id?'<p class="subtitle">Связанный пост удалён или недоступен.</p>':'<p class="subtitle">Жалоба не привязана к публикации.</p>';
     const reason={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'}[r.reason]||r.reason;
-    const html='<div class="admin-detail-grid">'+adminDetailField('Категория',reason)+adminDetailField('Статус',({open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'})[r.status]||r.status)+adminDetailField('Создана',adminFormatDate(r.created_at))+adminDetailField('Обработана',adminFormatDate(r.reviewed_at))+adminDetailField('ID жалобы',r.id)+'</div><section class="admin-detail-section"><h3>Кто отправил</h3>'+player(r.reporter_id)+'</section><section class="admin-detail-section"><h3>На кого жалуются</h3>'+player(r.reported_user_id)+'</section><section class="admin-detail-section"><h3>Подробности жалобы</h3><p class="admin-detail-bio">'+escapeHtml(r.details||'Заявитель не добавил описание.')+'</p></section>'+postMarkup+'<section class="admin-detail-section"><h3>Решение модерации</h3><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решена</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button><button class="btn btn-danger" onclick="adminDeleteReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить жалобу</button></div></section>';
+    const html='<div class="admin-detail-grid">'+adminDetailField('Категория',reason)+adminDetailField('Статус',({open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'})[r.status]||r.status)+adminDetailField('Создана',adminFormatDate(r.created_at))+adminDetailField('Обработана',adminFormatDate(r.reviewed_at))+adminDetailField('ID жалобы',r.id)+'</div><section class="admin-detail-section"><h3>Кто отправил</h3>'+player(r.reporter_id)+'</section><section class="admin-detail-section"><h3>На кого жалуются</h3>'+player(r.reported_user_id)+'</section><section class="admin-detail-section"><h3>Подробности жалобы</h3><p class="admin-detail-bio">'+escapeHtml(r.details||'Заявитель не добавил описание.')+'</p></section>'+postMarkup+'<section class="admin-detail-section"><h3>Ответ отправителю</h3>'+(r.moderator_reply?'<div class="my-report-reply"><p>'+escapeHtml(r.moderator_reply)+'</p></div>':'<p class="subtitle">Ответ ещё не отправлен.</p>')+'<textarea id="adminReportReply" maxlength="1000" rows="4" placeholder="Напиши, что проверено и какое решение принято"></textarea><div class="admin-entry-actions"><button class="btn btn-primary" onclick="adminReplyToReport(&quot;'+r.id+'&quot;,&quot;'+r.status+'&quot;)">Отправить ответ пользователю</button></div></section><section class="admin-detail-section"><h3>Решение модерации</h3><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решена</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button><button class="btn btn-danger" onclick="adminDeleteReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить жалобу</button></div></section>';
     adminDetailShell('Разбор жалобы',html);
   }
   async function adminInspectPost(id) {

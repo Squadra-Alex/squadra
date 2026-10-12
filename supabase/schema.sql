@@ -490,3 +490,6 @@ create index if not exists team_invites_inviter_id_idx on public.team_invites(in
 create index if not exists tournament_registrations_team_id_idx on public.tournament_registrations(team_id);
 create index if not exists tournament_registrations_user_id_idx on public.tournament_registrations(user_id);
 create index if not exists user_achievements_achievement_id_idx on public.user_achievements(achievement_id);
+
+-- Moderator responses are visible to report authors.
+alter table public.community_reports add column if not exists moderator_reply text;
