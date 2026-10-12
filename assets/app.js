@@ -1160,9 +1160,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       supabaseClient.functions.invoke('admin-users',{body:{action:'users'}}),
       supabaseClient.from('matches').select('id',{count:'exact',head:true})
     ]);
+    if(userDirectory.error?.context?.clone){try{userDirectory.data=await userDirectory.error.context.clone().json();}catch{}}
     const errors=[users,teams,tournaments,posts,profiles,feed,reports].filter(r=>r.error);
     if(userDirectory.error||userDirectory.data?.error) errors.push(userDirectory);
-    const errorDetails=errors.map(r=>r.error?.message||r.data?.error||'Ошибка запроса');
+    const errorDetails=errors.map(r=>r===userDirectory?(userDirectory.data?.reason?userDirectory.data.error+': '+userDirectory.data.reason:userDirectory.data?.error||r.error?.message||'Ошибка запроса'):(r.error?.message||'Ошибка запроса'));
     if(errors.length)console.error('Admin dashboard query failed:',errorDetails);
     const count=(r)=>r.count??'—';
     document.getElementById('adminUsersCount').textContent=count(users);
