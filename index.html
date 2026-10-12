@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=theme-mobile2-20261012">
+<link rel="stylesheet" href="/assets/app.css?v=mobile-inputs1-20261012">
 </head>
 <body>
 
@@ -171,7 +171,7 @@
       <p class="subtitle">Найди свою следующую дисциплину</p>
 
       <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <input id="gameSearch" placeholder="Поиск игры..." style="max-width:300px;" oninput="renderGames()">
+        <input id="gameSearch" maxlength="80" placeholder="Поиск игры..." style="max-width:300px;" oninput="renderGames()">
         <select id="gameGenre" style="max-width:200px;" onchange="renderGames()">
           <option value="">Все жанры</option><option value="FPS">FPS</option><option value="MOBA">MOBA</option><option value="Battle Royale">Battle Royale</option><option value="Спорт">Спорт</option><option value="RPG">RPG</option>
         </select>
@@ -190,7 +190,7 @@
 
       <div class="card" style="margin-bottom:24px;">
         <div class="grid grid-4">
-          <div class="form-group"><label>Никнейм</label><input id="plName" placeholder="Введите ник..." oninput="filterPlayers()"></div>
+          <div class="form-group"><label>Никнейм</label><input id="plName" maxlength="24" placeholder="Введите ник..." oninput="filterPlayers()"></div>
           <div class="form-group"><label>Игра</label><select id="plGame" onchange="filterPlayers()"><option value="">Любая</option><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
           <div class="form-group"><label>Ранг</label><select id="plRank" onchange="filterPlayers()"><option value="">Любой</option><option>Bronze</option><option>Silver</option><option>Gold</option><option>Diamond</option><option>Master</option><option>Grandmaster</option></select></div>
           <div class="form-group"><label>Регион</label><select id="plRegion" onchange="filterPlayers()"><option value="">Любой</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
@@ -212,7 +212,7 @@
       <div class="grid grid-2" id="teamsGrid"><p class="subtitle">Войди, чтобы увидеть команды.</p></div>
       <h2 style="margin-top:30px;"><i class="fa-solid fa-magnifying-glass"></i>Найти команду</h2>
       <div class="grid grid-3" style="margin:14px 0;">
-        <input id="teamDirectorySearch" placeholder="Название команды или тег" oninput="loadTeamDirectory()">
+        <input id="teamDirectorySearch" maxlength="80" placeholder="Название команды или тег" oninput="loadTeamDirectory()">
         <select id="teamDirectoryGame" onchange="loadTeamDirectory()"><option value="">Все игры</option></select>
         <select id="teamDirectoryRegion" onchange="loadTeamDirectory()"><option value="">Все регионы</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select>
       </div>
@@ -240,7 +240,7 @@
         <div>
           <div class="card" style="margin-bottom:16px;">
             <h3><i class="fa-solid fa-pen-to-square" style="color:var(--red); margin-right:8px;"></i>Создать публикацию</h3>
-            <textarea id="communityPostBody" rows="3" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
+            <textarea id="communityPostBody" rows="3" maxlength="3000" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
             <input id="communityMediaFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" hidden onchange="selectCommunityMediaFile(this)">
             <div id="communityMediaPreview" class="subtitle" style="display:none;margin:10px 0;"></div>
             <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
@@ -292,9 +292,9 @@
     <!-- MESSAGES / CHAT -->
     <section id="messages" class="section">
       <div class="section-heading"><div><h1><i class="fa-solid fa-comment-dots"></i>Сообщения</h1><p class="subtitle">Личные диалоги обновляются в реальном времени.</p></div><button class="btn btn-primary" onclick="openModal('newChatModal')"><i class="fa-solid fa-plus"></i> Новый чат</button></div>
-      <div class="messenger"><aside class="chat-sidebar"><div class="chat-sidebar-title"><strong>Чаты</strong><input id="chatSearch" placeholder="Поиск по диалогам" oninput="filterChatList()"></div><div id="chatList" class="chat-list"><p class="subtitle">Войди, чтобы увидеть переписки.</p></div></aside>
-        <div class="chat-main"><input id="chatRecipient" type="hidden"><div class="chat-header" id="activeChatHeader"><span class="subtitle">Выбери диалог или начни новый</span></div><div class="chat-messages" id="chatMessages"><p class="subtitle">Здесь появятся сообщения.</p></div><div class="chat-input"><input id="chatInput" maxlength="4000" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter')sendMessage()"><button class="btn btn-primary" aria-label="Отправить сообщение" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button></div></div></div>
-      <div class="modal" id="newChatModal"><div class="modal-content"><button class="modal-close" onclick="closeModal('newChatModal')">×</button><h2>Новый чат</h2><p class="subtitle">Найди игрока по Squadra-нику и открой профиль перед перепиской.</p><input id="newChatSearch" placeholder="Например, whunx" oninput="searchChatPlayers()"><div id="newChatResults" class="chat-search-results"></div></div></div>
+      <div class="messenger"><aside class="chat-sidebar"><div class="chat-sidebar-title"><strong>Чаты</strong><input id="chatSearch" maxlength="80" placeholder="Поиск по диалогам" oninput="filterChatList()"></div><div id="chatList" class="chat-list"><p class="subtitle">Войди, чтобы увидеть переписки.</p></div></aside>
+        <div class="chat-main"><input id="chatRecipient" type="hidden"><div class="chat-header" id="activeChatHeader"><span class="subtitle">Выбери диалог или начни новый</span></div><div class="chat-messages" id="chatMessages"><p class="subtitle">Здесь появятся сообщения.</p></div><div class="chat-input"><textarea id="chatInput" rows="1" maxlength="4000" placeholder="Введите сообщение..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea><button class="btn btn-primary" aria-label="Отправить сообщение" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button></div></div></div>
+      <div class="modal" id="newChatModal"><div class="modal-content"><button class="modal-close" onclick="closeModal('newChatModal')">×</button><h2>Новый чат</h2><p class="subtitle">Найди игрока по Squadra-нику и открой профиль перед перепиской.</p><input id="newChatSearch" maxlength="24" placeholder="Например, whunx" oninput="searchChatPlayers()"><div id="newChatResults" class="chat-search-results"></div></div></div>
     </section>
 
     <!-- FRIENDS -->
@@ -490,7 +490,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=ui-fix5-20261012"></script>
+<script src="/assets/app.js?v=mobile-inputs1-20261012"></script>
 
 </body>
 </html>
