@@ -1080,3 +1080,71 @@ body[data-theme="light"]{--red-glow:color-mix(in srgb,var(--red) 28%,transparent
  .home-pathways{grid-template-columns:minmax(0,1fr)!important;gap:9px!important;margin:16px 0 24px!important}
  .pathway-card{min-height:72px;padding:12px!important}
 }
+
+/* Light theme contrast: no dark cards with dark inherited text */
+body[data-theme="light"]{
+ --bg:#f3f4f7;--bg-2:#fff;--bg-3:#e7e9ef;--panel:#fff;--text:#191a20;--muted:#595d68;
+ --border:rgba(20,20,28,.12);--border-hi:color-mix(in srgb,var(--red) 48%,transparent);
+}
+body[data-theme="light"] .section,body[data-theme="light"] .container{color:var(--text)}
+body[data-theme="light"] .card,
+body[data-theme="light"] .stat-box,
+body[data-theme="light"] aside,
+body[data-theme="light"] .pathway-card,
+body[data-theme="light"] .chat-container,
+body[data-theme="light"] .messenger,
+body[data-theme="light"] .chat-sidebar,
+body[data-theme="light"] .chat-header,
+body[data-theme="light"] .chat-input,
+body[data-theme="light"] .public-profile-hero,
+body[data-theme="light"] .profile-header,
+body[data-theme="light"] .bracket-match,
+body[data-theme="light"] .custom-select-menu,
+body[data-theme="light"] .custom-select-trigger,
+body[data-theme="light"] .modal-content,
+body[data-theme="light"] .admin-chart-card,
+body[data-theme="light"] .achievement-card,
+body[data-theme="light"] .library-game-card,
+body[data-theme="light"] .notification-card{
+ color:var(--text)!important;background:var(--panel)!important;border-color:var(--border)!important;
+}
+body[data-theme="light"] .hero{
+ color:var(--text)!important;
+ background:radial-gradient(ellipse at 90% 10%,color-mix(in srgb,var(--red) 9%,transparent),transparent 40%),linear-gradient(120deg,#fff,#f7f7fa 65%,#f1f1f5)!important;
+ border-color:var(--border-hi)!important;box-shadow:0 18px 42px rgba(25,26,32,.09)!important;
+}
+body[data-theme="light"] .hero .hero-body h2,
+body[data-theme="light"] .hero .hero-body strong,
+body[data-theme="light"] .pathway-copy strong,
+body[data-theme="light"] .card h2,
+body[data-theme="light"] .card h3,
+body[data-theme="light"] .card h4,
+body[data-theme="light"] .stat-box .value,
+body[data-theme="light"] .section h1,
+body[data-theme="light"] .section h2,
+body[data-theme="light"] .section h3{color:#191a20!important}
+body[data-theme="light"] .hero .hero-body p,
+body[data-theme="light"] .hero .eyebrow,
+body[data-theme="light"] .card p,
+body[data-theme="light"] .card small,
+body[data-theme="light"] .subtitle,
+body[data-theme="light"] .pathway-copy small,
+body[data-theme="light"] .form-hint{color:#595d68!important}
+body[data-theme="light"] .pathway-card{background:linear-gradient(145deg,#fff,#f7f7fa)!important;box-shadow:0 6px 20px rgba(25,26,32,.05)}
+body[data-theme="light"] .pathway-icon{background:color-mix(in srgb,var(--red) 10%,white)!important}
+body[data-theme="light"] .game-img{background:linear-gradient(135deg,#f5f5f8,#e9eaf0)!important}
+body[data-theme="light"] .game-brand-icon{background:radial-gradient(circle,color-mix(in srgb,var(--red) 10%,white),#f0f1f5)!important}
+body[data-theme="light"] input,
+body[data-theme="light"] select,
+body[data-theme="light"] textarea,
+body[data-theme="light"] .custom-select-trigger{color:#191a20!important;background:#fff!important;border-color:rgba(20,20,28,.18)!important}
+body[data-theme="light"] input::placeholder,
+body[data-theme="light"] textarea::placeholder{color:#737783!important}
+body[data-theme="light"] .btn-ghost{color:var(--red-deep)!important;background:rgba(255,255,255,.82)!important;border-color:color-mix(in srgb,var(--red) 42%,transparent)!important}
+body[data-theme="light"] .btn-ghost:hover{background:color-mix(in srgb,var(--red) 8%,white)!important}
+body[data-theme="light"] table,
+body[data-theme="light"] th,
+body[data-theme="light"] td{color:#262830!important;border-color:rgba(20,20,28,.12)!important}
+body[data-theme="light"] th{background:color-mix(in srgb,var(--red) 7%,white)!important}
+body[data-theme="light"] .bracket-match .team{color:#30323a}
+body[data-theme="light"] .admin-user-actions .btn,body[data-theme="light"] #adminUsersBody .btn{color:#30323a!important}
