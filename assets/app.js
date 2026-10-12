@@ -47,7 +47,13 @@
   function showSection(id,options={}){if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events')loadPlatformEvents();if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);window.scrollTo({top:0,behavior:'smooth'});}
   window.addEventListener('popstate',applyLocationRoute);
   function toggleNavigation(force){const open=typeof force==='boolean'?force:!document.body.classList.contains('nav-open');document.body.classList.toggle('nav-open',open);const b=document.getElementById('menuToggle');if(b){b.setAttribute('aria-expanded',String(open));b.innerHTML='<i class="fa-solid '+(open?'fa-xmark':'fa-bars')+'"></i>';}}
-  function openModal(id){const modal=document.getElementById(id);if(modal)modal.classList.add('active');}
+  function openModal(id){
+    const modal=document.getElementById(id);
+    if(!modal)return;
+    modal.classList.add('active');
+    if(id==='loginModal') initGoogleIdentity('googleLoginButton');
+    if(id==='registerModal') initGoogleIdentity('googleSignupButton');
+  }
   function openPlayerProfile(id){if(id)showSection('playerProfile',{profileId:id,path:'/players/'+id});}
   async function loadPlayerProfile(id){const host=document.getElementById('publicPlayerCard');if(!host)return;if(!currentUser){host.innerHTML='<div class="empty-state"><p>Войди, чтобы посмотреть профиль игрока.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">Войти</button></div>';return;}const {data:p,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url,bio,game_name,region,rank_name,rating,matches_played,wins,kd,level,verified_color').eq('id',id).maybeSingle();if(error||!p){host.innerHTML='<p class="subtitle">Профиль не найден или недоступен.</p>';return;}const {data:roles}=await supabaseClient.from('user_roles').select('role').eq('user_id',id).in('role',['admin','moderator']);const role=(roles||[]).some(r=>r.role==='admin')?'<span class="staff-badge admin">Администратор</span>':(roles||[]).some(r=>r.role==='moderator')?'<span class="staff-badge moderator">Модератор</span>':'';const verified=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'" title="Проверенный аккаунт"></i>':'';host.innerHTML='<div class="public-profile-hero"><img class="public-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div><span class="eyebrow">ПРОФИЛЬ ИГРОКА</span><h1>'+escapeHtml(p.display_name||p.username)+' '+verified+' '+role+'</h1><p class="subtitle">@'+escapeHtml(p.username)+' • '+escapeHtml(p.region||'—')+' • '+escapeHtml(p.game_name||'—')+'</p><p>'+escapeHtml(p.bio||'Игрок Squadra.')+'</p></div><div class="profile-actions"><button class="btn btn-primary" onclick="addFriend(\''+p.id+'\')">В друзья</button><button class="btn btn-ghost" onclick="openChatWith(\''+p.id+'\')">Написать</button></div></div><div class="stats-grid"><div class="stat-box"><div class="value">'+fmt(p.rating||0)+'</div><div class="label">Рейтинг</div></div><div class="stat-box"><div class="value">'+fmt(p.level||1)+'</div><div class="label">Уровень</div></div><div class="stat-box"><div class="value">'+fmt(p.matches_played||0)+'</div><div class="label">Матчей</div></div><div class="stat-box"><div class="value">'+(p.matches_played?Math.round(100*p.wins/p.matches_played):0)+'%</div><div class="label">Побед</div></div></div><div class="card rating-how"><h3>Как повысить рейтинг</h3><p>Сыграй матч и внеси результат. После подтверждения соперником рейтинг пересчитывается по Elo: победа над игроком с высоким рейтингом даёт больше очков.</p></div>';}
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -1280,6 +1286,25 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       session = data?.session || null;
     } catch (error) {
       console.error('Could not read Supabase session:', error);
+    }
+
+    const oauthCode = new URLSearchParams(window.location.search).get('code');
+    if (oauthCode) {
+      try {
+        const { data, error } = await supabaseClient.auth.exchangeCodeForSession(oauthCode);
+        if (error) throw error;
+        session = data?.session || session;
+      } catch (error) {
+        console.error('Could not exchange Google OAuth code for a Squadra session:', error);
+        showNotification('Google подтвердил вход, но не удалось открыть сессию Squadra. Попробуй войти ещё раз.');
+      } finally {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('code');
+        params.delete('error');
+        params.delete('error_description');
+        const query = params.toString();
+        history.replaceState({}, document.title, location.pathname + (query ? '?' + query : '') + location.hash);
+      }
     }
 
     const authParams = new URLSearchParams(window.location.hash.slice(1));
