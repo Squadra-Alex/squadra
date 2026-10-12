@@ -66,6 +66,7 @@
     const modal=document.getElementById(id);
     if(!modal)return;
     modal.classList.add('active');
+    enhanceFields(modal);
     if(id==='loginModal') initGoogleIdentity('googleLoginButton');
     if(id==='registerModal') initGoogleIdentity('googleSignupButton');
   }
@@ -110,7 +111,7 @@
     if (!body) return;
     const { error } = await supabaseClient.from('direct_messages').insert({ sender_id:currentUser.id, receiver_id:receiverId, body });
     if (error) { console.error(error); return showNotification('Не удалось отправить сообщение.'); }
-    input.value=''; await loadDirectMessages();
+    input.value=''; input.dispatchEvent(new Event('input',{bubbles:true})); await loadDirectMessages();
   }
 
   function matchScore(p, ratingTol, role, region, time) {
@@ -1404,6 +1405,56 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     applyLocationRoute();
   }
 
+  // Responsive tables, growing textareas and consistent limits for dynamically rendered forms.
+  const fieldLimits = { gameSearch:80, plName:24, teamDirectorySearch:80, communityPostBody:3000, chatSearch:80, newChatSearch:24 };
+  function enhanceFields(root=document) {
+    Object.entries(fieldLimits).forEach(([id,limit]) => {
+      const field=(root.matches?.('#'+id)?root:root.querySelector?.('#'+id))||document.getElementById(id);
+      if(field && !field.maxLength) field.maxLength=limit;
+    });
+    root.querySelectorAll?.('input,textarea').forEach(field => {
+      if(field.type==='file'||field.type==='hidden'||field.type==='checkbox'||field.type==='radio') return;
+      field.style.resize='none';
+      const max=field.maxLength;
+      if(max>0 && !field.dataset.counterReady) {
+        field.dataset.counterReady='true';
+        const counter=document.createElement('small');
+        counter.className='character-counter';
+        counter.setAttribute('aria-live','polite');
+        const update=()=>{counter.textContent=field.value.length+' / '+max;counter.classList.toggle('at-limit',field.value.length>=max);};
+        field.addEventListener('input',update);
+        field.addEventListener('change',update);
+        if(field.parentElement?.classList.contains('chat-input')) field.parentElement.insertAdjacentElement('afterend',counter);
+        else field.insertAdjacentElement('afterend',counter);
+        update();
+      }
+      if(field instanceof HTMLTextAreaElement && !field.dataset.autoGrowReady) {
+        field.dataset.autoGrowReady='true';
+        field.style.overflowY='hidden';
+        const grow=()=>{field.style.height='auto';const maxHeight=Math.min(window.innerHeight*.5,420);field.style.height=Math.min(field.scrollHeight,maxHeight)+'px';field.style.overflowY=field.scrollHeight>maxHeight?'auto':'hidden';};
+        field.addEventListener('input',grow);
+        field.addEventListener('change',grow);
+        requestAnimationFrame(grow);
+      }
+    });
+    root.querySelectorAll?.('table').forEach(table=>{
+      if(table.parentElement?.classList.contains('table-scroll'))return;
+      const wrapper=document.createElement('div');
+      wrapper.className='table-scroll';
+      wrapper.tabIndex=0;
+      wrapper.setAttribute('role','region');
+      wrapper.setAttribute('aria-label','Таблица. Прокрутите по горизонтали, чтобы увидеть остальные столбцы.');
+      table.parentNode.insertBefore(wrapper,table);
+      wrapper.appendChild(table);
+    });
+  }
+  enhanceFields();
+  const responsiveObserver=new MutationObserver(records=>{
+    for(const record of records) for(const node of record.addedNodes) {
+      if(node.nodeType===1) enhanceFields(node);
+    }
+  });
+  responsiveObserver.observe(document.body,{childList:true,subtree:true});
   applyLocationRoute();
   window.addEventListener('load', () => { if (location.pathname !== '/') applyLocationRoute(); }, { once: true });
   initSupabaseAuth().catch(error => {
