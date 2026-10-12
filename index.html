@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=auth-final-20261012">
+<link rel="stylesheet" href="/assets/app.css?v=ui-fix-20261012">
 </head>
 <body>
 
@@ -25,32 +25,32 @@
 
 <!-- HEADER -->
 <header>
+  <button class="menu-toggle" id="menuToggle" type="button" aria-label="Открыть меню" aria-expanded="false" onclick="toggleNavigation()"><i class="fa-solid fa-bars"></i></button>
   <div class="logo" onclick="showSection('home')">
     <i class="fa-solid fa-shield-halved"></i><span class="sq-a">SQUADRA</span>
   </div>
-  <button class="menu-toggle" id="menuToggle" type="button" aria-label="Открыть меню" aria-expanded="false" onclick="toggleNavigation()"><i class="fa-solid fa-bars"></i></button>
   <nav id="primaryNav">
     <ul>
-      <li><a onclick="showSection('home')" class="active">Главная</a></li>
-      <li><a onclick="showSection('games')">Игры</a></li>
-      <li><a onclick="showSection('players')">Игроки</a></li>
-      <li><a onclick="showSection('teams')">Команды</a></li>
-      <li><a onclick="showSection('tournaments')">Турниры</a></li>
-      <li><a onclick="showSection('community')">Сообщество</a></li>
-      <li><a onclick="showSection('ranking')">Рейтинг</a></li>
+      <li><a onclick="showSection('home')" class="active"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Главная</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('games')"><i class="fa-solid fa-gamepad" aria-hidden="true"></i><span>Игры</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('players')"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Игроки</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('teams')"><i class="fa-solid fa-people-group" aria-hidden="true"></i><span>Команды</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('tournaments')"><i class="fa-solid fa-trophy" aria-hidden="true"></i><span>Турниры</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('community')"><i class="fa-solid fa-comments" aria-hidden="true"></i><span>Сообщество</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('ranking')"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i><span>Рейтинг</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li class="nav-heading">АККАУНТ</li>
-      <li><a onclick="showSection('profile')">Профиль</a></li>
-      <li><a onclick="showSection('library')">Библиотека</a></li>
-      <li><a onclick="showSection('friends')">Друзья</a></li>
-      <li><a onclick="showSection('messages')">Сообщения</a></li>
-      <li><a onclick="showSection('achievements')">Достижения</a></li>
-      <li><a onclick="showSection('history')">История</a></li>
-      <li><a onclick="showSection('notifications')">Уведомления</a></li>
-      <li><a onclick="showSection('settings')">Настройки</a></li>
+      <li><a onclick="showSection('profile')"><i class="fa-solid fa-user" aria-hidden="true"></i><span>Профиль</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('library')"><i class="fa-solid fa-book" aria-hidden="true"></i><span>Библиотека</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('friends')"><i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Друзья</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('messages')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Сообщения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('achievements')"><i class="fa-solid fa-medal" aria-hidden="true"></i><span>Достижения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>История</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('notifications')"><i class="fa-solid fa-bell" aria-hidden="true"></i><span>Уведомления</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('settings')"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Настройки</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li class="nav-heading">ИГРОВОЕ</li>
-      <li><a onclick="showSection('matchmaking')">Подбор игроков</a></li>
-      <li><a onclick="showSection('events')">События</a></li>
-      <li hidden><a onclick="showSection('admin')">Админ</a></li>
+      <li><a onclick="showSection('matchmaking')"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>Подбор игроков</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('events')"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>События</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li hidden><a onclick="showSection('admin')"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Админ</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
     </ul>
   </nav>
   <div class="nav-scrim" id="navScrim" onclick="toggleNavigation(false)"></div>
@@ -376,7 +376,7 @@
           <div class="form-group"><label>Язык</label><select id="settingsLanguage"><option value="ru">Русский</option><option value="en">English</option></select></div>
           <div class="form-group"><label>Регион</label><select id="settingsRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
           <div class="form-group"><label>Основная игра</label><select id="settingsGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div><div class="form-group"><label for="settingsTheme">Цветовая тема</label><select id="settingsTheme"><option value="default">Squadra — по умолчанию</option><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="green">Зелёная</option><option value="blue">Синяя</option><option value="purple">Фиолетовая</option><option value="yellow">Жёлтая</option></select></div>
-          <div class="form-group" style="grid-column:1/-1;"><label for="settingsAvatarFile">Аватар профиля</label><input id="settingsAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><small class="subtitle">JPG, PNG, WEBP или GIF, до 5 МБ</small></div>
+          <div class="form-group" style="grid-column:1/-1;"><label>Аватар профиля</label><div class="avatar-picker"><input id="settingsAvatarFile" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="updateAvatarFileName(this)"><label class="btn btn-ghost avatar-pick-button" for="settingsAvatarFile"><i class="fa-solid fa-image"></i> Выбрать изображение</label><span id="avatarFileName" class="avatar-file-name" aria-live="polite">Файл не выбран</span></div><small class="subtitle">JPG, PNG, WEBP или GIF, до 5 МБ</small></div>
           <div class="form-group" style="grid-column:1/-1;"><label>О себе</label><textarea id="settingsBio" rows="3" maxlength="500" placeholder="Расскажи о себе"></textarea></div>
         </div>
         <h3 style="margin-top:20px;">Уведомления</h3>
@@ -445,7 +445,7 @@
     <button class="modal-close" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Вход в аккаунт</h2>
     <p class="subtitle">Войди или создай аккаунт Squadra через Google</p>
-    <div id="googleLoginButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div></div>
+    <div id="googleLoginButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div>
     <p style="text-align:center;margin:6px 0 0;font-size:12px;"><a style="color:var(--red);" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&amp;redirect_to=https%3A%2F%2Fsquadra.forum%2F">Если окно не открылось — резервный вход через Google</a></p>
     <p style="text-align:center; margin-top:16px; color:var(--muted); font-size:13px;">Нет аккаунта? <a style="color:var(--red); cursor:pointer;" onclick="closeModal('loginModal'); openModal('registerModal')">Зарегистрироваться</a></p>
   </div>
@@ -456,7 +456,7 @@
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Регистрация</h2>
     <p class="subtitle">Первый вход через Google создаст аккаунт Squadra</p>
-    <div id="googleSignupButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div></div>
+    <div id="googleSignupButton" class="google-auth-button"><a class="google-fallback" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fsquadra.forum%2F"><i class="fa-brands fa-google"></i><span>Продолжить с Google</span></a></div>
     <p style="text-align:center;margin:6px 0 0;font-size:12px;"><a style="color:var(--red);" href="https://vblunxderjsyudlrsrai.supabase.co/auth/v1/authorize?provider=google&amp;redirect_to=https%3A%2F%2Fsquadra.forum%2F">Если окно не открылось — резервный вход через Google</a></p>
   </div>
 </div>
@@ -490,7 +490,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=auth-repair-20261012"></script>
+<script src="/assets/app.js?v=ui-fix-20261012"></script>
 
 </body>
 </html>
