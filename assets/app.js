@@ -214,7 +214,7 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
       window.google.accounts.id.renderButton(container, {
         type: 'standard',
         theme: 'filled_black',
-        size: 'large',
+        size: 'medium',
         text: id === 'googleSignupButton' ? 'signup_with' : 'signin_with',
         shape: 'rectangular',
         logo_alignment: 'left',
