@@ -483,12 +483,13 @@
 (function () {
   const routes = { '/games':'games', '/players':'players', '/teams':'teams', '/tournaments':'tournaments', '/community':'community', '/ranking':'ranking', '/profile':'profile', '/library':'library', '/friends':'friends', '/messages':'messages', '/achievements':'achievements', '/history':'history', '/notifications':'notifications', '/settings':'settings', '/matchmaking':'matchmaking', '/events':'events', '/admin':'admin' };
   const run = () => {
-    const path = location.pathname.replace(/\\/+$/, '') || '/';
+    const raw = location.pathname;
+    const path = raw.length > 1 && raw.endsWith('/') ? raw.slice(0, -1) : raw;
     if (path === '/') return;
-    const player = path.match(/^\\/players\\/([0-9a-f-]{36})$/i);
-    const group = path.match(/^\\/groups\\/([0-9a-f-]{36})$/i);
-    if (player && typeof showSection === 'function') showSection('playerProfile', { fromLocation: true, profileId: player[1] });
-    else if (group && typeof showSection === 'function') showSection('groupPage', { fromLocation: true, profileId: group[1] });
+    const playerId = path.startsWith('/players/') ? path.slice(9) : '';
+    const groupId = path.startsWith('/groups/') ? path.slice(8) : '';
+    if (/^[0-9a-f-]{36}$/i.test(playerId) && typeof showSection === 'function') showSection('playerProfile', { fromLocation: true, profileId: playerId });
+    else if (/^[0-9a-f-]{36}$/i.test(groupId) && typeof showSection === 'function') showSection('groupPage', { fromLocation: true, profileId: groupId });
     else if (routes[path] && typeof showSection === 'function') showSection(routes[path], { fromLocation: true });
   };
   if (document.readyState === 'complete') setTimeout(run, 0);
