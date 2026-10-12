@@ -1148,3 +1148,40 @@ body[data-theme="light"] td{color:#262830!important;border-color:rgba(20,20,28,.
 body[data-theme="light"] th{background:color-mix(in srgb,var(--red) 7%,white)!important}
 body[data-theme="light"] .bracket-match .team{color:#30323a}
 body[data-theme="light"] .admin-user-actions .btn,body[data-theme="light"] #adminUsersBody .btn{color:#30323a!important}
+
+
+/* Consistent field behavior and touch-friendly table scrolling */
+.table-scroll{
+  width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;scrollbar-color:var(--red) color-mix(in srgb,var(--panel) 85%,transparent);
+  border-radius:12px;
+}
+.table-scroll:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.table-scroll table{width:100%;border-collapse:collapse}
+textarea{resize:none!important;min-height:2.8em;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}
+.character-counter{display:block;width:100%;margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.35;text-align:right}
+.character-counter.at-limit{color:var(--red);font-weight:700}
+.chat-input textarea{flex:1;min-width:0;width:100%;min-height:42px;max-height:min(50vh,420px);padding:11px 13px;line-height:1.45;overflow-y:hidden}
+.chat-input + .character-counter{padding:0 14px 8px}
+@media(max-width:760px){
+  .table-scroll{margin-inline:0}
+  .table-scroll table{min-width:700px}
+  .table-scroll th,.table-scroll td{white-space:nowrap}
+  .table-scroll td:last-child{white-space:normal;min-width:220px}
+  .table-scroll td:last-child .btn{margin:3px;min-height:40px}
+  .section>.grid,.card>.grid{grid-template-columns:minmax(0,1fr)!important}
+  .section,.card,.modal-content{min-width:0;max-width:100%}
+  .modal{padding:12px;align-items:flex-start;overflow-y:auto}
+  .modal-content{width:100%;max-height:calc(100dvh - 24px);overflow-y:auto}
+  .form-group input,.form-group select,.form-group textarea{min-width:0;max-width:100%}
+  .chat-input{align-items:flex-end}
+  .chat-input textarea{font-size:16px}
+}
+@media(max-width:400px){
+  .table-scroll table{min-width:680px}
+  .modal{padding:8px}
+  .modal-content{padding:20px 16px}
+  .section-heading{align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .section-heading>.btn{flex:0 0 auto}
+}
