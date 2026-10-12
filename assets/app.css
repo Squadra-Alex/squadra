@@ -1431,3 +1431,25 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 
 
 .my-reports-panel{margin-top:24px}.my-report-card{padding:16px;margin:12px 0;background:var(--bg-2)}.my-report-card header{display:flex;align-items:center;justify-content:space-between;gap:12px}.my-report-card>p{margin:10px 0}.my-report-reply{margin-top:12px;padding:12px 14px;border-left:3px solid var(--accent,var(--red));border-radius:8px;background:color-mix(in srgb,var(--accent,var(--red)) 9%,var(--bg-2))}.my-report-reply p{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}.admin-detail-section #adminReportReply{display:block;width:100%;min-height:100px;max-height:220px;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font:500 14px/1.5 'Inter',system-ui,sans-serif}
+
+
+@media(max-width:760px){
+  #messages .messenger{display:flex!important;flex-direction:column!important;height:min(68dvh,700px)!important;min-height:420px!important;border-radius:16px!important}
+  #messages:not(.chat-open) .chat-main{display:none!important}
+  #messages:not(.chat-open) .chat-sidebar{display:flex!important;flex-direction:column!important;width:100%!important;max-height:none!important;min-height:0!important;flex:1!important;border:0!important}
+  #messages:not(.chat-open) .chat-list{max-height:none!important;flex:1;overflow-y:auto;overscroll-behavior:contain}
+  #messages.chat-open>.section-heading{display:none!important}
+  #messages.chat-open .messenger{position:fixed!important;z-index:850!important;inset:64px 0 0!important;width:100vw!important;height:auto!important;min-height:0!important;max-height:none!important;border:0!important;border-radius:0!important;background:var(--bg-2)!important}
+  #messages.chat-open .chat-sidebar{display:none!important}
+  #messages.chat-open .chat-main{display:flex!important;flex:1!important;width:100%;height:100%;min-height:0!important}
+  #messages.chat-open .chat-header{flex:0 0 auto;min-height:62px;padding:9px 12px;gap:10px}
+  #messages.chat-open .chat-messages{flex:1;min-height:0;max-height:none!important;padding:14px 12px;overscroll-behavior:contain}
+  #messages.chat-open .chat-input{flex:0 0 auto;align-items:flex-end;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--bg-2);box-shadow:0 -8px 24px rgba(0,0,0,.18)}
+  #messages.chat-open .chat-input textarea{flex:1;min-width:0;max-height:25dvh;min-height:44px;line-height:1.4;padding:11px 13px}
+  #messages.chat-open .chat-input .btn{width:46px;height:46px;flex:0 0 46px;border-radius:14px}
+  #messages.chat-open .message{max-width:86%;font-size:15px;line-height:1.45}
+  #messages.chat-open .mobile-chat-back{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border:1px solid var(--border);border-radius:12px;background:var(--bg-3);color:var(--text);font-size:17px}
+  #messages.chat-open .chat-header .mini-avatar{width:40px;height:40px}
+  #messages.chat-open .chat-header .player-profile-link{min-width:0;flex:1;text-align:left}
+}
+.mobile-chat-back{display:none}
