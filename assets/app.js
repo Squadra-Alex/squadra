@@ -1156,7 +1156,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     ]);
     const errors=[users,teams,tournaments,posts,profiles,feed,reports].filter(r=>r.error);
     if(userDirectory.error||userDirectory.data?.error) errors.push(userDirectory);
-    if(errors.length){const details=errors.map(r=>r.error?.message||r.data?.error||'Ошибка запроса');console.error('Admin dashboard query failed:',details);if(status)status.textContent='Часть данных не загрузилась: '+details.join(' • ');}else if(status)status.textContent='Панель обновлена.';
+    const errorDetails=errors.map(r=>r.error?.message||r.data?.error||'Ошибка запроса');
+    if(errors.length)console.error('Admin dashboard query failed:',errorDetails);
     const count=(r)=>r.count??'—';
     document.getElementById('adminUsersCount').textContent=count(users);
     document.getElementById('adminTeamsCount').textContent=count(teams);
@@ -1184,7 +1185,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(feedEl) feedEl.innerHTML=(feed.data||[]).map(p=>'<article class="list-divider" style="padding:16px 0;"><div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;"><div><strong>'+escapeHtml(authors.get(p.user_id)||'Игрок')+'</strong><span class="subtitle"> · '+new Date(p.created_at).toLocaleString('ru-RU')+'</span><p style="margin-top:8px;white-space:pre-wrap;">'+escapeHtml(p.body||'')+'</p>'+(p.media_type?'<span class="badge badge-info">'+escapeHtml(p.media_type)+'</span>':'')+'</div><button class="btn btn-danger" onclick="adminDeletePost(\''+p.id+'\')"><i class="fa-solid fa-trash"></i> Удалить</button></div></article>').join('')||'<p class="subtitle">Публикаций пока нет.</p>';
     const reportsEl=document.getElementById('adminReportsList');
     if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="list-divider" style="padding:12px 0"><strong>'+escapeHtml(r.reason)+'</strong><span class="subtitle"> • '+escapeHtml(r.status)+' • '+new Date(r.created_at).toLocaleString('ru-RU')+'</span><p>'+escapeHtml(r.details||'Без описания')+'</p><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работе</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
-    if(status) status.textContent='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';
+    if(status){const summary='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';status.textContent=summary+(errors.length?' Не загрузилась часть данных: '+errorDetails.join(' • '):'');}
     await loadAdminGames();await loadAdminTeamsAndTournaments();await loadAdminRegistrationChart();
   }
 
