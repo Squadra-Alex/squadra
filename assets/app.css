@@ -1420,3 +1420,17 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 /* Admin editor: touch-sized preferences and stacked nested dialogs */
 .admin-edit-preferences label:not(:first-child){min-height:48px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-2);cursor:pointer}
 .admin-edit-preferences input[type=checkbox]{width:24px!important;height:24px!important;min-width:24px;flex:0 0 24px;margin:0 4px 0 0;cursor:pointer;accent-color:var(--accent,#a855f7)}
+
+/* Prominent verification mark on public player profiles */
+.public-profile-hero h1 .verified-badge{
+  display:inline-grid;place-items:center;width:30px;height:30px;margin:0 5px;
+  padding:0;border:1px solid color-mix(in srgb,#3ddc84 50%,transparent);
+  border-radius:50%;background:color-mix(in srgb,#3ddc84 14%,transparent);
+  font-size:18px;line-height:1;vertical-align:middle;
+  filter:drop-shadow(0 0 7px color-mix(in srgb,#3ddc84 45%,transparent));
+}
+.public-profile-hero h1 .verified-badge.blue{
+  border-color:color-mix(in srgb,#54a8ff 55%,transparent);
+  background:color-mix(in srgb,#54a8ff 14%,transparent);
+  filter:drop-shadow(0 0 7px color-mix(in srgb,#54a8ff 45%,transparent));
+}
