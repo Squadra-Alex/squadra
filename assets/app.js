@@ -67,7 +67,8 @@
     if(!modal)return;
     const activeModals=[...document.querySelectorAll('.modal.active')];
     const topZ=activeModals.reduce((max,item)=>Math.max(max,Number(item.style.zIndex)||2000),1998);
-    modal.style.zIndex=String(topZ+2);
+    document.body.appendChild(modal);
+    modal.style.setProperty('z-index',String(topZ+2),'important');
     modal.classList.add('active');
     enhanceFields(modal);
     if(id==='loginModal') initGoogleIdentity('googleLoginButton');
@@ -89,7 +90,7 @@
     ]);
     if(sequence!==playerProfileRequest||host.dataset.profileId!==requestId)return;
     const relation=(friendRows||[]).find(f=>(f.requester_id===id||f.addressee_id===id));
-    const friendAction=id===currentUser?.id?'':relation?.status==='accepted'?'<button class="btn btn-primary" disabled><i class="fa-solid fa-check"></i> В друзьях</button>':relation?.status==='pending'&&relation.requester_id===currentUser?.id?'<button class="btn btn-ghost" disabled>Заявка отправлена</button>':relation?.status==='pending'?'<button class="btn btn-primary" onclick="respondFriend(\''+relation.id+'\',\'accepted\').then(()=>loadPlayerProfile(\''+id+'\'))">Принять заявку</button>':'<button class="btn btn-primary" onclick="addFriend(\''+id+'\')">В друзья</button>';
+    const friendAction=id===currentUser?.id?'':relation?.status==='accepted'?'<button class="btn btn-primary" disabled><i class="fa-solid fa-check"></i> В друзьях</button><button class="btn btn-ghost" onclick="removeFriend(\\''+relation.id+'\\')">Удалить из друзей</button>':relation?.status==='pending'&&relation.requester_id===currentUser?.id?'<button class="btn btn-ghost" disabled>Заявка отправлена</button>':relation?.status==='pending'?'<button class="btn btn-primary" onclick="respondFriend(\''+relation.id+'\',\'accepted\').then(()=>loadPlayerProfile(\''+id+'\'))">Принять заявку</button>':'<button class="btn btn-primary" onclick="addFriend(\''+id+'\')">В друзья</button>';
     const role=(roles||[]).some(r=>r.role==='admin')?'<span class="staff-badge admin"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Администратор</span>':(roles||[]).some(r=>r.role==='moderator')?'<span class="staff-badge moderator"><i class="fa-solid fa-shield" aria-hidden="true"></i> Модератор</span>':'';
     const verified=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'" title="Проверенный аккаунт"></i>':'';
     host.innerHTML='<div class="public-profile-hero"><img class="public-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div><span class="eyebrow">ПРОФИЛЬ ИГРОКА</span><h1>'+escapeHtml(p.display_name||p.username)+' '+verified+' '+role+'</h1><p class="subtitle">@'+escapeHtml(p.username)+' • '+escapeHtml(p.region||'—')+' • '+escapeHtml(p.game_name||'—')+'</p><p>'+escapeHtml(p.bio||'Игрок Squadra.')+'</p></div><div class="profile-actions">'+friendAction+(p.id!==currentUser?.id?'<button class="btn btn-ghost" onclick="openChatWith(\''+p.id+'\')">Написать</button>':'')+'</div></div><div class="stats-grid"><div class="stat-box"><div class="value">'+fmt(p.rating||0)+'</div><div class="label">Рейтинг</div></div><div class="stat-box"><div class="value">'+fmt(p.level||1)+'</div><div class="label">Уровень</div></div><div class="stat-box"><div class="value">'+fmt(p.matches_played||0)+'</div><div class="label">Матчей</div></div><div class="stat-box"><div class="value">'+(p.matches_played?Math.round(100*p.wins/p.matches_played):0)+'%</div><div class="label">Побед</div></div></div><div class="card rating-how"><h3>Как повысить рейтинг</h3><p>Сыграй матч и внеси результат. После подтверждения соперником рейтинг пересчитывается по Elo: победа над игроком с высоким рейтингом даёт больше очков.</p></div>';
@@ -475,7 +476,7 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
   }
   function renderFriends(rows) {
     const el=document.getElementById('friendsGrid');if(!el)return;
-    el.innerHTML=rows.map(f=>{const accepted=f.status==='accepted',other=f.requester_id===currentUser.id?f.addressee_id:f.requester_id,p=f.friend_profile||{},rate=p.matches_played?Math.round(100*p.wins/p.matches_played):0,verify=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'"></i>':'';return '<article class="card friend-card"><div class="friend-card-head"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div><button class="player-profile-link" onclick="openPlayerProfile(\''+other+'\')"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong>'+verify+'</button><p class="subtitle">@'+escapeHtml(p.username||'')+' • '+(accepted?'В друзья':f.requester_id===currentUser.id?'Запрос отправлен':'Входящий запрос')+'</p><p class="friend-summary">'+escapeHtml(p.game_name||'Игра не выбрана')+' • '+escapeHtml(p.region||'—')+' • '+escapeHtml(p.rank_name||'Unranked')+' • '+fmt(p.rating||0)+' Elo • '+rate+'% побед</p></div></div><div class="friend-card-actions"><button class="btn btn-ghost" onclick="openPlayerProfile(\''+other+'\')">Профиль</button>'+(f.status==='pending'&&f.addressee_id===currentUser.id?'<button class="btn btn-primary" onclick="respondFriend(\''+f.id+'\',\'accepted\')">Принять</button>':'')+(accepted?'<button class="btn btn-ghost" onclick="openChatWith(\''+other+'\')"><i class="fa-solid fa-comment"></i> Написать</button>':'')+'</div></article>';}).join('')||'<p class="subtitle">Пока нет друзей и запросов.</p>';
+    el.innerHTML=rows.map(f=>{const accepted=f.status==='accepted',other=f.requester_id===currentUser.id?f.addressee_id:f.requester_id,p=f.friend_profile||{},rate=p.matches_played?Math.round(100*p.wins/p.matches_played):0,verify=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'"></i>':'';return '<article class="card friend-card"><div class="friend-card-head"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div><button class="player-profile-link" onclick="openPlayerProfile(\''+other+'\')"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong>'+verify+'</button><p class="subtitle">@'+escapeHtml(p.username||'')+' • '+(accepted?'В друзья':f.requester_id===currentUser.id?'Запрос отправлен':'Входящий запрос')+'</p><p class="friend-summary">'+escapeHtml(p.game_name||'Игра не выбрана')+' • '+escapeHtml(p.region||'—')+' • '+escapeHtml(p.rank_name||'Unranked')+' • '+fmt(p.rating||0)+' Elo • '+rate+'% побед</p></div></div><div class="friend-card-actions"><button class="btn btn-ghost" onclick="openPlayerProfile(\''+other+'\')">Профиль</button>'+(f.status==='pending'&&f.addressee_id===currentUser.id?'<button class="btn btn-primary" onclick="respondFriend(\''+f.id+'\',\'accepted\')">Принять</button>':'')+(accepted?'<button class="btn btn-ghost" onclick="openChatWith(\\''+other+'\\')"><i class="fa-solid fa-comment"></i> Написать</button>':'')+(f.status==='pending'?'<button class="btn btn-ghost" onclick="removeFriend(\\''+f.id+'\\')">'+(f.requester_id===currentUser.id?'Отменить запрос':'Отклонить')+'</button>':'')+(accepted?'<button class="btn btn-ghost" onclick="removeFriend(\\''+f.id+'\\')">Удалить из друзей</button>':'')+'</div></article>';}).join('')||'<p class="subtitle">Пока нет друзей и запросов.</p>';
   }  async function loadFriendProfiles(rows) {
     const ids=[...new Set(rows.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id))];if(!ids.length)return rows;
     const {data}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url,game_name,region,rank_name,rating,matches_played,wins,level,verified_color').in('id',ids);
@@ -562,6 +563,14 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
   async function respondFriend(id,status) {
     const {error}=await supabaseClient.from('friendships').update({status}).eq('id',id).eq('addressee_id',currentUser.id);
     if(error)return showNotification('Не удалось обновить запрос.');
+    await loadAccountData();
+  }
+  async function removeFriend(id) {
+    if(!currentUser||!supabaseClient)return requireAccount();
+    if(!await askConfirm('Удалить дружбу? Игрок исчезнет из списка друзей, но его можно будет добавить снова.'))return;
+    const {error}=await supabaseClient.from('friendships').delete().eq('id',id);
+    if(error){console.error('Could not remove friendship:',error);showNotification('Не удалось удалить дружбу.');return;}
+    showNotification('Пользователь удалён из друзей.');
     await loadAccountData();
   }
   async function loadTeamDirectory() {
@@ -1118,10 +1127,42 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     await loadPendingMatches();
   }
 
+  let realtimeChannel=null;
+  let realtimeUserId=null;
+  let realtimeRetryTimer=null;
+  let realtimeRetryDelay=3000;
+  let realtimeGeneration=0;
+  let activeCommunityGroup=null;
+
+  function stopRealtime() {
+    realtimeGeneration++;
+    if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=null;}
+    const channel=realtimeChannel;
+    realtimeChannel=null;
+    realtimeUserId=null;
+    if(channel&&supabaseClient)supabaseClient.removeChannel(channel);
+  }
+  function scheduleRealtimeReconnect(uid,generation) {
+    if(realtimeRetryTimer)return;
+    const delay=realtimeRetryDelay;
+    realtimeRetryDelay=Math.min(realtimeRetryDelay*2,30000);
+    realtimeRetryTimer=setTimeout(()=>{
+      realtimeRetryTimer=null;
+      if(generation!==realtimeGeneration||currentUser?.id!==uid)return;
+      const channel=realtimeChannel;
+      realtimeChannel=null;
+      realtimeUserId=null;
+      if(channel)supabaseClient.removeChannel(channel);
+      setupRealtime();
+    },delay);
+  }
   function setupRealtime() {
     if(!supabaseClient||!currentUser)return;
-    if(realtimeChannel)supabaseClient.removeChannel(realtimeChannel);
     const uid=currentUser.id;
+    if(realtimeChannel&&realtimeUserId===uid)return;
+    if(realtimeChannel)stopRealtime();
+    const generation=++realtimeGeneration;
+    realtimeUserId=uid;
     realtimeChannel=supabaseClient.channel('squadra-live-'+uid)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'receiver_id=eq.'+uid},()=>{loadDirectMessages();loadChatList();})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'sender_id=eq.'+uid},()=>{loadDirectMessages();loadChatList();})
@@ -1140,10 +1181,34 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'community_reports',filter:'reporter_id=eq.'+uid},()=>loadAccountData())
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{const el=document.getElementById('notificationCount');if(el){el.textContent=String((Number(el.textContent)||0)+1);el.hidden=false;}loadAccountData();if(payload.new?.body)showNotification(payload.new.body);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);})
-      .subscribe();
+      .subscribe((status,error)=>{
+        if(generation!==realtimeGeneration)return;
+        if(status==='SUBSCRIBED'){
+          if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=null;}
+          realtimeRetryDelay=3000;
+          loadAccountData();
+          loadChatList();
+          if(document.getElementById('chatRecipient')?.value)loadDirectMessages();
+          if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);
+          return;
+        }
+        if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+          console.warn('Squadra Realtime disconnected:',status,error||'');
+          scheduleRealtimeReconnect(uid,generation);
+        }
+      });
   }
-  let realtimeChannel=null;
-  let activeCommunityGroup=null;
+
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden||!currentUser)return;
+    loadAccountData();
+    loadChatList();
+    if(document.getElementById('chatRecipient')?.value)loadDirectMessages();
+    if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);
+  });
+  window.addEventListener('online',()=>{
+    if(currentUser&&!realtimeChannel)setupRealtime();
+  });
   async function openGroupChat(groupId,options={}) {
     if(!currentUser)return requireAccount();activeCommunityGroup=groupId;
     if(!options.fromRoute)showSection('groupPage',{profileId:groupId,path:'/groups/'+groupId});
@@ -1305,7 +1370,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   const adminDetailField=(label,value)=>'<div class="admin-detail-field"><span>'+escapeHtml(label)+'</span><strong>'+escapeHtml(value===null||value===undefined||value===''?'—':String(value))+'</strong></div>';
   const adminFormatDate=value=>value?new Date(value).toLocaleString('ru-RU'):'—';
   function adminActivityMarkup(rows) {
-    return (rows||[]).map(x=>'<article class="admin-detail-row"><div><strong>'+escapeHtml(x.action||'Активность')+'</strong><span class="subtitle"> • '+escapeHtml(x.game_name||'без игры')+' • '+adminFormatDate(x.created_at)+'</span></div><p>'+escapeHtml(x.result||'')+(x.rating_delta!==null&&x.rating_delta!==undefined?' • рейтинг '+(x.rating_delta>0?'+':'')+x.rating_delta:'')+'</p></article>').join('')||'<p class="subtitle">История активности пока пуста.</p>';
+    const recent=(rows||[]).slice(0,100);
+    const entries=recent.map(x=>'<article class="admin-detail-row"><div><strong>'+escapeHtml(x.action||'Активность')+'</strong><span class="subtitle"> • '+escapeHtml(x.game_name||'без игры')+' • '+adminFormatDate(x.created_at)+'</span></div><p>'+escapeHtml(x.result||'')+(x.rating_delta!==null&&x.rating_delta!==undefined?' • рейтинг '+(x.rating_delta>0?'+':'')+x.rating_delta:'')+'</p></article>').join('');
+    return '<details class="admin-activity-disclosure"><summary><strong>История активности</strong><span>'+recent.length+' из 100 записей</span></summary><div class="admin-activity-entries">'+(entries||'<p class="subtitle">История активности пока пуста.</p>')+'</div></details>';
   }
   let adminSelectedUserData=null;
   async function adminInspectUser(id) {
@@ -1670,7 +1737,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     renderAuthState(currentUser);
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
       currentUser=nextSession?.user||null;
-      if(currentUser) { loadAccountData(); loadAdminAccess(); setupRealtime(); } else {if(realtimeChannel)supabaseClient.removeChannel(realtimeChannel);realtimeChannel=null;activeCommunityGroup=null;isAdmin=false;const adminNav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
+      if(currentUser) { loadAccountData(); loadAdminAccess(); setupRealtime(); } else {stopRealtime();activeCommunityGroup=null;isAdmin=false;const adminNav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
       renderAuthState(currentUser);
       if (event === 'SIGNED_OUT') { location.reload(); }
       if (event === 'SIGNED_IN') {
