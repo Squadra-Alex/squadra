@@ -1453,3 +1453,31 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
   #messages.chat-open .chat-header .player-profile-link{min-width:0;flex:1;text-align:left}
 }
 .mobile-chat-back{display:none}
+
+
+/* Keep the messenger visible and above the app shell on small screens. */
+@media(max-width:760px){
+  #messages.active{display:block!important;min-height:calc(100dvh - 210px)}
+  #messages:not(.chat-open) .messenger{min-height:min(68dvh,700px)!important}
+  #messages.chat-open{display:block!important}
+  #messages.chat-open .messenger{
+    position:fixed!important;z-index:12000!important;inset:0!important;
+    display:flex!important;flex-direction:column!important;width:100vw!important;
+    height:100dvh!important;min-height:0!important;max-height:100dvh!important;
+    padding-top:env(safe-area-inset-top);border:0!important;border-radius:0!important;
+    background:var(--bg-2)!important;overflow:hidden!important;
+  }
+  #messages.chat-open .chat-main{display:flex!important;flex:1!important;min-height:0!important}
+  #messages.chat-open .chat-messages{flex:1!important;min-height:0!important;max-height:none!important;overflow-y:auto!important}
+}
+
+.notification{z-index:2147483000!important;position:fixed!important;isolation:isolate}
+
+.admin-activity-disclosure{margin-top:18px;border:1px solid var(--border);border-radius:14px;background:var(--bg-2);overflow:hidden}
+.admin-activity-disclosure>summary{display:flex;align-items:center;gap:12px;min-height:54px;padding:14px 16px;cursor:pointer;list-style:none;color:var(--text)}
+.admin-activity-disclosure>summary::-webkit-details-marker{display:none}
+.admin-activity-disclosure>summary span{margin-left:auto;color:var(--muted);font-size:13px}
+.admin-activity-disclosure>summary:after{content:"+";display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--border);border-radius:8px;color:var(--accent,var(--red));font-size:20px}
+.admin-activity-disclosure[open]>summary:after{content:"−"}
+.admin-activity-entries{max-height:min(48dvh,560px);overflow:auto;padding:0 16px 16px;overscroll-behavior:contain}
+.admin-activity-entries .admin-detail-row{margin-top:10px}
