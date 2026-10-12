@@ -215,7 +215,7 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
         type: 'standard',
         theme: 'filled_black',
         size: 'large',
-        text: 'continue_with',
+        text: id === 'googleSignupButton' ? 'signup_with' : 'signin_with',
         shape: 'rectangular',
         logo_alignment: 'left',
         width: 320,
