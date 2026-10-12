@@ -1209,7 +1209,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     document.getElementById('adminUsersCount').textContent=count(users);
     document.getElementById('adminTeamsCount').textContent=count(teams);
     document.getElementById('adminTournamentsCount').textContent=count(tournaments);
-    document.getElementById('adminPostsCount').textContent=count(posts);
+    const postsCountEl=document.getElementById('adminPostsCount');if(postsCountEl)postsCountEl.textContent=count(posts);
     document.getElementById('adminMatchesCount').textContent=count(matchesCount);
     const directory=new Map((userDirectory.data?.users||[]).map(u=>[u.id,u]));
     const userIds=(profiles.data||[]).map(p=>p.id);
