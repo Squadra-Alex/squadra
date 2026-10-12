@@ -65,6 +65,47 @@ Deno.serve(async (req: Request) => {
 
   const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId : "";
   if (!/^[0-9a-f-]{36}$/i.test(targetUserId)) return response({ error: "Invalid target user" }, 400);
+  if (action === "user-detail") {
+    if (!callerIsAdmin) return response({ error: "Forbidden" }, 403);
+    const [authResult, profileResult, settingsResult, rolesResult, friendsResult, postsResult, teamsResult, matchesResult, activityResult] = await Promise.all([
+      admin.auth.admin.getUserById(targetUserId),
+      admin.from("profiles").select("*").eq("id", targetUserId).maybeSingle(),
+      admin.from("user_settings").select("*").eq("user_id", targetUserId).maybeSingle(),
+      admin.from("user_roles").select("role").eq("user_id", targetUserId),
+      admin.from("friendships").select("id", { count: "exact", head: true }).eq("status", "accepted").or(`requester_id.eq.${targetUserId},addressee_id.eq.${targetUserId}`),
+      admin.from("community_posts").select("id", { count: "exact", head: true }).eq("user_id", targetUserId),
+      admin.from("team_members").select("role,teams(id,name,tag,game_name)").eq("user_id", targetUserId),
+      admin.from("matches").select("game_id,status,score_a,score_b,played_at,created_at").or(`player_a_id.eq.${targetUserId},player_b_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(10),
+      admin.from("activity_history").select("action,game_name,result,rating_delta,created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(20),
+    ]);
+    if (authResult.error || !authResult.data?.user) return response({ error: "User not found" }, 404);
+    if (profileResult.error) return response({ error: "Could not load profile" }, 500);
+    if (!profileResult.data) return response({ error: "Profile not found" }, 404);
+    if (settingsResult.error || rolesResult.error || friendsResult.error || postsResult.error || teamsResult.error || matchesResult.error || activityResult.error) {
+      console.error("Could not load admin user details", settingsResult.error, rolesResult.error, friendsResult.error, postsResult.error, teamsResult.error, matchesResult.error, activityResult.error);
+      return response({ error: "Could not load full user details" }, 500);
+    }
+    const authUser = authResult.data.user;
+    return response({
+      user: {
+        id: authUser.id,
+        email: authUser.email || "",
+        bannedUntil: authUser.banned_until || null,
+        providers: (authUser.identities || []).map((identity) => identity.provider).filter(Boolean),
+        createdAt: authUser.created_at,
+        lastSignInAt: authUser.last_sign_in_at || null,
+        emailConfirmedAt: authUser.email_confirmed_at || null,
+      },
+      profile: profileResult.data,
+      settings: settingsResult.data || {},
+      roles: rolesResult.data || [],
+      friendCount: friendsResult.count || 0,
+      communityPostCount: postsResult.count || 0,
+      teams: teamsResult.data || [],
+      matches: matchesResult.data || [],
+      activity: activityResult.data || [],
+    });
+  }
   if (action === "post-update" || action === "post-delete" || action === "comment-update" || action === "comment-delete") {
     const contentId = typeof body.contentId === "string" ? body.contentId : "";
     if (!/^[0-9a-f-]{36}$/i.test(contentId)) return response({ error: "Invalid content id" }, 400);
