@@ -479,5 +479,21 @@
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="/assets/app.js"></script>
 
+<script>
+(function () {
+  const routes = { '/games':'games', '/players':'players', '/teams':'teams', '/tournaments':'tournaments', '/community':'community', '/ranking':'ranking', '/profile':'profile', '/library':'library', '/friends':'friends', '/messages':'messages', '/achievements':'achievements', '/history':'history', '/notifications':'notifications', '/settings':'settings', '/matchmaking':'matchmaking', '/events':'events', '/admin':'admin' };
+  const run = () => {
+    const path = location.pathname.replace(/\\/+$/, '') || '/';
+    if (path === '/') return;
+    const player = path.match(/^\\/players\\/([0-9a-f-]{36})$/i);
+    const group = path.match(/^\\/groups\\/([0-9a-f-]{36})$/i);
+    if (player && typeof showSection === 'function') showSection('playerProfile', { fromLocation: true, profileId: player[1] });
+    else if (group && typeof showSection === 'function') showSection('groupPage', { fromLocation: true, profileId: group[1] });
+    else if (routes[path] && typeof showSection === 'function') showSection(routes[path], { fromLocation: true });
+  };
+  if (document.readyState === 'complete') setTimeout(run, 0);
+  else window.addEventListener('load', run, { once: true });
+})();
+</script>
 </body>
 </html>
