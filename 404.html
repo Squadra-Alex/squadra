@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=admin-library-controls-20261014">
+<link rel="stylesheet" href="/assets/app.css?v=selectmenus-teamcatalog-20261014">
 </head>
 <body>
 
@@ -212,10 +212,10 @@
 
       <div class="grid grid-2" id="teamsGrid"><p class="subtitle">Войди, чтобы увидеть команды.</p></div>
       <h2 style="margin-top:30px;"><i class="fa-solid fa-magnifying-glass"></i>Найти команду</h2>
-      <div class="grid grid-3" style="margin:14px 0;">
-        <input id="teamDirectorySearch" placeholder="Название команды или тег" oninput="loadTeamDirectory()" maxlength="80">
-        <select id="teamDirectoryGame" onchange="loadTeamDirectory()"><option value="">Все игры</option></select>
-        <select id="teamDirectoryRegion" onchange="loadTeamDirectory()"><option value="">Все регионы</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select>
+      <div class="team-directory-filters">
+        <div class="team-search-field"><input id="teamDirectorySearch" placeholder="Название команды или тег" oninput="loadTeamDirectory()" maxlength="80"></div>
+        <div class="team-filter-field"><select id="teamDirectoryGame" onchange="loadTeamDirectory()"><option value="">Все игры</option></select></div>
+        <div class="team-filter-field"><select id="teamDirectoryRegion" onchange="loadTeamDirectory()"><option value="">Все регионы</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
       </div>
       <div class="grid grid-2" id="teamDirectory"><p class="subtitle">Войди, чтобы искать команды.</p></div>
       <h2 style="margin-top:30px;"><i class="fa-solid fa-inbox"></i>Заявки в мои команды</h2>
@@ -544,7 +544,7 @@
     <h2 style="font-family:Oswald; text-transform:uppercase;">Создать команду</h2>
     <div class="form-group"><label>Название команды</label><input id="teamName" maxlength="60" placeholder="Например: Phoenix Squad"></div>
     <div class="form-group"><label>Тег</label><input id="teamTag" maxlength="12" placeholder="[PS]"></div>
-    <div class="form-group"><label>Игра</label><select id="teamGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
+    <div class="form-group"><label>Игра</label><select id="teamGame"><option value="">Загрузка игр…</option></select></div>
     <div class="form-group"><label>Регион</label><select id="teamRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
     <div class="form-group"><label>Описание</label><textarea id="teamDescription" rows="3" maxlength="1000" placeholder="Расскажите о команде..."></textarea></div>
     <button class="btn btn-primary" style="width:100%;" onclick="createTeam()"><i class="fa-solid fa-shield-halved"></i> Создать</button>
@@ -567,7 +567,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=admin-library-controls-20261014"></script>
+<script src="/assets/app.js?v=selectmenus-teamcatalog-20261014"></script>
 
 <script>
 (function () {
