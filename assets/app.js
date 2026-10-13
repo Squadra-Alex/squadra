@@ -206,7 +206,88 @@
     });
   }
 
-function initCustomSelects(root=document){root.querySelectorAll('select').forEach(select=>{if(select.dataset.customReady)return;select.dataset.customReady='1';select.classList.add('custom-select-source');select.tabIndex=-1;select.setAttribute('aria-hidden','true');const shell=document.createElement('div');shell.className='custom-select-shell';select.parentNode.insertBefore(shell,select);shell.appendChild(select);const trigger=document.createElement('button');trigger.type='button';trigger.className='custom-select-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');const value=document.createElement('span'),icon=document.createElement('i');icon.className='fa-solid fa-chevron-down';trigger.append(value,icon);const label=select.id?document.querySelector('label[for="'+select.id+'"]'):null;if(label){trigger.setAttribute('aria-label',label.textContent.trim());label.addEventListener('click',e=>{e.preventDefault();trigger.click();});}const menu=document.createElement('div');menu.className='custom-select-menu';menu.setAttribute('role','listbox');menu.hidden=true;shell.append(trigger,menu);const render=()=>{const selected=select.options[select.selectedIndex];value.textContent=selected?.textContent||'Выбрать';menu.innerHTML=[...select.options].map((o,i)=>'<button type="button" class="custom-select-option" role="option" aria-selected="'+(i===select.selectedIndex)+'" data-index="'+i+'">'+escapeHtml(o.textContent)+'</button>').join('');};const close=()=>{menu.hidden=true;shell.classList.remove('opens-upward');trigger.setAttribute('aria-expanded','false');};const open=state=>{if(!state){close();return;}const rect=trigger.getBoundingClientRect(),below=window.innerHeight-rect.bottom-12,above=rect.top-12,up=below<Math.min(220,menu.scrollHeight)&&above>below;shell.classList.toggle('opens-upward',up);menu.style.maxHeight=Math.max(120,Math.min(280,(up?above:below)-8))+'px';menu.hidden=false;trigger.setAttribute('aria-expanded','true');};const native=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');try{Object.defineProperty(select,'value',{configurable:true,get(){return native.get.call(this)},set(v){native.set.call(this,v);render()}})}catch{}trigger.onclick=()=>open(menu.hidden);trigger.onkeydown=e=>{if(['ArrowDown','Enter',' '].includes(e.key)){e.preventDefault();open(true);menu.querySelector('.custom-select-option')?.focus()}};menu.onkeydown=e=>{if(e.key==='Escape'){close();trigger.focus()}};menu.onclick=e=>{const option=e.target.closest('[data-index]');if(!option)return;select.selectedIndex=Number(option.dataset.index);select.dispatchEvent(new Event('change',{bubbles:true}));render();close();trigger.focus()};select.addEventListener('change',render);new MutationObserver(render).observe(select,{childList:true,subtree:true,attributes:true,characterData:true});document.addEventListener('click',e=>{if(!shell.contains(e.target))close()});window.addEventListener('resize',()=>{if(!menu.hidden)open(true)},{passive:true});render()})}
+function initCustomSelects(root=document) {
+    root.querySelectorAll('select').forEach(select=>{
+      if(select.dataset.customReady)return;
+      select.dataset.customReady='1';
+      select.classList.add('custom-select-source');
+      select.tabIndex=-1;
+      select.setAttribute('aria-hidden','true');
+      const shell=document.createElement('div');
+      shell.className='custom-select-shell';
+      select.parentNode.insertBefore(shell,select);
+      shell.appendChild(select);
+      const trigger=document.createElement('button');
+      trigger.type='button';
+      trigger.className='custom-select-trigger';
+      trigger.setAttribute('aria-haspopup','listbox');
+      trigger.setAttribute('aria-expanded','false');
+      const value=document.createElement('span'),icon=document.createElement('i');
+      icon.className='fa-solid fa-chevron-down';
+      trigger.append(value,icon);
+      const label=select.id?document.querySelector('label[for="'+select.id+'"]'):null;
+      if(label){trigger.setAttribute('aria-label',label.textContent.trim());label.addEventListener('click',e=>{e.preventDefault();trigger.click();});}
+      const menu=document.createElement('div');
+      menu.className='custom-select-menu';
+      menu.setAttribute('role','listbox');
+      menu.hidden=true;
+      shell.append(trigger);
+      const render=()=>{
+        const selected=select.options[select.selectedIndex];
+        value.textContent=selected?.textContent||'Выбрать';
+        menu.innerHTML=[...select.options].map((o,i)=>'<button type="button" class="custom-select-option" role="option" aria-selected="'+(i===select.selectedIndex)+'" data-index="'+i+'">'+escapeHtml(o.textContent)+'</button>').join('');
+      };
+      const close=()=>{
+        menu.hidden=true;
+        shell.classList.remove('opens-upward');
+        trigger.setAttribute('aria-expanded','false');
+      };
+      const positionMenu=()=>{
+        const rect=trigger.getBoundingClientRect();
+        if(rect.bottom<0||rect.top>window.innerHeight){close();return;}
+        menu.style.maxHeight='none';
+        const naturalHeight=Math.min(menu.scrollHeight,280);
+        const below=window.innerHeight-rect.bottom-12,above=rect.top-12;
+        const up=below<naturalHeight&&above>below;
+        const space=up?above:below;
+        const maxHeight=Math.max(90,Math.min(280,space-8));
+        menu.style.maxHeight=maxHeight+'px';
+        const height=Math.min(menu.scrollHeight,maxHeight);
+        const width=Math.min(rect.width,window.innerWidth-16);
+        menu.style.width=width+'px';
+        menu.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8))+'px';
+        menu.style.top=Math.max(8,Math.min(up?rect.top-height-6:rect.bottom+6,window.innerHeight-height-8))+'px';
+        shell.classList.toggle('opens-upward',up);
+      };
+      const open=state=>{
+        if(!state){close();return;}
+        if(menu.parentElement!==document.body)document.body.appendChild(menu);
+        menu.hidden=false;
+        menu.style.position='fixed';
+        menu.style.zIndex='12000';
+        trigger.setAttribute('aria-expanded','true');
+        positionMenu();
+      };
+      const native=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
+      try{Object.defineProperty(select,'value',{configurable:true,get(){return native.get.call(this)},set(v){native.set.call(this,v);render()}})}catch{}
+      trigger.onclick=()=>open(menu.hidden);
+      trigger.onkeydown=e=>{if(['ArrowDown','Enter',' '].includes(e.key)){e.preventDefault();open(true);menu.querySelector('.custom-select-option')?.focus()}};
+      menu.onkeydown=e=>{if(e.key==='Escape'){close();trigger.focus()}};
+      menu.onclick=e=>{
+        const option=e.target.closest('[data-index]');
+        if(!option)return;
+        select.selectedIndex=Number(option.dataset.index);
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+        render();close();trigger.focus();
+      };
+      select.addEventListener('change',render);
+      new MutationObserver(render).observe(select,{childList:true,subtree:true,attributes:true,characterData:true});
+      document.addEventListener('click',e=>{if(!shell.contains(e.target)&&!menu.contains(e.target))close()});
+      window.addEventListener('resize',()=>{if(!menu.hidden)positionMenu()},{passive:true});
+      window.addEventListener('scroll',()=>{if(!menu.hidden)positionMenu()},true);
+      render();
+    });
+  }
     // RENDER ON LOAD
   try {
     document.getElementById('homeGames').innerHTML = games.slice(0,4).map(gameCard).join('');
@@ -960,6 +1041,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     populate('settingsGame',false,accountProfile?.game_name||'CS2');
     populate('mmGame',false,accountMatchmakingPrefs?.game_name||accountProfile?.game_name||'CS2');
     populate('plGame',true,'');
+    populate('teamGame',false,accountProfile?.game_name||'CS2');
+    populate('teamDirectoryGame',true,'');
     renderGames();renderLibrary(accountLibrary,accountGameStats);
     const home=document.getElementById('homeGames');if(home)home.innerHTML=games.slice(0,4).map(gameCard).join('');
   }
@@ -968,7 +1051,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const el=document.getElementById('homeTournaments');if(!el||!supabaseClient)return;
     const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,participant_limit').order('starts_at',{ascending:true,nullsFirst:false}).limit(2);
     if(error){console.error('Home tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить турниры.</p>';return;}
-    el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='live'?'badge-danger':'badge-warning')+'">'+escapeHtml(t.status)+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+(t.starts_at?' • '+new Date(t.starts_at).toLocaleDateString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong>'+escapeHtml(t.prize)+'</strong></p>':'')+'<button class="btn btn-ghost" onclick="showSection(\'tournaments\')">Подробнее</button></article>').join('')||'<p class="subtitle">Опубликованных турниров пока нет.</p>';
+    el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='live'?'badge-danger':'badge-warning')+'">'+escapeHtml(tournamentStatusLabel(t.status))+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+(t.starts_at?' • '+new Date(t.starts_at).toLocaleDateString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong>'+escapeHtml(t.prize)+'</strong></p>':'')+'<button class="btn btn-ghost" onclick="showSection(\'tournaments\')">Подробнее</button></article>').join('')||'<p class="subtitle">Опубликованных турниров пока нет.</p>';
   }
 
   async function loadSeason() {
@@ -1050,6 +1133,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     closeModal('adminDetailModal');showNotification('Жалоба удалена.');await loadAdminPanel();
   }
 
+  function tournamentStatusLabel(status) {
+    return ({upcoming:'Скоро',registration:'Регистрация',live:'Идёт',completed:'Завершён',cancelled:'Отменён'})[String(status||'').toLowerCase()]||String(status||'Турнир');
+  }
   async function loadPlatformEvents() {
     const el=document.getElementById('eventsGrid');if(!el||!supabaseClient)return;
     const [ev,tr]=await Promise.all([
@@ -1070,7 +1156,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
         const count=counts.get(e.id)||0,full=e.registration_limit&&count>=e.registration_limit,joined=mine.has(e.id);
         return '<article class="card"><span class="badge badge-info">'+escapeHtml(({event:'Событие',championship:'Чемпионат',league:'Лига',meetup:'Встреча'})[e.event_type]||'Событие')+'</span><h3>'+escapeHtml(e.title)+'</h3><p class="subtitle">'+escapeHtml(names.get(e.game_id)||'Все игры')+' • '+new Date(e.starts_at).toLocaleString('ru-RU')+' • '+count+(e.registration_limit?'/'+e.registration_limit:'')+' участников</p><p>'+escapeHtml(e.description||'')+'</p>'+(currentUser?(joined?'<button class="btn btn-ghost" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,true)">Отменить участие</button>':!full?'<button class="btn btn-primary" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,false)">Участвовать</button>':'<span class="badge badge-warning">Мест нет</span>'):'<button class="btn btn-primary" onclick="requireAccount()">Войти для участия</button>')+((e.owner_id===currentUser?.id||isAdmin)?'<button class="btn btn-ghost" onclick="deletePlatformEvent(&quot;'+e.id+'&quot;)">Удалить</button>':'')+'</article>';
       }
-      return '<article class="card"><span class="badge badge-warning">'+escapeHtml(e.status)+'</span><h3>'+escapeHtml(e.name)+'</h3><p class="subtitle">'+escapeHtml(e.game_name)+' • '+(e.starts_at?new Date(e.starts_at).toLocaleString('ru-RU'):'дата не задана')+'</p>'+(e.description?'<p>'+escapeHtml(e.description)+'</p>':'')+(e.prize?'<strong>'+escapeHtml(e.prize)+'</strong>':'')+(e.status==='registration'?'<button class="btn btn-primary" onclick="registerForTournament(&quot;'+escapeHtml(e.id)+'&quot;)">Записаться в турнир</button>':'')+'</article>';
+      return '<article class="card"><span class="badge badge-warning">'+escapeHtml(tournamentStatusLabel(e.status))+'</span><h3>'+escapeHtml(e.name)+'</h3><p class="subtitle">'+escapeHtml(e.game_name)+' • '+(e.starts_at?new Date(e.starts_at).toLocaleString('ru-RU'):'дата не задана')+'</p>'+(e.description?'<p>'+escapeHtml(e.description)+'</p>':'')+(e.prize?'<strong>'+escapeHtml(e.prize)+'</strong>':'')+(e.status==='registration'?'<button class="btn btn-primary" onclick="registerForTournament(&quot;'+escapeHtml(e.id)+'&quot;)">Записаться в турнир</button>':'')+'</article>';
     }).join('')||'<p class="subtitle">Событий пока нет. Создай первое.</p>';
   }
   async function createPlatformEvent() {
