@@ -1587,3 +1587,16 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 }
 .table-scroll{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin;}
 .bracket{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin;}
+
+
+/* Dropdown menus must only scroll vertically; long option labels must not create a bottom scrollbar. */
+.custom-select-menu{
+  box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior:contain!important;touch-action:pan-y!important;
+  -webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important;
+}
+.custom-select-option{box-sizing:border-box!important;width:100%;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.admin-managed-row,.admin-managed-row>div{min-width:0;max-width:100%}
+.admin-managed-actions{min-width:0;max-width:100%;flex-wrap:wrap}
+.admin-managed-actions .custom-select-shell{flex:0 1 150px;min-width:120px;max-width:100%}
+.admin-managed-actions .btn{max-width:100%;white-space:normal}
