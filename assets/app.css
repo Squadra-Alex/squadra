@@ -1558,3 +1558,14 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 .custom-select-menu::-webkit-scrollbar {width:8px;height:8px;}
 .custom-select-menu::-webkit-scrollbar-track {background:var(--bg-3);border-radius:8px;}
 .custom-select-menu::-webkit-scrollbar-thumb {background:var(--red);border:2px solid var(--bg-2);border-radius:8px;}
+
+.team-invite-modal{width:min(520px,calc(100vw - 28px))}
+.team-invite-results{display:grid;gap:7px;margin-top:12px;max-height:min(48vh,360px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.team-invite-result{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--bg-2);color:var(--text);text-align:left;cursor:pointer}
+.team-invite-result:hover,.team-invite-result:focus-visible{border-color:var(--border-hi);background:var(--bg-3)}
+.team-invite-result>span:nth-child(2){display:grid;gap:3px;min-width:0}
+.team-invite-result small{color:var(--muted)}
+.team-invite-result>i:last-child{margin-left:auto;color:var(--red)}
+.team-invite-avatar{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border-radius:50%;overflow:hidden;background:var(--bg-3);color:var(--red)}
+.team-invite-avatar img{width:100%;height:100%;object-fit:cover}
+.custom-select-menu{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
