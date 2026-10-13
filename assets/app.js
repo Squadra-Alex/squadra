@@ -36,7 +36,7 @@
   const fmt = n => n.toLocaleString('ru-RU');
 
   const gameLogoSources = {
-    'standoff 2': 'steam:2818260', 'cs2': 'steam:730', 'counter-strike 2': 'steam:730',
+    'standoff 2': 'url:https://play-lh.googleusercontent.com/uAfkyiLUpCY5pk4J5hKGb03q3afDOybzE3F25c6rbBTWaEtvhm6-qLTuO5LhLvnSIuHljRxXA7P6MH_6mAdy3w=s0-br30', 'cs2': 'steam:730', 'counter-strike 2': 'steam:730',
     'dota 2': 'steam:570', 'valorant': 'simple:valorant', 'league of legends': 'simple:leagueoflegends',
     'lol': 'simple:leagueoflegends', 'apex legends': 'steam:1172470', 'fortnite': 'simple:fortnite',
     'rocket league': 'steam:252950', 'pubg': 'steam:578080', 'pubg: battlegrounds': 'steam:578080',
@@ -50,6 +50,7 @@
   function gameLogoUrl(name) {
     const source = gameLogoSources[String(name || '').trim().toLowerCase()];
     if (!source) return '';
+    if (source.startsWith('url:')) return source.slice(4);
     if (source.startsWith('steam:')) return 'https://cdn.akamai.steamstatic.com/steam/apps/' + source.slice(6) + '/library_600x900.jpg';
     return 'https://cdn.simpleicons.org/' + source.slice(7) + '/ffffff';
   }
