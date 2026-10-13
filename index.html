@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=selectmenus-teamcatalog-20261014c">
+<link rel="stylesheet" href="/assets/app.css?v=game-search-invites-brackets-20261014">
 </head>
 <body>
 
@@ -537,12 +537,20 @@
   </div>
 </div>
 
+<div id="teamInviteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="teamInviteTitle">
+  <div class="modal-content team-invite-modal"><button class="modal-close" type="button" aria-label="Закрыть" onclick="closeModal('teamInviteModal')"><i class="fa-solid fa-xmark"></i></button>
+    <h2 id="teamInviteTitle">Пригласить игрока</h2><p class="subtitle">Начни вводить ник и выбери игрока из списка.</p>
+    <input id="teamInviteSearch" type="search" maxlength="24" autocomplete="off" placeholder="Ник игрока" oninput="searchTeamInvitePlayers()" aria-label="Поиск игрока для приглашения">
+    <div id="teamInviteResults" class="team-invite-results" role="list"></div>
+  </div>
+</div>
+
 <div id="createTeamModal" class="modal">
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('createTeamModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Создать команду</h2>
     <div class="form-group"><label>Название команды</label><input id="teamName" maxlength="60" placeholder="Например: Phoenix Squad"></div>
-    <div class="form-group"><label>Тег</label><input id="teamTag" maxlength="12" placeholder="[PS]"></div>
+    <div class="form-group"><label>Тег</label><input id="teamTag" maxlength="12" placeholder="[PS]" aria-describedby="teamTagHint"><small id="teamTagHint" class="subtitle">Скобки добавятся автоматически</small></div>
     <div class="form-group"><label>Игра</label><select id="teamGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
     <div class="form-group"><label>Регион</label><select id="teamRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
     <div class="form-group"><label>Описание</label><textarea id="teamDescription" rows="3" maxlength="1000" placeholder="Расскажите о команде..."></textarea></div>
@@ -555,7 +563,7 @@
     <button class="modal-close" onclick="closeModal('createTournamentModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Создать турнир</h2>
     <div class="form-group"><label>Название</label><input id="tournamentName" maxlength="100" placeholder="Например: Squadra Open"></div>
-    <div class="form-group"><label>Игра</label><select id="tournamentGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>League of Legends</option></select></div>
+    <div class="form-group"><label>Игра</label><select id="tournamentGame"><option>Загрузка игр…</option></select></div>
     <div class="grid grid-2"><div class="form-group"><label>Команд</label><input id="tournamentLimit" type="number" min="2" max="256" value="16"></div><div class="form-group"><label>Начало</label><input id="tournamentStarts" type="datetime-local"></div></div>
     <div class="form-group"><label>Призовой фонд</label><input id="tournamentPrize" maxlength="80" placeholder="Например: ₽ 50 000"></div>
     <div class="form-group"><label>Описание</label><textarea id="tournamentDescription" rows="3" maxlength="2000" placeholder="Правила и информация о турнире"></textarea></div>
@@ -566,7 +574,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=selectmenus-teamcatalog-20261014c"></script>
+<script src="/assets/app.js?v=game-search-invites-brackets-20261014"></script>
 
 </body>
 </html>
