@@ -35,15 +35,23 @@
 
   const fmt = n => n.toLocaleString('ru-RU');
 
-  const gameLogoSlugs = {
-    'standoff 2': 'standoff2', 'cs2': 'counterstrike', 'counter-strike 2': 'counterstrike',
-    'dota 2': 'dota2', 'valorant': 'valorant', 'league of legends': 'leagueoflegends',
-    'lol': 'leagueoflegends', 'apex legends': 'apexlegends', 'fortnite': 'fortnite',
-    'rocket league': 'rocketleague', 'pubg': 'pubg', 'pubg: battlegrounds': 'pubg'
+  const gameLogoSources = {
+    'standoff 2': 'steam:2818260', 'cs2': 'steam:730', 'counter-strike 2': 'steam:730',
+    'dota 2': 'steam:570', 'valorant': 'simple:valorant', 'league of legends': 'simple:leagueoflegends',
+    'lol': 'simple:leagueoflegends', 'apex legends': 'steam:1172470', 'fortnite': 'simple:fortnite',
+    'rocket league': 'steam:252950', 'pubg': 'steam:578080', 'pubg: battlegrounds': 'steam:578080',
+    'rust': 'steam:252490', 'warthunder': 'steam:236390', 'war thunder': 'steam:236390',
+    'overwatch 2': 'steam:2357570', 'rainbow six siege': 'steam:359550',
+    'marvel rivals': 'steam:2767030', 'the finals': 'steam:2073850',
+    'warframe': 'steam:230410', 'destiny 2': 'steam:1085660',
+    'team fortress 2': 'steam:440', 'dead by daylight': 'steam:381210',
+    'once human': 'steam:2139460'
   };
   function gameLogoUrl(name) {
-    const slug = gameLogoSlugs[String(name || '').trim().toLowerCase()];
-    return slug ? 'https://cdn.simpleicons.org/' + slug + '/ffffff' : '';
+    const source = gameLogoSources[String(name || '').trim().toLowerCase()];
+    if (!source) return '';
+    if (source.startsWith('steam:')) return 'https://cdn.akamai.steamstatic.com/steam/apps/' + source.slice(6) + '/header.jpg';
+    return 'https://cdn.simpleicons.org/' + source.slice(7) + '/ffffff';
   }
   function gameInitials(name) {
     const words = String(name || 'GG').trim().split(/\\s+/).filter(Boolean);
