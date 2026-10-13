@@ -1542,3 +1542,14 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
   .admin-managed-actions {width:100%;justify-content:flex-start;}
   #adminTab-reports .admin-report-filters {overflow:visible;}
 }
+
+/* Custom select menus are portaled to the viewport so cards and modals cannot clip them. */
+.custom-select-menu {position:fixed!important;z-index:12000!important;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin;}
+.team-directory-filters {display:grid;grid-template-columns:minmax(0,1.15fr) minmax(220px,1fr) minmax(200px,.8fr);align-items:start;gap:12px;margin:14px 0;}
+.team-search-field,.team-filter-field {min-width:0;width:100%;}
+.team-search-field input,.team-filter-field .custom-select-shell {width:100%;min-width:0;}
+.team-search-field .character-counter {display:block;text-align:right;line-height:1.2;margin-top:4px;}
+@media(max-width:760px) {
+  .team-directory-filters {grid-template-columns:minmax(0,1fr);gap:10px;}
+  .team-filter-field,.team-search-field {width:100%;}
+}
