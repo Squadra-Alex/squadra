@@ -50,7 +50,7 @@
   function gameLogoUrl(name) {
     const source = gameLogoSources[String(name || '').trim().toLowerCase()];
     if (!source) return '';
-    if (source.startsWith('steam:')) return 'https://cdn.akamai.steamstatic.com/steam/apps/' + source.slice(6) + '/header.jpg';
+    if (source.startsWith('steam:')) return 'https://cdn.akamai.steamstatic.com/steam/apps/' + source.slice(6) + '/library_600x900.jpg';
     return 'https://cdn.simpleicons.org/' + source.slice(7) + '/ffffff';
   }
   function gameInitials(name) {
