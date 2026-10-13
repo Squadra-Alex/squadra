@@ -59,7 +59,7 @@
   }
 
   function gameCard(g) {
-    const name=escapeHtml(g.name),genre=escapeHtml(g.genre),arg=JSON.stringify(g.name).replace(/"/g,'&quot;'),logo=gameLogoUrl(g.name),icon=logo?'<img src="'+logo+'" alt="" loading="lazy" onerror="this.parentElement.classList.add(\'no-logo\')">':'';
+    const name=escapeHtml(g.name),genre=escapeHtml(g.genre),arg=JSON.stringify(g.name).replace(/"/g,'&quot;'),logo=gameLogoUrl(g.name),icon=logo?'<img src="'+logo+'" alt="" loading="lazy" style="position:absolute;inset:0;width:100%!important;height:100%!important;max-width:100%;max-height:100%;object-fit:contain;padding:4px;box-sizing:border-box;opacity:1" onerror="this.parentElement.classList.add(\'no-logo\')">':'';
     return '<article class="card game-card"><div class="game-img game-brand-icon '+(logo?'':'no-logo')+'">'+icon+'<span class="fallback-icon" aria-hidden="true">'+escapeHtml(gameInitials(g.name))+'</span></div><div class="game-info"><h4>'+name+'</h4><div class="genre">'+genre+'</div><div class="online">'+fmt(g.playerCount||0)+' игроков на Squadra</div><button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="addGameToLibrary('+arg+')"><i class="fa-solid fa-plus"></i> В библиотеку</button></div></article>';
   }
   function renderGames(){const q=(document.getElementById('gameSearch')?.value||'').toLowerCase(),gen=document.getElementById('gameGenre')?.value||'',sort=document.getElementById('gameSort')?.value||'';let list=games.filter(g=>(!q||g.name.toLowerCase().includes(q))&&(!gen||g.genre===gen));list.sort((a,b)=>(b.playerCount||0)-(a.playerCount||0));const host=document.getElementById('gamesGrid');if(host)host.innerHTML=list.map(gameCard).join('')||'<p class="subtitle">Ничего не найдено</p>';}
