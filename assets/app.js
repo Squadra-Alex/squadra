@@ -607,14 +607,14 @@ function initCustomSelects(root=document) {
       const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).ilike('username','%'+safe+'%').order('username').limit(8);
       if(sequence!==teamInviteSearchSequence)return;
       if(error){console.error('Team invite search failed:',error);results.innerHTML='<p class="subtitle">Не удалось найти игроков.</p>';return;}
-      results.innerHTML=(data||[]).map(p=>'<button type="button" class="team-invite-result" onclick="selectTeamInvitePlayer('+JSON.stringify(p.id)+')"><span class="team-invite-avatar">'+(p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>')+'</span><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><i class="fa-solid fa-arrow-right"></i></button>').join('')||'<p class="subtitle">Игроки не найдены.</p>';
+      results.innerHTML=(data||[]).map(p=>'<button type="button" class="team-invite-result" onclick="selectTeamInvitePlayer(&quot;'+escapeHtml(p.id)+'&quot;)"><span class="team-invite-avatar">'+(p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>')+'</span><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><i class="fa-solid fa-arrow-right"></i></button>').join('')||'<p class="subtitle">Игроки не найдены.</p>';
     },180);
   }
   async function selectTeamInvitePlayer(playerId) {
     if(!currentUser||!pendingTeamInviteId||!playerId)return;
     const teamId=pendingTeamInviteId;
     const {error}=await supabaseClient.from('team_invites').insert({team_id:teamId,inviter_id:currentUser.id,invitee_id:playerId});
-    if(error){console.error(error);showNotification(error.code==='23505'?'Приглашение этому игроку уже отправлено.':'Не удалось отправить приглашение.');return;}
+    if(error){console.error('Team invite insert failed:',error);const message=error.code==='23505'?'Приглашение этому игроку уже отправлено.':error.code==='42501'?'Приглашать игроков может только владелец команды.':'Не удалось отправить приглашение. Попробуй ещё раз.';showNotification(message);return;}
     const {data:target}=await supabaseClient.from('profiles').select('username').eq('id',playerId).maybeSingle();
     closeModal('teamInviteModal');pendingTeamInviteId=null;
     showNotification('Приглашение отправлено'+(target?.username?' @'+target.username:'')+'.');
@@ -1700,29 +1700,29 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
   async function adminToggleTeam(id,isActive) {
     if(!isAdmin||!await askConfirm(isActive?'Опубликовать команду?':'Скрыть команду из каталога?'))return;
-    const {error}=await supabaseClient.from('teams').update({is_active:isActive}).eq('id',id);
-    if(error){console.error(error);return showNotification('Не удалось изменить команду.');}
+    const {data:updated,error}=await supabaseClient.from('teams').update({is_active:isActive}).eq('id',id).select('id,is_active').maybeSingle();
+    if(error||!updated){console.error('Team visibility update failed:',error);return showNotification('Не удалось изменить команду. Обнови страницу и проверь права доступа.');}
     await loadAdminTeamsAndTournaments();await loadTeamDirectory();showNotification(isActive?'Команда опубликована.':'Команда скрыта.');
   }
   async function adminDeleteTeam(id) {
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить команду безвозвратно? Её участники, заявки и приглашения тоже будут удалены.'))return;
-    const {error}=await supabaseClient.from('teams').delete().eq('id',id);
-    if(error){console.error(error);return showNotification('Не удалось удалить команду.');}
+    const {data:deleted,error}=await supabaseClient.from('teams').delete().eq('id',id).select('id').maybeSingle();
+    if(error||!deleted){console.error('Team delete failed:',error);return showNotification('Не удалось удалить команду. Обнови страницу и проверь права доступа.');}
     showNotification('Команда удалена.');
     await Promise.all([loadAdminTeamsAndTournaments(),loadTeamDirectory(),currentUser?loadAccountData():Promise.resolve()]);
   }
   async function adminDeleteTournament(id) {
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить турнир безвозвратно? Регистрации и сетка турнира тоже будут удалены.'))return;
-    const {error}=await supabaseClient.from('tournaments').delete().eq('id',id);
-    if(error){console.error(error);return showNotification('Не удалось удалить турнир.');}
+    const {data:deleted,error}=await supabaseClient.from('tournaments').delete().eq('id',id).select('id').maybeSingle();
+    if(error||!deleted){console.error('Tournament delete failed:',error);return showNotification('Не удалось удалить турнир. Обнови страницу и проверь права доступа.');}
     showNotification('Турнир удалён.');
     await Promise.all([loadAdminTeamsAndTournaments(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
   }
   async function adminUpdateTournamentStatus(id,status) {
     if(!isAdmin||!supabaseClient||!['upcoming','registration','live','completed','cancelled'].includes(status))return;
-    const {error}=await supabaseClient.from('tournaments').update({status}).eq('id',id);
-    if(error){console.error(error);return showNotification('Не удалось обновить статус турнира.');}
-    showNotification('Статус турнира обновлён.');
+    const {data:updated,error}=await supabaseClient.from('tournaments').update({status}).eq('id',id).select('id,status').maybeSingle();
+    if(error||!updated){console.error('Tournament status update failed:',error);showNotification('Не удалось сохранить статус турнира.');await loadAdminTeamsAndTournaments();return;}
+    showNotification('Статус турнира: '+tournamentStatusLabel(updated.status)+'.');
     await Promise.all([loadAdminTeamsAndTournaments(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
   }
 
