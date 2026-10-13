@@ -1176,7 +1176,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
 
   function tournamentStatusLabel(status) {
-    return ({upcoming:'Скоро',registration:'Регистрация',live:'Идёт',completed:'Завершён',cancelled:'Отменён'})[String(status||'').toLowerCase()]||String(status||'Турнир');
+    return ({upcoming:'Скоро',registration:'Регистрация',live:'Идёт',completed:'Завершён',finished:'Завершён',cancelled:'Отменён'})[String(status||'').toLowerCase()]||String(status||'Турнир');
   }
   async function loadPlatformEvents() {
     const el=document.getElementById('eventsGrid');if(!el||!supabaseClient)return;
