@@ -216,11 +216,14 @@ create table if not exists public.tournaments (
   id text primary key,
   name text not null,
   game_name text not null,
-  status text not null default 'registration' check (status in ('upcoming','registration','live','finished')),
+  status text not null default 'registration' check (status in ('upcoming','registration','live','completed','cancelled','finished')),
   prize text not null default '',
   starts_at timestamptz,
   created_at timestamptz not null default now()
 );
+alter table public.tournaments drop constraint if exists tournaments_status_check;
+alter table public.tournaments add constraint tournaments_status_check check (status in ('upcoming','registration','live','completed','cancelled','finished'));
+
 create table if not exists public.tournament_registrations (
   id uuid primary key default gen_random_uuid(),
   tournament_id text not null references public.tournaments(id) on delete cascade,
