@@ -586,13 +586,37 @@ function initCustomSelects(root=document) {
     const html=pending.map(x=>'<div class="card"><span class="badge badge-warning">Приглашение</span><h3>'+escapeHtml(x.teams?.name||'Команда')+'</h3><button class="btn btn-primary" onclick="respondTeamInvite(\''+x.id+'\',\'accepted\')">Принять</button> <button class="btn btn-ghost" onclick="respondTeamInvite(\''+x.id+'\',\'declined\')">Отклонить</button></div>').join('');
     grid.insertAdjacentHTML('afterbegin',html);
   }
-  async function inviteToTeam(teamId) {
-    const username=await askInput('Ник игрока в Squadra:');if(!username)return;
-    const {data:target,error:lookupError}=await supabaseClient.from('profiles').select('id,username').ilike('username',username.trim()).maybeSingle();
-    if(lookupError||!target)return showNotification('Игрок с таким ником не найден.');
-    const {error}=await supabaseClient.from('team_invites').insert({team_id:teamId,inviter_id:currentUser.id,invitee_id:target.id});
-    if(error){console.error(error);return showNotification('Не удалось отправить приглашение.');}
-    showNotification('Приглашение отправлено @'+target.username);
+  let pendingTeamInviteId=null,teamInviteSearchTimer=0,teamInviteSearchSequence=0;
+  function inviteToTeam(teamId) {
+    if(!currentUser)return requireAccount();
+    pendingTeamInviteId=teamId;
+    const input=document.getElementById('teamInviteSearch'),results=document.getElementById('teamInviteResults');
+    if(input)input.value='';
+    if(results)results.innerHTML='<p class="subtitle">Начни вводить ник игрока.</p>';
+    openModal('teamInviteModal');setTimeout(()=>input?.focus(),0);
+  }
+  function searchTeamInvitePlayers() {
+    clearTimeout(teamInviteSearchTimer);
+    const term=(document.getElementById('teamInviteSearch')?.value||'').trim(),results=document.getElementById('teamInviteResults'),sequence=++teamInviteSearchSequence;
+    if(!results)return;
+    if(term.length<2){results.innerHTML='<p class="subtitle">Введи минимум 2 символа.</p>';return;}
+    results.innerHTML='<p class="subtitle">Ищем игроков…</p>';
+    teamInviteSearchTimer=setTimeout(async()=>{
+      const safe=term.replace(/[%_]/g,'');
+      const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).ilike('username','%'+safe+'%').order('username').limit(8);
+      if(sequence!==teamInviteSearchSequence)return;
+      if(error){console.error('Team invite search failed:',error);results.innerHTML='<p class="subtitle">Не удалось найти игроков.</p>';return;}
+      results.innerHTML=(data||[]).map(p=>'<button type="button" class="team-invite-result" onclick="selectTeamInvitePlayer('+JSON.stringify(p.id)+')"><span class="team-invite-avatar">'+(p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>')+'</span><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><i class="fa-solid fa-arrow-right"></i></button>').join('')||'<p class="subtitle">Игроки не найдены.</p>';
+    },180);
+  }
+  async function selectTeamInvitePlayer(playerId) {
+    if(!currentUser||!pendingTeamInviteId||!playerId)return;
+    const teamId=pendingTeamInviteId;
+    const {error}=await supabaseClient.from('team_invites').insert({team_id:teamId,inviter_id:currentUser.id,invitee_id:playerId});
+    if(error){console.error(error);showNotification(error.code==='23505'?'Приглашение этому игроку уже отправлено.':'Не удалось отправить приглашение.');return;}
+    const {data:target}=await supabaseClient.from('profiles').select('username').eq('id',playerId).maybeSingle();
+    closeModal('teamInviteModal');pendingTeamInviteId=null;
+    showNotification('Приглашение отправлено'+(target?.username?' @'+target.username:'')+'.');
   }
   async function respondTeamInvite(id,status) {
     const {error}=await supabaseClient.from('team_invites').update({status}).eq('id',id).eq('invitee_id',currentUser.id);
@@ -713,9 +737,14 @@ function initCustomSelects(root=document) {
     await loadTeamDirectory();
   }
 
+  function normalizeTeamTag(value){return String(value||'').replace(/[\[\]]/g,'').trim().slice(0,10);}
+  document.getElementById('teamTag')?.addEventListener('focus',event=>{event.currentTarget.value=normalizeTeamTag(event.currentTarget.value);});
+  document.getElementById('teamTag')?.addEventListener('blur',event=>{const tag=normalizeTeamTag(event.currentTarget.value);event.currentTarget.value=tag?'['+tag+']':'';});
   async function createTeam() {
     if(!currentUser)return requireAccount();
-    const team={owner_id:currentUser.id,name:document.getElementById('teamName').value.trim(),tag:document.getElementById('teamTag').value.trim(),game_name:document.getElementById('teamGame').value,region:document.getElementById('teamRegion').value,description:document.getElementById('teamDescription').value.trim()};
+    const tagField=document.getElementById('teamTag'),tag=normalizeTeamTag(tagField?.value||'');
+    if(tagField)tagField.value=tag?'['+tag+']':'';
+    const team={owner_id:currentUser.id,name:document.getElementById('teamName').value.trim(),tag,game_name:document.getElementById('teamGame').value,region:document.getElementById('teamRegion').value,description:document.getElementById('teamDescription').value.trim()};
     const {error}=await supabaseClient.from('teams').insert(team);
     if(error){console.error(error);return showNotification('Не удалось создать команду. Проверь название и SQL-схему.');}
     closeModal('createTeamModal');await loadAccountData();showNotification('Команда создана.');
@@ -860,13 +889,22 @@ function initCustomSelects(root=document) {
     showNotification('Турнирная сетка создана.');await loadTournamentBracket(tournamentId);await loadCreatedTournaments();
   }
 
+  let bracketLoadSequence=0;
   async function loadTournamentBracket(tournamentId) {
     const select=document.getElementById('tournamentBracketSelect'),el=document.getElementById('tournamentBracket');
     if(select&&tournamentId)select.value=tournamentId;
-    if(!el||!tournamentId)return;
-    const {data:matches,error}=await supabaseClient.from('tournament_matches').select('*').eq('tournament_id',tournamentId).order('round_number').order('match_number');
+    if(!el)return;
+    if(!tournamentId){el.innerHTML='<p class="subtitle">Выбери турнир, чтобы посмотреть сетку и матчи.</p>';return;}
+    const sequence=++bracketLoadSequence;
+    el.innerHTML='<p class="subtitle">Загружаем турнир…</p>';
+    const [{data:tournament,error:tournamentError},{data:matches,error}]=await Promise.all([
+      supabaseClient.from('tournaments').select('id,name').eq('id',tournamentId).maybeSingle(),
+      supabaseClient.from('tournament_matches').select('*').eq('tournament_id',tournamentId).order('round_number').order('match_number')
+    ]);
+    if(sequence!==bracketLoadSequence||select?.value!==tournamentId)return;
+    if(tournamentError||!tournament){console.error('Tournament not found:',tournamentError);el.innerHTML='<p class="subtitle">Не удалось найти выбранный турнир. Обнови список и попробуй снова.</p>';return;}
     if(error){console.error(error);el.innerHTML='<p class="subtitle">Не удалось загрузить сетку.</p>';return;}
-    if(!matches?.length){el.innerHTML='<p class="subtitle">Сетка ещё не создана организатором.</p>';return;}
+    if(!matches?.length){el.innerHTML='<p class="subtitle">Турнир «'+escapeHtml(tournament.name)+'» найден. Сетка ещё не создана организатором.</p>';return;}
     const ids=[...new Set(matches.flatMap(m=>[m.team_a_id,m.team_b_id]).filter(Boolean))];
     const teams=ids.length?await supabaseClient.from('teams').select('id,name,tag').in('id',ids):{data:[]};
     const names=new Map((teams.data||[]).map(t=>[t.id,t.name+(t.tag?' ['+t.tag+']':'')]));
@@ -1031,7 +1069,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const populate=(id,allowAny,fallback)=>{
       const el=document.getElementById(id);if(!el)return;
       const selected=el.value, options=games.map(g=>'<option value="'+escapeHtml(g.name)+'">'+escapeHtml(g.name)+'</option>').join('');
-      const emptyLabel=id==='plGame'?'Любая':id==='teamDirectoryGame'?'Все игры':'Выбери игру';el.innerHTML=(allowAny?'<option value="">'+emptyLabel+'</option>':'')+options;
+      const emptyLabel=id==='plGame'?'Любая':id==='teamDirectoryGame'?'Все игры':id==='platformEventGame'?'Без привязки к игре':'Выбери игру';el.innerHTML=(allowAny?'<option value="">'+emptyLabel+'</option>':'')+options;
       const next=selected&&games.some(g=>g.name===selected)?selected:fallback&&games.some(g=>g.name===fallback)?fallback:allowAny?'':'';
       el.value=next;
     };
@@ -1042,6 +1080,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     populate('mmGame',false,accountMatchmakingPrefs?.game_name||accountProfile?.game_name||'CS2');
     populate('plGame',true,'');
     populate('teamGame',false,accountProfile?.game_name||'CS2');
+    populate('tournamentGame',false,accountProfile?.game_name||'CS2');
+    populate('communityGroupGame',false,accountProfile?.game_name||'CS2');
+    populate('platformEventGame',true,'');
     populate('teamDirectoryGame',true,'');
     renderGames();renderLibrary(accountLibrary,accountGameStats);
     const home=document.getElementById('homeGames');if(home)home.innerHTML=games.slice(0,4).map(gameCard).join('');
