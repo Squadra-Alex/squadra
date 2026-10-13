@@ -284,7 +284,8 @@ function initCustomSelects(root=document) {
       new MutationObserver(render).observe(select,{childList:true,subtree:true,attributes:true,characterData:true});
       document.addEventListener('click',e=>{if(!shell.contains(e.target)&&!menu.contains(e.target))close()});
       window.addEventListener('resize',()=>{if(!menu.hidden)positionMenu()},{passive:true});
-      window.addEventListener('scroll',()=>{if(!menu.hidden)positionMenu()},true);
+      window.addEventListener('scroll',event=>{if(!menu.hidden&&!menu.contains(event.target))positionMenu()},true);
+      menu.addEventListener('wheel',event=>{if(menu.scrollHeight>menu.clientHeight){const before=menu.scrollTop;menu.scrollTop+=event.deltaY;if(menu.scrollTop!==before)event.preventDefault();}},{passive:false});
       render();
     });
   }
