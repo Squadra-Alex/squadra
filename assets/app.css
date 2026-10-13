@@ -1600,3 +1600,52 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 .admin-managed-actions{min-width:0;max-width:100%;flex-wrap:wrap}
 .admin-managed-actions .custom-select-shell{flex:0 1 150px;min-width:120px;max-width:100%}
 .admin-managed-actions .btn{max-width:100%;white-space:normal}
+
+
+/* Keep tournament status and delete controls aligned and stable. */
+#adminTournamentsList .admin-managed-row {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center !important;
+}
+#adminTournamentsList .admin-managed-actions {
+  display:flex;
+  flex-wrap:nowrap !important;
+  align-items:center;
+  justify-content:flex-end;
+  width:auto !important;
+  min-width:max-content;
+  gap:8px;
+}
+#adminTournamentsList .admin-managed-actions .custom-select-shell {
+  flex:0 0 150px !important;
+  width:150px !important;
+  min-width:150px !important;
+}
+#adminTournamentsList .admin-managed-actions .admin-delete-action {
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+@media(max-width:500px) {
+  #adminTournamentsList .admin-managed-row {
+    grid-template-columns:minmax(0,1fr);
+  }
+  #adminTournamentsList .admin-managed-actions {
+    justify-content:flex-start;
+  }
+}
+
+/* Genre and sort filters retain their width when the selected label changes. */
+.games-filter-controls > .custom-select-shell:nth-of-type(1) {
+  flex:0 0 144px;
+  width:144px;
+  min-width:144px;
+}
+.games-filter-controls > .custom-select-shell:nth-of-type(2) {
+  flex:0 0 200px;
+  width:200px;
+  min-width:200px;
+}
+.games-filter-controls > .custom-select-shell .custom-select-trigger {
+  width:100%;
+}
