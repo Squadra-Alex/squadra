@@ -1031,7 +1031,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const populate=(id,allowAny,fallback)=>{
       const el=document.getElementById(id);if(!el)return;
       const selected=el.value, options=games.map(g=>'<option value="'+escapeHtml(g.name)+'">'+escapeHtml(g.name)+'</option>').join('');
-      el.innerHTML=(allowAny?'<option value="">'+(id==='plGame'?'Любая':'Выбери игру')+'</option>':'')+options;
+      const emptyLabel=id==='plGame'?'Любая':id==='teamDirectoryGame'?'Все игры':'Выбери игру';el.innerHTML=(allowAny?'<option value="">'+emptyLabel+'</option>':'')+options;
       const next=selected&&games.some(g=>g.name===selected)?selected:fallback&&games.some(g=>g.name===fallback)?fallback:allowAny?'':'';
       el.value=next;
     };
