@@ -1569,3 +1569,21 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 .team-invite-avatar{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border-radius:50%;overflow:hidden;background:var(--bg-3);color:var(--red)}
 .team-invite-avatar img{width:100%;height:100%;object-fit:cover}
 .custom-select-menu{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+
+
+/* Make every interactive scroll area reliably scroll on mouse, touch, and trackpads. */
+.custom-select-menu{
+  position:fixed!important;max-height:min(52dvh,360px);
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior-y:contain;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;
+}
+.chat-list,.chat-messages,.group-messages,.modal-content,.admin-detail-body,
+.admin-activity-entries,.team-invite-results,.admin-sidebar{
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;
+}
+.table-scroll,.bracket,.admin-sidebar{
+  overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x;
+}
+.table-scroll{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin;}
+.bracket{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin;}
