@@ -60,8 +60,8 @@
   }
 
   function gameCard(g) {
-    const name=escapeHtml(g.name),genre=escapeHtml(g.genre),arg=JSON.stringify(g.name).replace(/"/g,'&quot;'),logo=gameLogoUrl(g.name),icon=logo?'<img src="'+logo+'" alt="" loading="lazy" style="position:absolute;inset:0;width:100%!important;height:100%!important;max-width:100%;max-height:100%;object-fit:contain;padding:4px;box-sizing:border-box;opacity:1" onerror="this.parentElement.classList.add(\'no-logo\')">':'';
-    return '<article class="card game-card"><div class="game-img game-brand-icon '+(logo?'':'no-logo')+'">'+icon+'<span class="fallback-icon" aria-hidden="true">'+escapeHtml(gameInitials(g.name))+'</span></div><div class="game-info"><h4>'+name+'</h4><div class="genre">'+genre+'</div><div class="online">'+fmt(g.playerCount||0)+' игроков на Squadra</div><button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="addGameToLibrary('+arg+')"><i class="fa-solid fa-plus"></i> В библиотеку</button></div></article>';
+    const name=escapeHtml(g.name),genre=escapeHtml(g.genre),arg=JSON.stringify(g.name).replace(/"/g,'&quot;'),logo=gameLogoUrl(g.name),icon=logo?'<img src="'+logo+'" alt="" loading="lazy" style="position:absolute;inset:0;width:100%!important;height:100%!important;max-width:100%;max-height:100%;object-fit:contain;padding:4px;box-sizing:border-box;opacity:1" onerror="this.parentElement.classList.add(\'no-logo\')">':'',inLibrary=!!(currentUser&&(accountLibrary||[]).some(row=>row.game_name===g.name)),action=inLibrary?'<button class="btn btn-ghost" style="margin-top:12px;width:100%;" disabled aria-label="Уже добавлена в библиотеку"><i class="fa-solid fa-check"></i> В библиотеке</button>':'<button class="btn btn-ghost" style="margin-top:12px;width:100%;" onclick="addGameToLibrary('+arg+')"><i class="fa-solid fa-plus"></i> В библиотеку</button>';
+    return '<article class="card game-card"><div class="game-img game-brand-icon '+(logo?'':'no-logo')+'">'+icon+'<span class="fallback-icon" aria-hidden="true">'+escapeHtml(gameInitials(g.name))+'</span></div><div class="game-info"><h4>'+name+'</h4><div class="genre">'+genre+'</div><div class="online">'+fmt(g.playerCount||0)+' игроков на Squadra</div>'+action+'</div></article>';
   }
   function renderGames(){const q=(document.getElementById('gameSearch')?.value||'').toLowerCase(),gen=document.getElementById('gameGenre')?.value||'',sort=document.getElementById('gameSort')?.value||'';let list=games.filter(g=>(!q||g.name.toLowerCase().includes(q))&&(!gen||g.genre===gen));list.sort((a,b)=>(b.playerCount||0)-(a.playerCount||0));const host=document.getElementById('gamesGrid');if(host)host.innerHTML=list.map(gameCard).join('')||'<p class="subtitle">Ничего не найдено</p>';}
   async function filterPlayers(){const body=document.getElementById('playersBody');if(!body)return;if(!supabaseClient||!currentUser){body.innerHTML='<tr><td colspan="8" class="subtitle">Войди, чтобы искать игроков.</td></tr>';return;}let q=supabaseClient.from('profiles').select('id,username,display_name,avatar_url,game_name,region,rank_name,rating,level,matches_played,wins,kd,verified_color').neq('id',currentUser.id).limit(100);const name=(document.getElementById('plName')?.value||'').trim(),game=document.getElementById('plGame')?.value,rank=document.getElementById('plRank')?.value,region=document.getElementById('plRegion')?.value;if(name)q=q.ilike('username','%'+name.replace(/[%_]/g,'')+'%');if(game)q=q.eq('game_name',game);if(rank)q=q.eq('rank_name',rank);if(region)q=q.eq('region',region);const {data,error}=await q.order('rating',{ascending:false});if(error){console.error(error);body.innerHTML='<tr><td colspan="8">Не удалось загрузить игроков.</td></tr>';return;}const ids=(data||[]).map(x=>x.id),rr=ids.length?await supabaseClient.from('user_roles').select('user_id,role').in('user_id',ids).in('role',['admin','moderator']):{data:[]},roles=new Map();(rr.data||[]).forEach(x=>roles.set(x.user_id,[...(roles.get(x.user_id)||[]),x.role]));body.innerHTML=(data||[]).map(p=>{const badge=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'"></i>':'',role=(roles.get(p.id)||[]).includes('admin')?'<span class="staff-badge admin">Администратор</span>':(roles.get(p.id)||[]).includes('moderator')?'<span class="staff-badge moderator">Модератор</span>':'';return '<tr><td><button class="player-profile-link" onclick="openPlayerProfile(\''+p.id+'\')"><strong>'+escapeHtml(p.display_name||p.username)+'</strong>'+badge+role+'<small style="display:block;color:var(--muted)">@'+escapeHtml(p.username)+'</small></button></td><td>'+escapeHtml(p.rank_name||'—')+'</td><td>'+p.level+'</td><td>'+escapeHtml(p.game_name||'—')+'</td><td>'+escapeHtml(p.region||'—')+'</td><td>'+(p.matches_played?Math.round(p.wins*100/p.matches_played):0)+'%</td><td>'+fmt(p.rating||0)+'</td><td><button class="btn btn-ghost" onclick="addFriend(\''+p.id+'\')">Друг</button><button class="btn btn-ghost" onclick="toggleFollow(\''+p.id+'\')">Подписаться</button><button class="btn btn-ghost" onclick="reportMatch(\''+p.id+'\',\''+escapeHtml(p.game_name||'')+'\')">Результат</button></td></tr>';}).join('')||'<tr><td colspan="8" class="subtitle">Игроки не найдены.</td></tr>';}
@@ -416,7 +416,7 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
       supabaseClient.from('user_follows').select('following_id').eq('follower_id',uid)
     ]);
     queryError('profile',pr.error);queryError('settings',st.error);queryError('library',lib.error);queryError('friendships',fr.error);queryError('teams',teams.error);queryError('history',history.error);queryError('achievements',ach.error);queryError('posts',posts.error);queryError('likes',likes.error);queryError('matchmaking',prefs.error);
-    accountProfile=pr.data; accountGameStats=gameStats.data||[];accountLibrary=lib.data||[];followedIds=new Set((follows.data||[]).map(x=>x.following_id)); accountMatchmakingPrefs=prefs.data; accountFriends=await loadFriendProfiles(fr.data||[]);
+    accountProfile=pr.data; accountGameStats=gameStats.data||[];accountLibrary=lib.data||[];renderGames();followedIds=new Set((follows.data||[]).map(x=>x.following_id)); accountMatchmakingPrefs=prefs.data; accountFriends=await loadFriendProfiles(fr.data||[]);
     renderAccountProfile(accountProfile,st.data);renderAuthState(currentUser);
     renderLibrary(accountLibrary,accountGameStats);
     renderFriends(accountFriends);
@@ -470,7 +470,7 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
   function renderLibrary(rows) {
     const el=document.getElementById('libraryGrid');if(!el)return;const stats=accountGameStats||[];
     if(!rows.length){el.innerHTML='<div class="library-empty card"><div class="empty-state"><i class="fa-solid fa-gamepad"></i><h3>Твоя игровая библиотека</h3><p>Сохраняй любимые игры, смотри игровой рейтинг и статистику по матчам.</p><button class="btn btn-primary" onclick="showSection(\'games\')">Открыть каталог игр</button></div></div>';return;}
-    el.innerHTML=rows.map(r=>{const g=games.find(x=>x.name===r.game_name)||{name:r.game_name,genre:'Игра'},gameId=games.find(x=>x.name===r.game_name)?.id,s=stats.find(x=>x.game_id===gameId),wr=s?.matches_played?Math.round(100*s.wins/s.matches_played):0,logo=gameLogoUrl(g.name),icon=logo?'<img src="'+logo+'" alt="" onerror="this.parentElement.classList.add(\'no-logo\')">':'';return '<article class="card library-game-card"><div class="game-brand-icon '+(logo?'':'no-logo')+'">'+icon+'<span class="fallback-icon">'+escapeHtml(gameInitials(g.name))+'</span></div><div class="library-game-info"><span class="eyebrow">'+escapeHtml(g.genre||'ИГРА')+'</span><h3>'+escapeHtml(r.game_name)+'</h3><p class="subtitle">Добавлена '+new Date(r.added_at).toLocaleDateString('ru-RU')+'</p><div class="library-game-stats"><span><strong>'+fmt(s?.rating||0)+'</strong><small>рейтинг</small></span><span><strong>'+fmt(s?.matches_played||0)+'</strong><small>матчей</small></span><span><strong>'+wr+'%</strong><small>побед</small></span></div><button class="btn btn-ghost" onclick="showSection(\'ranking\')">Таблица лидеров</button> <button class="btn btn-ghost" onclick="removeLibraryGame(\''+r.id+'\')"><i class="fa-solid fa-trash"></i></button></div></article>';}).join('');
+    el.innerHTML=rows.map(r=>{const g=games.find(x=>x.name===r.game_name)||{name:r.game_name,genre:'Игра'},gameId=games.find(x=>x.name===r.game_name)?.id,s=stats.find(x=>x.game_id===gameId),wr=s?.matches_played?Math.round(100*s.wins/s.matches_played):0,logo=gameLogoUrl(g.name),icon=logo?'<img src="'+logo+'" alt="" loading="lazy" style="display:block;width:100%!important;height:100%!important;max-width:100%;max-height:100%;object-fit:contain;padding:3px;box-sizing:border-box" onerror="this.parentElement.classList.add(\'no-logo\')">':'';return '<article class="card library-game-card"><div class="game-brand-icon '+(logo?'':'no-logo')+'">'+icon+'<span class="fallback-icon">'+escapeHtml(gameInitials(g.name))+'</span></div><div class="library-game-info"><span class="eyebrow">'+escapeHtml(g.genre||'ИГРА')+'</span><h3>'+escapeHtml(r.game_name)+'</h3><p class="subtitle">Добавлена '+new Date(r.added_at).toLocaleDateString('ru-RU')+'</p><div class="library-game-stats"><span><strong>'+fmt(s?.rating||0)+'</strong><small>рейтинг</small></span><span><strong>'+fmt(s?.matches_played||0)+'</strong><small>матчей</small></span><span><strong>'+wr+'%</strong><small>побед</small></span></div><div class="library-game-actions"><button class="btn btn-ghost" onclick="showSection(\'ranking\')"><i class="fa-solid fa-ranking-star"></i> Таблица лидеров</button><button class="btn btn-ghost" onclick="removeLibraryGame(\''+r.id+'\')"><i class="fa-solid fa-trash"></i> Удалить игру</button></div></div></article>';}).join('');
   }
   async function addGameToLibrary(name) {
     if(!currentUser)return requireAccount();
@@ -479,9 +479,11 @@ function initCustomSelects(root=document){root.querySelectorAll('select').forEac
     await loadAccountData();showNotification(name+' добавлена в библиотеку.');
   }
   async function removeLibraryGame(id) {
-    const {error}=await supabaseClient.from('user_library').delete().eq('id',id).eq('user_id',currentUser.id);
-    if(error)return showNotification('Не удалось удалить игру.');
-    await loadAccountData();
+    if(!currentUser||!supabaseClient)return requireAccount();
+    const {data,error}=await supabaseClient.from('user_library').delete().eq('id',id).eq('user_id',currentUser.id).select('id');
+    if(error){console.error(error);return showNotification('Не удалось удалить игру из библиотеки.');}
+    if(!data?.length)return showNotification('Игра уже удалена или недоступна.');
+    await loadAccountData();showNotification('Игра удалена из библиотеки.');
   }
   function renderFriends(rows) {
     const el=document.getElementById('friendsGrid');if(!el)return;
@@ -1563,10 +1565,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       supabaseClient.from('tournaments').select('id,name,game_name,status,starts_at,owner_id').order('created_at',{ascending:false}).limit(100)
     ]);
     const teamEl=document.getElementById('adminTeamsList');
-    if(teamEl)teamEl.innerHTML=(teams.data||[]).map(t=>'<article class="list-divider" style="padding:12px 0;display:flex;justify-content:space-between;gap:12px;align-items:center"><div><strong>'+escapeHtml(t.name)+(t.tag?' ['+escapeHtml(t.tag)+']':'')+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+' • '+escapeHtml(t.region)+' • '+(t.is_active?'Опубликована':'Скрыта')+'</div></div><button class="btn '+(t.is_active?'btn-ghost':'btn-primary')+'" onclick="adminToggleTeam(&quot;'+t.id+'&quot;,'+(!t.is_active)+')">'+(t.is_active?'Скрыть':'Показать')+'</button></article>').join('')||'<p class="subtitle">Команд пока нет.</p>';
-    const statusOptions=['upcoming','registration','live','completed','cancelled'];
+    if(teamEl)teamEl.innerHTML=(teams.data||[]).map(t=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(t.name)+(t.tag?' ['+escapeHtml(t.tag)+']':'')+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+' • '+escapeHtml(t.region)+' • '+(t.is_active?'Опубликована':'Скрыта')+'</div></div><div class="admin-managed-actions"><button class="btn '+(t.is_active?'btn-ghost':'btn-primary')+'" onclick="adminToggleTeam(&quot;'+t.id+'&quot;,'+(!t.is_active)+')">'+(t.is_active?'Скрыть':'Показать')+'</button><button class="btn btn-ghost admin-delete-action" onclick="adminDeleteTeam(&quot;'+t.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить команду</button></div></article>').join('')||'<p class="subtitle">Команд пока нет.</p>';
+    const statusOptions=['upcoming','registration','live','completed','cancelled'],statusLabels={upcoming:'Скоро',registration:'Регистрация',live:'Идёт',completed:'Завершён',cancelled:'Отменён'};
     const tournamentEl=document.getElementById('adminTournamentsList');
-    if(tournamentEl)tournamentEl.innerHTML=(tournaments.data||[]).map(t=>'<article class="list-divider" style="padding:12px 0;display:flex;justify-content:space-between;gap:12px;align-items:center"><div><strong>'+escapeHtml(t.name)+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</div></div><select aria-label="Статус турнира" onchange="adminUpdateTournamentStatus(&quot;'+t.id+'&quot;,this.value)">'+statusOptions.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+s+'</option>').join('')+'</select></article>').join('')||'<p class="subtitle">Турниров пока нет.</p>';
+    if(tournamentEl)tournamentEl.innerHTML=(tournaments.data||[]).map(t=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(t.name)+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</div></div><div class="admin-managed-actions"><select aria-label="Статус турнира" onchange="adminUpdateTournamentStatus(&quot;'+t.id+'&quot;,this.value)">'+statusOptions.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+statusLabels[s]+'</option>').join('')+'</select><button class="btn btn-ghost admin-delete-action" onclick="adminDeleteTournament(&quot;'+t.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить турнир</button></div></article>').join('')||'<p class="subtitle">Турниров пока нет.</p>';
   }
   async function adminToggleTeam(id,isActive) {
     if(!isAdmin||!await askConfirm(isActive?'Опубликовать команду?':'Скрыть команду из каталога?'))return;
@@ -1574,11 +1576,26 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(error){console.error(error);return showNotification('Не удалось изменить команду.');}
     await loadAdminTeamsAndTournaments();await loadTeamDirectory();showNotification(isActive?'Команда опубликована.':'Команда скрыта.');
   }
+  async function adminDeleteTeam(id) {
+    if(!isAdmin||!supabaseClient||!await askConfirm('Удалить команду безвозвратно? Её участники, заявки и приглашения тоже будут удалены.'))return;
+    const {error}=await supabaseClient.from('teams').delete().eq('id',id);
+    if(error){console.error(error);return showNotification('Не удалось удалить команду.');}
+    showNotification('Команда удалена.');
+    await Promise.all([loadAdminTeamsAndTournaments(),loadTeamDirectory(),currentUser?loadAccountData():Promise.resolve()]);
+  }
+  async function adminDeleteTournament(id) {
+    if(!isAdmin||!supabaseClient||!await askConfirm('Удалить турнир безвозвратно? Регистрации и сетка турнира тоже будут удалены.'))return;
+    const {error}=await supabaseClient.from('tournaments').delete().eq('id',id);
+    if(error){console.error(error);return showNotification('Не удалось удалить турнир.');}
+    showNotification('Турнир удалён.');
+    await Promise.all([loadAdminTeamsAndTournaments(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
+  }
   async function adminUpdateTournamentStatus(id,status) {
-    if(!isAdmin||!['upcoming','registration','live','completed','cancelled'].includes(status))return;
+    if(!isAdmin||!supabaseClient||!['upcoming','registration','live','completed','cancelled'].includes(status))return;
     const {error}=await supabaseClient.from('tournaments').update({status}).eq('id',id);
     if(error){console.error(error);return showNotification('Не удалось обновить статус турнира.');}
-    showNotification('Статус турнира обновлён.');await Promise.all([loadAdminTeamsAndTournaments(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
+    showNotification('Статус турнира обновлён.');
+    await Promise.all([loadAdminTeamsAndTournaments(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
   }
 
   async function loadAdminGames() {
