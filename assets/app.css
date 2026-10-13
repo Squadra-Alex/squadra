@@ -1553,3 +1553,8 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
   .team-directory-filters {grid-template-columns:minmax(0,1fr);gap:10px;}
   .team-filter-field,.team-search-field {width:100%;}
 }
+
+.custom-select-menu {scrollbar-color:var(--red) var(--bg-3);}
+.custom-select-menu::-webkit-scrollbar {width:8px;height:8px;}
+.custom-select-menu::-webkit-scrollbar-track {background:var(--bg-3);border-radius:8px;}
+.custom-select-menu::-webkit-scrollbar-thumb {background:var(--red);border:2px solid var(--bg-2);border-radius:8px;}
