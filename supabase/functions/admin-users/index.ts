@@ -48,7 +48,9 @@ Deno.serve(async (req: Request) => {
 
   const action = body.action;
   const moderationActions = new Set(["post-update", "post-delete", "comment-update", "comment-delete", "report-update", "report-delete"]);
-  if (!callerIsAdmin && (!callerIsModerator || !moderationActions.has(String(action)))) return response({ error: "Forbidden" }, 403);
+  const reportConversationActions = new Set(["report-message-list", "report-message-send"]);
+  if (!callerIsAdmin && !callerIsModerator && !reportConversationActions.has(String(action))) return response({ error: "Forbidden" }, 403);
+  if (!callerIsAdmin && callerIsModerator && !moderationActions.has(String(action)) && !reportConversationActions.has(String(action))) return response({ error: "Forbidden" }, 403);
   if (action === "users") {
     if (!callerIsAdmin) return response({ error: "Forbidden" }, 403);
     const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -109,6 +111,46 @@ Deno.serve(async (req: Request) => {
     return response({ ok: true, deleted: data?.id || reportId });
   }
 
+  if (reportConversationActions.has(String(action))) {
+    const reportId = typeof body.reportId === "string" ? body.reportId : "";
+    if (!/^[0-9a-f-]{36}$/i.test(reportId)) return response({ error: "Invalid report id" }, 400);
+    const { data: report, error: reportError } = await admin.from("community_reports")
+      .select("id,reporter_id,status").eq("id", reportId).maybeSingle();
+    if (reportError) return response({ error: "Could not load report" }, 500);
+    if (!report) return response({ error: "Report not found" }, 404);
+    const isStaff = callerIsAdmin || callerIsModerator;
+    if (!isStaff && report.reporter_id !== callerId) return response({ error: "Forbidden" }, 403);
+    if (action === "report-message-list") {
+      const { data, error } = await admin.from("community_report_messages")
+        .select("id,report_id,sender_id,body,created_at").eq("report_id", reportId)
+        .order("created_at", { ascending: true }).limit(200);
+      if (error) { console.error("Could not load report conversation:", error); return response({ error: "Could not load report conversation" }, 500); }
+      return response({ ok: true, messages: data || [] });
+    }
+    const message = typeof body.message === "string" ? body.message.trim() : "";
+    if (!message || message.length > 2000) return response({ error: "Message must contain 1–2000 characters" }, 400);
+    const { data: inserted, error: insertError } = await admin.from("community_report_messages")
+      .insert({ report_id: reportId, sender_id: callerId, body: message })
+      .select("id,report_id,sender_id,body,created_at").single();
+    if (insertError) { console.error("Could not send report message:", insertError); return response({ error: "Could not send report message" }, 500); }
+    if (isStaff) {
+      await admin.from("community_reports").update({ moderator_reply: message }).eq("id", reportId);
+    }
+    const recipientIds: string[] = isStaff
+      ? [report.reporter_id]
+      : ((await admin.from("user_roles").select("user_id").in("role", ["admin", "moderator"])).data || []).map((row) => row.user_id);
+    const recipients = [...new Set(recipientIds)].filter((id) => id !== callerId);
+    if (recipients.length) {
+      const { error: notificationError } = await admin.from("notifications").insert(recipients.map((user_id) => ({
+        user_id, kind: "report_message",
+        body: isStaff ? "Новое сообщение поддержки по вашей жалобе." : "Пользователь ответил в переписке по жалобе.",
+        source_type: "community_report", source_id: reportId, actor_id: callerId,
+      })));
+      if (notificationError) console.error("Report message was sent but a notification failed:", notificationError);
+    }
+    return response({ ok: true, message: inserted });
+  }
+
   const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId : "";
   if (!/^[0-9a-f-]{36}$/i.test(targetUserId)) return response({ error: "Invalid target user" }, 400);
   if (action === "user-detail") {
@@ -122,7 +164,7 @@ Deno.serve(async (req: Request) => {
       admin.from("community_posts").select("id", { count: "exact", head: true }).eq("user_id", targetUserId),
       admin.from("team_members").select("role,teams(id,name,tag,game_name)").eq("user_id", targetUserId),
       admin.from("matches").select("game_id,status,score_a,score_b,played_at,created_at").or(`player_a_id.eq.${targetUserId},player_b_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(10),
-      admin.from("activity_history").select("action,game_name,result,rating_delta,created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(20),
+      admin.from("activity_history").select("action,game_name,result,rating_delta,created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(100),
     ]);
     if (authResult.error || !authResult.data?.user) return response({ error: "User not found" }, 404);
     if (profileResult.error) return response({ error: "Could not load profile" }, 500);
@@ -222,7 +264,7 @@ Deno.serve(async (req: Request) => {
     if (!/^[a-z0-9_]{3,24}$/.test(username)) return response({ error: "Username must be 3–24 characters using letters, numbers, and underscores" }, 400);
     if (gameName.length > 60 || region.length > 40 || rankName.length > 40 || bio.length > 400) return response({ error: "One or more fields exceed their character limit" }, 400);
     if (!Number.isInteger(level) || level < 1 || level > 100 || !Number.isInteger(rating) || rating < 0 || rating > 100000) return response({ error: "Level or rating is outside the allowed range" }, 400);
-    if (requestedColor !== null && requestedColor !== "blue" && requestedColor !== "green") return response({ error: "Invalid verification color" }, 400);
+    if (requestedColor !== null && requestedColor !== "blue") return response({ error: "Only the blue verification badge is supported" }, 400);
 
     const { data: currentProfile, error: currentProfileError } = await admin
       .from("profiles")
@@ -282,6 +324,12 @@ Deno.serve(async (req: Request) => {
         return response({ error: "Profile saved, but the account email could not be changed", partial: true }, 409);
       }
     }
+    const { error: actionNoticeError } = await admin.from("notifications").insert({
+      user_id: targetUserId, kind: "account_action",
+      body: "Администратор обновил настройки профиля вашего аккаунта.",
+      source_type: "account_action", source_id: targetUserId, actor_id: callerId,
+    });
+    if (actionNoticeError) console.error("Profile updated but account notification failed:", actionNoticeError);
     return response({ ok: true, profile: updatedProfile, identityChanged, emailChanged });
   }
 
@@ -327,13 +375,20 @@ Deno.serve(async (req: Request) => {
   }
 
   if (action === "verify") {
-    const color = body.color === "blue" || body.color === "green" ? body.color : null;
-    const { error } = await admin.from("profiles").update({
+    if (body.color && body.color !== "blue") return response({ error: "Only the blue verification badge is supported" }, 400);
+    const color = body.color === "blue" ? "blue" : null;
+    const { data: updated, error } = await admin.from("profiles").update({
       verified_color: color,
       verified_at: color ? new Date().toISOString() : null,
       verified_by: color ? callerId : null,
-    }).eq("id", targetUserId);
-    if (error) return response({ error: "Could not update verification badge" }, 500);
+    }).eq("id", targetUserId).select("id").maybeSingle();
+    if (error || !updated) return response({ error: "Could not update verification badge" }, 500);
+    const { error: noticeError } = await admin.from("notifications").insert({
+      user_id: targetUserId, kind: "account_action",
+      body: color ? "Администратор выдал вам синюю галочку верификации." : "Администратор снял галочку верификации с вашего аккаунта.",
+      source_type: "account_action", source_id: targetUserId, actor_id: callerId,
+    });
+    if (noticeError) console.error("Verification changed but account notification failed:", noticeError);
     return response({ ok: true, color });
   }
 
@@ -347,6 +402,12 @@ Deno.serve(async (req: Request) => {
       ban_duration: action === "ban" ? `${days}d` : "none",
     });
     if (error) return response({ error: "Could not update ban status" }, 500);
+    const { error: noticeError } = await admin.from("notifications").insert({
+      user_id: targetUserId, kind: "account_action",
+      body: action === "ban" ? "Администратор временно заблокировал ваш аккаунт на " + days + " дн." : "Администратор снял блокировку с вашего аккаунта.",
+      source_type: "account_action", source_id: targetUserId, actor_id: callerId,
+    });
+    if (noticeError) console.error("Account status changed but notification failed:", noticeError);
     return response({ ok: true, banned: action === "ban", days });
   }
 
@@ -361,6 +422,13 @@ Deno.serve(async (req: Request) => {
       ? await admin.from("user_roles").upsert({ user_id: targetUserId, role }, { onConflict: "user_id,role" })
       : await admin.from("user_roles").delete().eq("user_id", targetUserId).eq("role", role);
     if (query.error) return response({ error: "Could not update role" }, 500);
+    const roleLabel = role === "admin" ? "администратора" : "модератора";
+    const { error: noticeError } = await admin.from("notifications").insert({
+      user_id: targetUserId, kind: "account_action",
+      body: action === "grant_role" ? "Администратор назначил вам роль " + roleLabel + "." : "Администратор снял с вас роль " + roleLabel + ".",
+      source_type: "account_action", source_id: targetUserId, actor_id: callerId,
+    });
+    if (noticeError) console.error("Role changed but account notification failed:", noticeError);
     return response({ ok: true, role, granted: action === "grant_role" });
   }
 
