@@ -1788,3 +1788,40 @@ body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:con
  .notification-card-actions .btn{width:100%;white-space:normal}
  #communityGroupsCard.community-groups-open{max-height:calc(100dvh - 28px);padding-bottom:20px}
 }
+
+/* Fixes for tabbed groups, compact chat actions, library feedback and mobile bounds */
+#communityFeedGrid[hidden],#communityGroupsView[hidden]{display:none!important}
+#communityGroupsView{width:100%;margin:8px 0 18px}
+#communityGroupsCard{width:100%;margin:0}
+#communityGroupsCard.community-groups-open{position:static;inset:auto;transform:none;width:100%;max-height:none;overflow:visible;box-shadow:none}
+#communityGroupsCard .community-groups-close{float:right}
+.game-description{margin:7px 0 10px;color:var(--muted);font-size:13px;line-height:1.5}
+.game-card .game-description{min-height:40px}
+.library-game-card .game-description{font-size:12px}
+.library-game-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.library-game-actions .btn{flex:1 1 150px;min-height:42px;border-radius:12px;font-weight:700}
+.library-game-actions .btn-danger{background:color-mix(in srgb,var(--red) 10%,var(--bg-3));border-color:color-mix(in srgb,var(--red) 38%,var(--border));color:var(--red)}
+.chat-main .chat-header{position:relative}
+#messages .chat-tools{display:block;position:relative;flex:0 0 auto;margin-left:auto}
+#messages .chat-tools summary{list-style:none;display:grid;place-items:center;width:40px;height:40px;min-height:40px;padding:0;cursor:pointer}
+#messages .chat-tools summary::-webkit-details-marker{display:none}
+#messages .chat-tools-menu{position:absolute;z-index:20;right:0;top:calc(100% + 7px);display:grid;gap:6px;min-width:180px;padding:8px;border:1px solid var(--border-hi);border-radius:12px;background:var(--bg-2);box-shadow:0 14px 36px rgba(0,0,0,.45)}
+#messages .chat-tools-menu .btn{text-align:left;white-space:nowrap}
+#messages .chat-header .player-profile-link{min-width:0;max-width:min(40vw,280px)}
+#messages .chat-header .player-profile-link strong,#messages .chat-header .player-profile-link small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#messages.chat-open .messenger{position:fixed!important;inset:64px 0 0!important;width:100vw!important;height:auto!important;max-height:none!important;min-height:0!important}
+#messages.chat-open .chat-input{display:flex!important;visibility:visible!important}
+.notification-card-actions{box-sizing:border-box;min-width:0;max-width:100%}
+.notification-card-actions .btn-primary{min-width:0}
+@media(max-width:760px){
+ #communityGroupsView{margin:4px 0 14px}
+ #communityGroupsCard .card{padding:14px!important}
+ #messages.chat-open .chat-header{min-width:0;gap:7px!important}
+ #messages.chat-open .chat-header .player-profile-link{flex:1 1 0;max-width:38vw}
+ #messages.chat-open .chat-tools{flex:0 0 auto;max-width:none!important}
+ #messages.chat-open .chat-tools summary{width:38px;height:38px}
+ #messages.chat-open .chat-tools-menu{right:0;top:calc(100% + 5px)}
+ .notification-card-actions{width:100%;padding-left:54px;box-sizing:border-box}
+ .notification-card-actions .btn{box-sizing:border-box;max-width:100%;white-space:normal;line-height:1.25;min-height:42px}
+ .avatar-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+}
