@@ -150,7 +150,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId : "";
-  if (!/^[0-9a-f-]{36}$/i.test(targetUserId)) return response({ error: "Invalid target user" }, 400);
+  const accountActions = new Set(["user-detail", "user-update", "user-delete", "ban", "unban", "grant_role", "revoke_role", "verify"]);
+  if (accountActions.has(String(action)) && !/^[0-9a-f-]{36}$/i.test(targetUserId)) return response({ error: "Invalid target user" }, 400);
   if (action === "user-detail") {
     if (!callerIsAdmin) return response({ error: "Forbidden" }, 403);
     const [authResult, profileResult, settingsResult, rolesResult, friendsResult, postsResult, teamsResult, matchesResult, activityResult] = await Promise.all([
