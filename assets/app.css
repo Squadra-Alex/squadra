@@ -2028,3 +2028,21 @@ body > div.container > main > .section {
     margin:14px auto 44px!important;
   }
 }
+/* Keep every route inside the centered desktop frame. */
+body > .container > main {
+  display:block!important;
+  width:min(1440px, calc(100vw - 48px))!important;
+  max-width:1440px!important;
+  min-width:0!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:760px){
+  body > .container > main {
+    width:100%!important;
+    max-width:100%!important;
+    margin-left:0!important;
+    margin-right:0!important;
+  }
+}
