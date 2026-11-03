@@ -42,7 +42,7 @@
       <li class="nav-heading">АККАУНТ</li>
       <li><a onclick="showSection('profile')"><i class="fa-solid fa-user" aria-hidden="true"></i><span>Профиль</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('library')"><i class="fa-solid fa-book" aria-hidden="true"></i><span>Библиотека</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
-      <li><a onclick="showSection('friends')"><i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Друзья</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('friends')"><i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Друзья</span><span id="friendRequestCount" class="badge badge-danger" hidden></span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('messages')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Сообщения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('achievements')"><i class="fa-solid fa-medal" aria-hidden="true"></i><span>Достижения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>История</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
@@ -292,7 +292,7 @@
 
     <!-- MESSAGES / CHAT -->
     <section id="messages" class="section">
-      <div class="section-heading"><div><h1><i class="fa-solid fa-comment-dots"></i>Сообщения</h1><p class="subtitle">Личные диалоги обновляются в реальном времени.</p></div><button class="btn btn-primary" onclick="openModal('newChatModal')"><i class="fa-solid fa-plus"></i> Новый чат</button></div>
+      <div class="section-heading"><div><h1><i class="fa-solid fa-comment-dots"></i>Сообщения</h1><p class="subtitle">Личные диалоги обновляются в реальном времени. <span id="chatRealtimeStatus" class="chat-connection-status"><i class="fa-solid fa-circle"></i> Подключаемся</span></p></div><button class="btn btn-primary" onclick="openModal('newChatModal')"><i class="fa-solid fa-plus"></i> Новый чат</button></div>
       <div class="messenger"><aside class="chat-sidebar"><div class="chat-sidebar-title"><strong>Чаты</strong><input id="chatSearch" placeholder="Поиск по диалогам" oninput="filterChatList()" maxlength="80"></div><div id="chatList" class="chat-list"><p class="subtitle">Войди, чтобы увидеть переписки.</p></div></aside>
         <div class="chat-main"><input id="chatRecipient" type="hidden"><div class="chat-header" id="activeChatHeader"><span class="subtitle">Выбери диалог или начни новый</span></div><div class="chat-messages" id="chatMessages"><p class="subtitle">Здесь появятся сообщения.</p></div><div class="chat-input"><textarea id="chatInput" rows="1" maxlength="4000" placeholder="Введите сообщение..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea><button class="btn btn-primary" aria-label="Отправить сообщение" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button></div></div></div>
       <div class="modal" id="newChatModal"><div class="modal-content"><button class="modal-close" onclick="closeModal('newChatModal')">×</button><h2>Новый чат</h2><p class="subtitle">Найди игрока по Squadra-нику и открой профиль перед перепиской.</p><input id="newChatSearch" placeholder="Например, whunx" oninput="searchChatPlayers()" maxlength="24"><div id="newChatResults" class="chat-search-results"></div></div></div>
@@ -300,7 +300,8 @@
 
     <!-- FRIENDS -->
     <section id="friends" class="section">
-      <h1><i class="fa-solid fa-users"></i>Друзья</h1>
+      <div class="section-heading"><div><h1><i class="fa-solid fa-users"></i>Друзья</h1><p class="subtitle">Друзья, приглашения и новые знакомства — в одном месте.</p></div></div>
+      <div class="friends-toolbar"><label class="friends-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="friendsSearch" type="search" autocomplete="off" placeholder="Найти друга или заявку…" oninput="filterFriends()" aria-label="Поиск по друзьям"></label><div class="friends-filters" role="group" aria-label="Фильтр списка друзей"><button class="btn btn-ghost active" type="button" data-friend-filter="all" onclick="filterFriends('all')">Все</button><button class="btn btn-ghost" type="button" data-friend-filter="friends" onclick="filterFriends('friends')">Друзья</button><button class="btn btn-ghost" type="button" data-friend-filter="requests" onclick="filterFriends('requests')">Заявки</button></div></div>
       <div class="grid grid-3" id="friendsGrid"><p class="subtitle">Войди, чтобы увидеть друзей.</p></div>
     </section>
 
