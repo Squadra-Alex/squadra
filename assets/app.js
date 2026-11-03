@@ -1872,7 +1872,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action,targetUserId,role,days,durationHours:action==='ban'?Math.max(1,Math.round(days*24)):null,color:color||null}});
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось изменить аккаунт.');console.error('Admin user action failed:',error||data);showNotification(message);return;}
     showNotification(action==='ban'?'Аккаунт заблокирован.':action==='unban'?'Аккаунт разблокирован.':action==='grant_role'?'Роль назначена.':action==='verify'?(color?'Значок проверки выдан.':'Значок проверки снят.'):'Роль снята.');
-    await loadAdminPanel();await adminInspectUser(targetUserId);
+    await adminInspectUser(targetUserId);
   }
 
   async function loadAdminRegistrationChart() {
