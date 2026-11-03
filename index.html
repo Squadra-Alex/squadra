@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=chat-mobile-polish-20261104-4">
+<link rel="stylesheet" href="/assets/app.css?v=community-realtime-polish-20261104-1">
 </head>
 <body>
 
@@ -265,11 +265,13 @@
           </div>
           <div class="card" id="communityGroupsCard" hidden>
             <button class="btn btn-ghost community-groups-close" type="button" onclick="toggleCommunityGroups(false)" aria-label="Закрыть группы"><i class="fa-solid fa-xmark"></i></button><h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
-            <div class="form-group" style="margin-top:12px;"><label for="communityGroupName">Создать группу</label><input id="communityGroupName" maxlength="80" placeholder="Название группы"></div>
-            <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
-            <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="О чём группа"></div>
-            <button class="btn btn-primary" onclick="createCommunityGroup()">Создать группу</button>
-            <div id="communityGroups" style="margin-top:10px;"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
+            <div class="community-group-form">
+              <div class="form-group"><label for="communityGroupName">Название</label><input id="communityGroupName" maxlength="80" placeholder="Например, CS2 Premier"></div>
+              <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
+              <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="Кого ищете и как играете"></div>
+              <button class="btn btn-primary" onclick="createCommunityGroup()"><i class="fa-solid fa-plus"></i> Создать группу</button>
+            </div>
+            <div id="communityGroups"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
           </div>
         </div>
       </div>
@@ -342,10 +344,7 @@
     <!-- HISTORY -->
     <section id="history" class="section">
       <h1><i class="fa-solid fa-clock-rotate-left"></i>История активности</h1>
-      <table>
-        <thead><tr><th>Дата</th><th>Действие</th><th>Игра</th><th>Результат</th><th>Рейтинг</th></tr></thead>
-        <tbody id="historyBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">Войди, чтобы увидеть историю.</td></tr></tbody>
-      </table><h2 style="margin-top:24px;">Результаты на подтверждение</h2><div id="pendingMatches"><p class="subtitle">Войди, чтобы увидеть заявки.</p></div>
+      <div id="historyBody" class="activity-history-list"><div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Войди, чтобы увидеть историю</strong></div></div><h2 style="margin-top:24px;">Результаты на подтверждение</h2><div id="pendingMatches"><p class="subtitle">Войди, чтобы увидеть заявки.</p></div>
     </section>
 
     <!-- EVENTS -->
@@ -575,7 +574,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=chat-mobile-polish-20261104-4"></script>
+<script src="/assets/app.js?v=community-realtime-polish-20261104-1"></script>
 
 </body>
 </html>
