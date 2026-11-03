@@ -1685,3 +1685,81 @@ select {appearance:none;padding-right:40px;background-image:url("data:image/svg+
   .admin-user-control-actions {grid-template-columns:minmax(0,1fr)}
   .admin-user-control-actions .btn:last-child {grid-column:auto}
 }
+
+
+/* Mobile overlay scroll ownership: the open panel owns touch scroll and the page stays put. */
+body.nav-open,body.modal-open,body.mobile-chat-open{overflow:hidden!important;overscroll-behavior:none!important}
+body.nav-open header nav{overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch}
+body.modal-open .modal{overscroll-behavior:contain}
+body.modal-open .modal-content{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+
+/* Clear, compact friends directory */
+.friends-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 18px;padding:14px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--red) 8%,var(--bg-2)),var(--bg-2))}
+.friends-search{display:flex;align-items:center;gap:10px;min-width:min(420px,100%);flex:1;color:var(--muted)}
+.friends-search input{margin:0;min-width:0}
+.friends-filters{display:flex;gap:6px;flex-wrap:wrap}
+.friends-filters .btn{min-height:38px;padding:8px 13px}
+.friends-filters .btn.active{border-color:var(--border-hi);background:color-mix(in srgb,var(--red) 16%,var(--bg-2));color:var(--text)}
+#friendsGrid{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));align-items:stretch}
+.friend-card{display:flex;flex-direction:column;gap:16px;min-width:0;height:100%;border:1px solid var(--border);background:linear-gradient(145deg,color-mix(in srgb,var(--red) 6%,var(--bg-2)),var(--bg-2))}
+.friend-card-head{display:flex;align-items:flex-start;gap:13px;min-width:0}
+.friend-card-head .mini-avatar{width:52px;height:52px;flex:0 0 52px;border-radius:16px}
+.friend-card-info{min-width:0;flex:1}
+.friend-card-info .player-profile-link{max-width:100%;font-size:16px}
+.friend-card-info .subtitle{display:flex;align-items:center;gap:8px;margin:5px 0}
+.friend-state{padding:3px 8px;border:1px solid var(--border);border-radius:999px;font-size:11px}
+.friend-state.is-friend{color:var(--success,#45d38a);border-color:color-mix(in srgb,var(--success,#45d38a) 35%,var(--border))}
+.friend-state.is-pending{color:var(--warning,#f5bd54)}
+.friend-summary{margin:8px 0;color:var(--muted);font-size:12px;line-height:1.5}
+.friend-stats{display:flex;flex-wrap:wrap;gap:6px}
+.friend-stats span{padding:5px 8px;border-radius:8px;background:var(--bg-3);color:var(--text);font-size:11px}
+.friend-card-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.friend-card-actions .btn{min-height:36px;padding:7px 10px;font-size:12px}
+.friend-card-actions .friend-remove{margin-left:auto}
+.friend-empty{grid-column:1/-1}
+#friendRequestCount{margin-left:auto;min-width:20px;text-align:center}
+.badge[hidden]{display:none!important}
+
+/* Messenger stays in its own viewport; message refreshes never resize the whole page. */
+#messages .messenger{height:min(72vh,780px);min-height:560px}
+#messages .chat-main{min-height:0}
+#messages .chat-main .chat-messages{min-height:0;max-height:none;overscroll-behavior:contain;scrollbar-gutter:stable}
+#messages .message{max-width:min(78%,620px);overflow-wrap:anywhere;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+#messages .message .message-body{white-space:pre-wrap;overflow-wrap:anywhere}
+#messages .chat-list-item>span{min-width:0;flex:1}
+#messages .chat-list-item small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+#messages .chat-input{align-items:flex-end;background:color-mix(in srgb,var(--bg-2) 95%,transparent)}
+#messages .chat-input textarea{min-width:0;min-height:44px;max-height:160px;resize:none}
+.chat-loading{display:flex;align-items:center;justify-content:center;gap:10px;min-height:120px;color:var(--muted)}
+.chat-empty{min-height:220px;padding:24px}
+.chat-connection-status{display:inline-flex;align-items:center;gap:6px;margin-left:6px;color:var(--muted);font-size:11px;white-space:nowrap}
+.chat-connection-status i{font-size:7px}
+.chat-connection-status.is-connected{color:#43d98b}
+.chat-connection-status.is-reconnecting{color:#f0b74d}
+.notifications-toolbar{align-items:flex-start;flex-wrap:wrap;padding:12px 0}
+.notification-actions,.notification-card-actions{display:flex;flex-wrap:wrap;gap:7px}
+.notification-actions .btn,.notification-card-actions .btn{min-height:36px;padding:7px 10px;font-size:12px}
+.notification-card-actions{margin-left:auto;align-items:center}
+#adminDetailBody .report-chat-messages{max-height:360px}
+@media(max-width:760px){
+ .friends-toolbar{align-items:stretch;flex-direction:column;padding:12px}
+ .friends-search{min-width:0}
+ .friends-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .friends-filters .btn{padding-inline:6px}
+ #friendsGrid{grid-template-columns:minmax(0,1fr)!important}
+ .friend-card-actions .btn{flex:1 1 auto}
+ .friend-card-actions .friend-remove{margin-left:0}
+ #messages .messenger{height:calc(100dvh - 110px);min-height:440px}
+ #messages.chat-open{overscroll-behavior:none}
+ #messages.chat-open .messenger{height:auto!important;min-height:0!important;bottom:0!important}
+ #messages.chat-open .chat-main{overflow:hidden}
+ #messages.chat-open .chat-messages{touch-action:pan-y;overscroll-behavior:contain}
+ #messages.chat-open .chat-input textarea{width:100%;min-width:0}
+ .notification-card-actions{width:100%;margin-left:54px}
+ .notification-card-actions .btn{flex:1}
+ #adminDetailModal .admin-detail-modal{max-height:calc(100dvh - 16px);overflow-y:auto}
+ #adminDetailBody .report-chat-messages{max-height:none!important;overflow:visible!important}
+ #adminDetailBody .report-chat-panel{overflow:visible}
+ .report-chat-compose{grid-template-columns:minmax(0,1fr)}
+}
