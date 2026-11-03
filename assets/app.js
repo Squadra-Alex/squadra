@@ -1190,7 +1190,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-send',reportId,message}});
     if(button)button.disabled=false;
     if(error||data?.error){const text=await adminFunctionError(error,data,'Не удалось отправить сообщение.');console.error('Report message send failed:',error||data);showNotification(text);return;}
-    field.value='';const host=document.getElementById('report-chat-messages-'+reportId),panel=document.getElementById('report-chat-panel-'+reportId);if(host&&!panel?.hidden&&data?.message){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data.message],currentUser.id));host.scrollTop=host.scrollHeight;}
+    field.value='';const host=document.getElementById('report-chat-messages-'+reportId),panel=document.getElementById('report-chat-panel-'+reportId);if(host&&!panel?.hidden&&data?.message&&!host.querySelector('[data-message-id="'+data.message.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data.message],currentUser.id));host.scrollTop=host.scrollHeight;}
   }
   function renderMyCommunityReports(rows) {
     const host=document.getElementById('myCommunityReportsList');if(!host)return;
@@ -1810,7 +1810,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(message.length>2000)return showNotification('Сообщение ограничено 2000 символами.');
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-send',reportId,message}});
     if(error||data?.error){const text=await adminFunctionError(error,data,'Не удалось отправить сообщение.');console.error('Admin report message failed:',error||data);showNotification(text);return;}
-    field.value='';const host=document.getElementById('adminReportConversation');if(host&&document.getElementById('adminDetailModal')?.classList.contains('active')&&data?.message){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data.message],currentUser.id));host.scrollTop=host.scrollHeight;}
+    field.value='';const host=document.getElementById('adminReportConversation');if(host&&document.getElementById('adminDetailModal')?.classList.contains('active')&&data?.message&&!host.querySelector('[data-message-id="'+data.message.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data.message],currentUser.id));host.scrollTop=host.scrollHeight;}
   }
   async function adminInspectReport(id) {
     if(!isModerator||!supabaseClient)return;
