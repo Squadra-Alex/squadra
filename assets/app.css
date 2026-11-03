@@ -1763,3 +1763,28 @@ body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:con
  #adminDetailBody .report-chat-panel{overflow:visible}
  .report-chat-compose{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Chat polish: readable neutral bubbles, stable mobile composer, compact actions */
+#messages .message.own{background:linear-gradient(145deg,#34343a,#25252b)!important;border:1px solid rgba(255,255,255,.13)!important;box-shadow:0 5px 18px rgba(0,0,0,.18)!important}
+#messages .message.own .author{color:#c4c4ce!important}
+#messages .chat-tools{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+#messages .chat-tools .btn{min-height:34px;padding:6px 9px;font-size:12px}
+#messages .chat-list-item.active{background:rgba(255,255,255,.07)!important}
+.notification-card-actions .btn-primary{white-space:nowrap;min-width:max-content}
+#communityGroupsCard[hidden]{display:none!important}
+#communityGroupsCard.community-groups-open{position:fixed;z-index:2100;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 30px);overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,.65)}
+#communityGroupsCard .community-groups-close{float:right}
+@media(max-width:760px){
+ #messages.chat-open .messenger{height:calc(100dvh - 64px)!important;max-height:calc(100dvh - 64px)!important;min-height:0!important;inset:64px 0 auto!important;bottom:auto!important}
+ #messages.chat-open .chat-main{height:100%!important;min-height:0!important;overflow:hidden!important}
+ #messages.chat-open .chat-header{flex:0 0 auto}
+ #messages.chat-open .chat-messages{flex:1 1 0;min-height:0!important;overflow-y:auto!important}
+ #messages.chat-open .chat-input{position:relative;z-index:2;flex:0 0 auto!important;display:flex!important;align-items:flex-end!important;background:#17171c!important;padding:9px 12px calc(9px + env(safe-area-inset-bottom))!important}
+ #messages.chat-open .chat-input textarea{display:block!important;flex:1 1 auto!important;width:1%;min-height:46px!important;max-height:22dvh!important;font-size:16px!important}
+ #messages.chat-open .chat-tools{gap:4px;max-width:45%;overflow-x:auto;flex-wrap:nowrap}
+ #messages.chat-open .chat-tools .btn{white-space:nowrap;padding:5px 7px;font-size:11px}
+ .notification-card{align-items:flex-start;flex-wrap:wrap}
+ .notification-card-actions{margin:0!important;width:100%;display:grid;grid-template-columns:minmax(0,1fr);padding-left:54px}
+ .notification-card-actions .btn{width:100%;white-space:normal}
+ #communityGroupsCard.community-groups-open{max-height:calc(100dvh - 28px);padding-bottom:20px}
+}
