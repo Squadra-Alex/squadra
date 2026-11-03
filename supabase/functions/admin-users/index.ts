@@ -131,18 +131,6 @@ Deno.serve(async (req: Request) => {
       .insert({ report_id: reportId, sender_id: callerId, body: message })
       .select("id,report_id,sender_id,body,created_at").single();
     if (insertError) { console.error("Could not send report message:", insertError); return response({ error: "Could not send report message" }, 500); }
-    const recipientIds: string[] = isStaff
-      ? [report.reporter_id]
-      : ((await admin.from("user_roles").select("user_id").in("role", ["admin", "moderator"])).data || []).map((row) => row.user_id);
-    const recipients = [...new Set(recipientIds)].filter((id) => id !== callerId);
-    if (recipients.length) {
-      const { error: notificationError } = await admin.from("notifications").insert(recipients.map((user_id) => ({
-        user_id, kind: "report_message",
-        body: isStaff ? "Новое сообщение поддержки по вашей жалобе." : "Пользователь ответил в переписке по жалобе.",
-        source_type: "community_report", source_id: reportId, actor_id: callerId,
-      })));
-      if (notificationError) console.error("Report message was sent but a notification failed:", notificationError);
-    }
     return response({ ok: true, message: inserted });
   }
 
