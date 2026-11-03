@@ -518,6 +518,8 @@ create table if not exists public.community_report_messages (
 );
 create index if not exists community_report_messages_report_created_idx
   on public.community_report_messages(report_id,created_at);
+create index if not exists community_report_messages_sender_idx
+  on public.community_report_messages(sender_id);
 alter table public.community_report_messages enable row level security;
 grant select on public.community_report_messages to authenticated;
 drop policy if exists "report participants read report messages" on public.community_report_messages;
