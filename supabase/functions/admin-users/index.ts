@@ -37,8 +37,6 @@ Deno.serve(async (req: Request) => {
   if (roleError) return response({ error: "Could not verify staff access" }, 500);
   const callerIsAdmin = (callerRoles || []).some((item) => item.role === "admin");
   const callerIsModerator = (callerRoles || []).some((item) => item.role === "moderator");
-  if (!callerIsAdmin && !callerIsModerator) return response({ error: "Forbidden" }, 403);
-
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -385,7 +383,7 @@ Deno.serve(async (req: Request) => {
     if (error || !updated) return response({ error: "Could not update verification badge" }, 500);
     const { error: noticeError } = await admin.from("notifications").insert({
       user_id: targetUserId, kind: "account_action",
-      body: color ? "Администратор выдал вам синюю галочку верификации." : "Администратор снял галочку верификации с вашего аккаунта.",
+      body: color ? "Администратор выдал вам галочку верификации." : "Администратор снял галочку верификации с вашего аккаунта.",
       source_type: "account_action", source_id: targetUserId, actor_id: callerId,
     });
     if (noticeError) console.error("Verification changed but account notification failed:", noticeError);
@@ -397,14 +395,15 @@ Deno.serve(async (req: Request) => {
     if ((targetRoles || []).some((r) => r.role === "admin")) {
       return response({ error: "Administrator accounts cannot be banned here" }, 403);
     }
-    const days = action === "ban" ? Math.max(1, Math.min(365, Number(body.days) || 7)) : 0;
+    const durationHours = action === "ban" ? Math.max(1, Math.min(8760, Math.floor(Number(body.durationHours) || (Number(body.days) || 7) * 24))) : 0;
+    const days = durationHours / 24;
     const { error } = await admin.auth.admin.updateUserById(targetUserId, {
-      ban_duration: action === "ban" ? `${days}d` : "none",
+      ban_duration: action === "ban" ? `${durationHours}h` : "none",
     });
     if (error) return response({ error: "Could not update ban status" }, 500);
     const { error: noticeError } = await admin.from("notifications").insert({
       user_id: targetUserId, kind: "account_action",
-      body: action === "ban" ? "Администратор временно заблокировал ваш аккаунт на " + days + " дн." : "Администратор снял блокировку с вашего аккаунта.",
+      body: action === "ban" ? "Администратор временно заблокировал ваш аккаунт на " + (durationHours % 24 === 0 ? days + " дн." : durationHours + " ч.") : "Администратор снял блокировку с вашего аккаунта.",
       source_type: "account_action", source_id: targetUserId, actor_id: callerId,
     });
     if (noticeError) console.error("Account status changed but notification failed:", noticeError);
