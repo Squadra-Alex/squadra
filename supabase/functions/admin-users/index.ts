@@ -131,9 +131,6 @@ Deno.serve(async (req: Request) => {
       .insert({ report_id: reportId, sender_id: callerId, body: message })
       .select("id,report_id,sender_id,body,created_at").single();
     if (insertError) { console.error("Could not send report message:", insertError); return response({ error: "Could not send report message" }, 500); }
-    if (isStaff) {
-      await admin.from("community_reports").update({ moderator_reply: message }).eq("id", reportId);
-    }
     const recipientIds: string[] = isStaff
       ? [report.reporter_id]
       : ((await admin.from("user_roles").select("user_id").in("role", ["admin", "moderator"])).data || []).map((row) => row.user_id);
