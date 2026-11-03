@@ -1363,6 +1363,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .on('postgres_changes',{event:'*',schema:'public',table:'community_post_comments'},()=>{if(document.getElementById('community')?.classList.contains('active'))loadAccountData();})
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+uid},()=>loadAccountData())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'user_settings',filter:'user_id=eq.'+uid},()=>loadAccountData())
+      .on('postgres_changes',{event:'*',schema:'public',table:'user_roles',filter:'user_id=eq.'+uid},async()=>{await loadAdminAccess();loadAccountData();if(isModerator&&document.getElementById('admin')?.classList.contains('active'))loadAdminPanel();})
        .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_events'},()=>{loadPlatformEvents();})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
