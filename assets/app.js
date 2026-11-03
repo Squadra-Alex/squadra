@@ -163,10 +163,12 @@
     if (!receiverId) return showNotification('Выбери друга для переписки.');
     if (!body) return;
     const prefs=readChatPreferences();prefs.hidden=(prefs.hidden||[]).filter(id=>id!==receiverId);writeChatPreferences(prefs);
-    const { error } = await supabaseClient.from('direct_messages').insert({ sender_id:currentUser.id, receiver_id:receiverId, body });
-    if (error) { console.error(error); return showNotification('Не удалось отправить сообщение.'); }
+    const { data:message,error } = await supabaseClient.from('direct_messages').insert({ sender_id:currentUser.id, receiver_id:receiverId, body }).select('id,sender_id,receiver_id,body,created_at,read_at').single();
+    if (error) { console.error(error); return showNotification(error.code==='42501'?'Аккаунт заблокирован: отправка сообщений недоступна.':'Не удалось отправить сообщение.'); }
     input.value=''; input.dispatchEvent(new Event('input',{bubbles:true}));
-    void Promise.allSettled([loadDirectMessages(),loadChatList()]);
+    const box=document.getElementById('chatMessages');
+    if(box&&document.getElementById('chatRecipient')?.value===receiverId&&message&&!box.querySelector('[data-message-id="'+message.id+'"]')){box.querySelector('.chat-loading')?.remove();if(box.querySelector('.subtitle'))box.replaceChildren();box.insertAdjacentHTML('beforeend','<article class="message own" data-message-id="'+escapeHtml(message.id)+'"><div class="author">Вы • '+new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</div><div class="message-body">'+escapeHtml(message.body)+'</div></article>');box.scrollTop=box.scrollHeight;}
+    const item=[...document.querySelectorAll('.chat-list-item')].find(x=>x.getAttribute('onclick')?.includes(receiverId));if(item){item.querySelector('small').textContent=body;item.querySelector('time').textContent=new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}else void loadChatList();
   }
 
   function matchScore(p, ratingTol, role, region, time) {
@@ -711,14 +713,13 @@ function initCustomSelects(root=document) {
     if(selected)sel.value=selected;
   }
   let directChatLoadGeneration=0,chatListLoadGeneration=0,chatProfileLoadGeneration=0,chatSearchTimer,chatSearchGeneration=0;
-  async function loadDirectMessages() {
+  async function loadDirectMessages({silent=false}={}) {
     const id=document.getElementById('chatRecipient')?.value,box=document.getElementById('chatMessages'),uid=currentUser?.id;
     const request=++directChatLoadGeneration;
     if(!box)return;
     if(!id){box.innerHTML='<div class="empty-state"><i class="fa-regular fa-comments"></i><p>Выбери диалог слева или найди игрока по Squadra-нику.</p></div>';return;}
     if(!uid||!supabaseClient)return;
-    box.setAttribute('aria-busy','true');
-    box.innerHTML='<div class="chat-loading"><i class="fa-solid fa-spinner fa-spin"></i><span>Загружаю переписку…</span></div>';
+    if(!silent||!box.querySelector('.message')){box.setAttribute('aria-busy','true');if(!silent)box.innerHTML='<div class="chat-loading"><i class="fa-solid fa-spinner fa-spin"></i><span>Загружаю переписку…</span></div>';}
     const {data,error}=await supabaseClient.from('direct_messages').select('id,sender_id,receiver_id,body,created_at,read_at').or('and(sender_id.eq.'+uid+',receiver_id.eq.'+id+'),and(sender_id.eq.'+id+',receiver_id.eq.'+uid+')').order('created_at',{ascending:false}).limit(100);
     if(request!==directChatLoadGeneration||document.getElementById('chatRecipient')?.value!==id)return;
     if(error){console.error('Could not load direct messages:',error);box.innerHTML='<p class="subtitle">Не удалось загрузить переписку. Проверь соединение и повтори попытку.</p>';box.removeAttribute('aria-busy');return;}
@@ -1157,7 +1158,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const visible=hideRead?all.filter(n=>!n.read_at):all;
     const list=document.getElementById('notificationsList');if(!list)return;
     const controls='<div class="notifications-toolbar"><span class="subtitle">'+(unread?unread+' непрочитанных':'Все прочитаны')+'</span><div class="notification-actions"><button class="btn btn-ghost" type="button" onclick="markAllNotificationsRead()" '+(unread?'':'disabled')+'>Прочитать все</button><button class="btn btn-ghost" type="button" aria-pressed="'+hideRead+'" onclick="toggleReadNotifications()">'+(hideRead?'Показать прочитанные':'Скрыть прочитанные')+'</button><button class="btn btn-danger" type="button" onclick="deleteAllNotifications()" '+(all.length?'':'disabled')+'>Удалить все</button></div></div>';
-    list.innerHTML=controls+(visible.map(n=>{const support=n.source_type==='community_report'&&n.kind==='report_message';return '<article class="card notification-card '+(n.read_at?'is-read':'')+'" onclick="openNotification(\''+n.id+'\')"><div class="notification-icon"><i class="fa-solid '+notificationIcon(n.source_type||n.kind)+'"></i></div><div class="notification-copy"><p>'+escapeHtml(n.body||'У тебя новое обновление.')+'</p><small class="subtitle">'+new Date(n.created_at).toLocaleString('ru-RU')+'</small></div><div class="notification-card-actions">'+(support?'<button class="btn btn-primary" type="button" onclick="event.stopPropagation();openNotification(\''+n.id+'\')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть переписку</button>':'')+'<button class="btn btn-ghost" type="button" onclick="event.stopPropagation();markNotificationRead(\''+n.id+'\')">'+(n.read_at?'Открыть':'Прочитано')+'</button></div></article>';}).join('')||'<div class="empty-state"><i class="fa-regular fa-bell-slash"></i><p>'+(hideRead&&all.length?'Прочитанные уведомления скрыты.':'Пока нет уведомлений.')+'</p></div>');
+    list.innerHTML=controls+(visible.map(n=>{const support=n.source_type==='community_report'&&n.kind==='report_message';return '<article class="card notification-card '+(n.read_at?'is-read':'')+'" onclick="openNotification(\''+n.id+'\')"><div class="notification-icon"><i class="fa-solid '+notificationIcon(n.source_type||n.kind)+'"></i></div><div class="notification-copy"><p>'+escapeHtml(n.body||'У тебя новое обновление.')+'</p><small class="subtitle">'+new Date(n.created_at).toLocaleString('ru-RU')+'</small></div><div class="notification-card-actions">'+(support?'<button class="btn btn-primary" type="button" onclick="event.stopPropagation();openNotification(\''+n.id+'\')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть чат поддержки</button>':'<button class="btn btn-ghost" type="button" onclick="event.stopPropagation();markNotificationRead(\''+n.id+'\')">'+(n.read_at?'Открыть':'Прочитано')+'</button>')+'</div></article>';}).join('')||'<div class="empty-state"><i class="fa-regular fa-bell-slash"></i><p>'+(hideRead&&all.length?'Прочитанные уведомления скрыты.':'Пока нет уведомлений.')+'</p></div>');
   }
   async function refreshNotifications(){if(!currentUser||!supabaseClient)return;const uid=currentUser.id;const {data,error}=await supabaseClient.from('notifications').select('*').eq('user_id',uid).order('created_at',{ascending:false}).limit(50);if(error){console.error('Could not refresh notifications:',error);return;}if(currentUser?.id!==uid)return;accountNotifications=data||[];renderNotifications(accountNotifications);}
   function toggleReadNotifications(){if(!currentUser)return requireAccount();const key='squadra-hide-read-notifications-'+currentUser.id;const next=localStorage.getItem(key)!=='1';localStorage.setItem(key,next?'1':'0');renderNotifications(accountNotifications);}
@@ -1300,7 +1301,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const details=await askInput('Подробности (необязательно):','')||'';
     const {error}=await supabaseClient.from('community_reports').insert({reporter_id:currentUser.id,post_id:postId,reported_user_id:userId,reason:normalized,details});
     if(error){console.error(error);return showNotification('Не удалось отправить жалобу.');}
-    showNotification('Жалоба передана модераторам.');
+    showNotification('Жалоба передана модераторам.');void Promise.allSettled([refreshNotifications(),refreshMyReports()]);
   }
 
   async function reviewCommunityReport(reportId,status,reply) {
@@ -1309,7 +1310,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body});
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось обновить жалобу.');console.error('Report review failed:',error||data);showNotification(message);return false;}
     showNotification(reply!==undefined?'Ответ отправлен автору жалобы.':({reviewing:'Жалоба взята в работу.',resolved:'Жалоба отмечена как решённая.',dismissed:'Жалоба отклонена.'})[status]||'Статус жалобы обновлён.');
-    await loadAdminPanel();if(reply!==undefined)await adminInspectReport(reportId);return true;
+    void refreshAdminReports();if(adminSelectedReportId===reportId)void adminInspectReport(reportId);return true;
   }
   async function adminReplyToReport(reportId,status) {
     const field=document.getElementById('adminReportReply'),reply=field?.value.trim()||'';
@@ -1454,7 +1455,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
         const peerId=row.sender_id===uid?row.receiver_id:row.sender_id;
         const prefs=readChatPreferences();prefs.hidden=(prefs.hidden||[]).filter(id=>id!==peerId);writeChatPreferences(prefs);
         void loadChatList();
-        if(row.sender_id!==uid&&document.getElementById('chatRecipient')?.value===peerId)void loadDirectMessages();
+        if(row.sender_id!==uid&&document.getElementById('chatRecipient')?.value===peerId)void loadDirectMessages({silent:true});
       })
       .subscribe((status,error)=>{
         if(generation!==realtimeGeneration)return;
@@ -1490,14 +1491,11 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
       .on('postgres_changes',{event:'*',schema:'public',table:'community_reports'},payload=>{
         const row=payload?.new||payload?.old;if(!row)return;
-        if(row.reporter_id===uid)void refreshMyReports();
-        if(isModerator&&document.getElementById('admin')?.classList.contains('active')){
-          loadAdminPanel();
-          if(adminSelectedReportId===row.id&&payload.eventType!=='DELETE')adminInspectReport(row.id);
-        }
+        if(row.reporter_id===uid){void refreshMyReports();void refreshNotifications();}
+        if(isModerator&&document.getElementById('admin')?.classList.contains('active')){void refreshAdminReports();if(adminSelectedReportId===row.id&&payload.eventType!=='DELETE')void adminInspectReport(row.id);}
       })
       .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{void refreshNotifications();if(payload.eventType==='INSERT'&&payload.new?.body)showNotification(payload.new.body);})
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId&&document.getElementById('adminDetailModal')?.classList.contains('active')&&!document.querySelector('#adminReportConversation [data-message-id="'+payload.new.id+'"]'))void loadAdminReportConversation(reportId);const panel=document.getElementById('report-chat-panel-'+reportId),host=document.getElementById('report-chat-messages-'+reportId);if(panel&&!panel.hidden&&host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]'))void loadMyReportConversation(reportId);})
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId&&document.getElementById('adminDetailModal')?.classList.contains('active')){const host=document.getElementById('adminReportConversation');if(host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}}const panel=document.getElementById('report-chat-panel-'+reportId),host=document.getElementById('report-chat-messages-'+reportId);if(panel&&!panel.hidden&&host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);})
       .subscribe((status,error)=>{
         if(generation!==realtimeGeneration)return;
@@ -2000,7 +1998,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:type==='post'?'post-update':'comment-update',contentId:id,body}});
     if(button){button.disabled=false;button.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Сохранить';}
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось сохранить текст.');console.error('Content edit failed:',error||data);showNotification(message);return;}
-    closeModal('adminContentEditModal');showNotification(type==='post'?'Публикация обновлена.':'Комментарий обновлён.');
+    closeModal('adminContentEditModal');
+    if(type==='post'){communityPostRows=communityPostRows.map(p=>p.id===id?{...p,body,updated_at:new Date().toISOString()}:p);renderCommunity(communityPostRows,communityLiked,communityCommentRows);}
+    else{communityCommentRows=communityCommentRows.map(c=>c.id===id?{...c,body}:c);renderCommunity(communityPostRows,communityLiked,communityCommentRows);}
+    showNotification(type==='post'?'Публикация обновлена.':'Комментарий обновлён.');
     await adminInspectPost(postId);
   }
   async function adminDeleteComment(commentId,postId) {
