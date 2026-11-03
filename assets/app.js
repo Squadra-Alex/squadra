@@ -1452,6 +1452,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages'},payload=>{
         const row=payload?.new;if(!row||(row.sender_id!==uid&&row.receiver_id!==uid))return;
         const peerId=row.sender_id===uid?row.receiver_id:row.sender_id;
+        const prefs=readChatPreferences();prefs.hidden=(prefs.hidden||[]).filter(id=>id!==peerId);writeChatPreferences(prefs);
         void loadChatList();
         if(row.sender_id!==uid&&document.getElementById('chatRecipient')?.value===peerId)void loadDirectMessages();
       })
@@ -2000,13 +2001,13 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(button){button.disabled=false;button.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Сохранить';}
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось сохранить текст.');console.error('Content edit failed:',error||data);showNotification(message);return;}
     closeModal('adminContentEditModal');showNotification(type==='post'?'Публикация обновлена.':'Комментарий обновлён.');
-    await loadAdminPanel();await adminInspectPost(postId);
+    await adminInspectPost(postId);
   }
   async function adminDeleteComment(commentId,postId) {
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить этот комментарий? Это действие сразу скроет его для всех пользователей.'))return;
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'comment-delete',contentId:commentId}});
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось удалить комментарий.');console.error('Comment delete failed:',error||data);showNotification(message);return;}
-    showNotification('Комментарий удалён.');await loadAdminPanel();
+    showNotification('Комментарий удалён.');
     if(document.getElementById('adminContentEditModal')?.classList.contains('active')&&adminContentEditContext?.type==='post'&&adminContentEditContext.postId===postId){await loadAdminEditComments(postId);return;}
     await adminInspectPost(postId);
   }
@@ -2014,7 +2015,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить эту публикацию и все её комментарии для всех пользователей?')) return;
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'post-delete',contentId:postId}});
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось удалить публикацию.');console.error('Could not remove community post:',error||data);showNotification(message);return;}
-    closeModal('adminDetailModal');showNotification('Публикация и связанные комментарии удалены.');await loadAdminPanel();
+    closeModal('adminDetailModal');document.querySelectorAll('#adminPostsList .admin-entry').forEach(entry=>{if(entry.querySelector('[onclick*="'+postId+'"]'))entry.remove();});showNotification('Публикация и связанные комментарии удалены.');
   }
 
   function renderAuthState(user) {
