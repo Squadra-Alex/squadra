@@ -1825,3 +1825,13 @@ body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:con
  .notification-card-actions .btn{box-sizing:border-box;max-width:100%;white-space:normal;line-height:1.25;min-height:42px}
  .avatar-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 }
+
+/* Desktop chat layout must stay a two-column panel, even when a conversation is selected. */
+@media(min-width:761px){
+ #messages.active .messenger{position:relative!important;inset:auto!important;display:grid!important;grid-template-columns:300px minmax(0,1fr)!important;width:100%!important;height:min(72vh,780px)!important;min-height:560px!important;max-height:none!important;overflow:hidden!important}
+ #messages.active .chat-sidebar{display:flex!important;flex-direction:column!important;width:auto!important;height:100%!important;max-height:none!important;min-height:0!important}
+ #messages.active .chat-list{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important}
+ #messages.active .chat-main{display:flex!important;flex-direction:column!important;width:auto!important;height:100%!important;min-height:0!important}
+ #messages.active .chat-messages{display:flex!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important}
+ #messages.active .chat-input{display:flex!important;flex:0 0 auto!important}
+}
