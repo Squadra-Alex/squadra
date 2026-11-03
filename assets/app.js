@@ -69,7 +69,7 @@
   const sectionRoutes={home:'/',games:'/games',players:'/players',teams:'/teams',tournaments:'/tournaments',community:'/community',ranking:'/ranking',profile:'/profile',library:'/library',friends:'/friends',messages:'/messages',achievements:'/achievements',history:'/history',notifications:'/notifications',settings:'/settings',matchmaking:'/matchmaking',events:'/events',admin:'/admin'};
   function routeSection(path){const p=(path||'/').replace(/\/+$/,'')||'/';if(/^\/players\/[0-9a-f-]{36}$/i.test(p))return{section:'playerProfile',id:p.split('/').pop()};if(/^\/groups\/[0-9a-f-]{36}$/i.test(p))return{section:'groupPage',id:p.split('/').pop()};return{section:Object.keys(sectionRoutes).find(k=>sectionRoutes[k]===p)||'home'};}
   function applyLocationRoute(){const r=routeSection(location.pathname);if(r.section==='admin'&&!authInitialized){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById('admin')?.classList.add('active');const s=document.getElementById('adminStatus');if(s)s.textContent='Проверяем права доступа…';return;}if(r.section==='admin'&&!isModerator){if(currentUser&&!isAdmin){showNotification('Панель доступна только администраторам.');showSection('home',{replace:true});}else if(!currentUser){showSection('home',{replace:true});openModal('loginModal');}return;}showSection(r.section,{fromLocation:true,profileId:r.id});}
-  function showSection(id,options={}){if(id!=='messages'){directChatLoadGeneration++;document.getElementById('messages')?.classList.remove('chat-open');document.body.classList.remove('mobile-chat-open');}if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events')loadPlatformEvents();if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');if(id==='community'&&currentUser)queueCommunityFeedRefresh();if(id==='friends'&&currentUser)void refreshFriendList();if(id==='notifications'&&currentUser){void refreshNotifications();void refreshMyReports();}document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);if(!options.skipScroll)window.scrollTo({top:0,behavior:'smooth'});}
+  function showSection(id,options={}){if(id!=='messages'){directChatLoadGeneration++;document.getElementById('messages')?.classList.remove('chat-open');document.body.classList.remove('mobile-chat-open');}if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events')loadPlatformEvents();if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');if(id==='community'&&currentUser)queueCommunityFeedRefresh();if(id==='friends'&&currentUser)void refreshFriendList();if(id==='messages'&&currentUser)void refreshUnreadMessageCount();if(id==='notifications'&&currentUser){void refreshNotifications();void refreshMyReports();}document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);if(!options.skipScroll)window.scrollTo({top:0,behavior:'smooth'});}
   window.addEventListener('popstate',applyLocationRoute);
   function toggleNavigation(force){const open=typeof force==='boolean'?force:!document.body.classList.contains('nav-open');document.body.classList.toggle('nav-open',open);if(open)document.body.classList.remove('mobile-chat-open');const b=document.getElementById('menuToggle');if(b){b.setAttribute('aria-expanded',String(open));b.innerHTML='<i class="fa-solid '+(open?'fa-xmark':'fa-bars')+'"></i>';}}
   function syncModalLock(){document.body.classList.toggle('modal-open',!!document.querySelector('.modal.active'));}
@@ -739,7 +739,7 @@ function initCustomSelects(root=document) {
     const messages=(data||[]).reverse().filter(m=>new Date(m.created_at).getTime()>cutoff);
     box.innerHTML=messages.map(m=>'<article class="message '+(m.sender_id===uid?'own':'')+'" data-message-id="'+escapeHtml(m.id)+'"><div class="author">'+(m.sender_id===uid?'Вы':'Собеседник')+' • '+new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</div><div class="message-body">'+escapeHtml(m.body)+'</div></article>').join('')||'<p class="subtitle">Начни переписку.</p>';
     box.scrollTop=box.scrollHeight;box.removeAttribute('aria-busy');
-    void supabaseClient.from('direct_messages').update({read_at:new Date().toISOString()}).eq('receiver_id',uid).eq('sender_id',id).is('read_at',null);
+    void supabaseClient.from('direct_messages').update({read_at:new Date().toISOString()}).eq('receiver_id',uid).eq('sender_id',id).is('read_at',null).then(()=>refreshUnreadMessageCount());
   }
   function readChatPreferences(){if(!currentUser)return{};try{return JSON.parse(localStorage.getItem('squadra-chat-preferences-'+currentUser.id)||'{}')}catch{return{}}}
   function writeChatPreferences(prefs){if(currentUser)localStorage.setItem('squadra-chat-preferences-'+currentUser.id,JSON.stringify(prefs))}
@@ -770,6 +770,19 @@ function initCustomSelects(root=document) {
     if(error||!p){host.innerHTML='<button type="button" class="mobile-chat-back" onclick="closeMobileChat()" aria-label="К списку чатов"><i class="fa-solid fa-arrow-left"></i></button><span class="subtitle">Игрок недоступен</span>';return;}
     const nickname=readChatPreferences().nicknames?.[id]||'';
     host.innerHTML='<button type="button" class="mobile-chat-back" onclick="closeMobileChat()" aria-label="К списку чатов"><i class="fa-solid fa-arrow-left"></i></button><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><button class="player-profile-link" onclick="openPlayerProfile(\''+p.id+'\')"><strong>'+escapeHtml(nickname||p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></button><button class="btn btn-ghost" onclick="openPlayerProfile(\''+p.id+'\')">Профиль</button><details class="chat-tools"><summary class="btn btn-ghost" aria-label="Действия чата"><i class="fa-solid fa-ellipsis"></i></summary><div class="chat-tools-menu"><button class="btn btn-ghost" onclick="editChatNickname(\''+p.id+'\')">Задать имя</button><button class="btn btn-ghost" onclick="clearChatHistory(\''+p.id+'\')">Очистить историю</button><button class="btn btn-danger" onclick="deleteChatForMe(\''+p.id+'\')">Удалить чат</button></div></details>';
+  }
+  let unreadMessagesRequest=0;
+  function paintUnreadMessageCount(count){
+    const value=Math.max(0,Number(count)||0),label=value>99?'99+':String(value);
+    document.querySelectorAll('#headerMessageCount,#sidebarMessageCount,#chatUnreadCount').forEach(badge=>{badge.textContent=value?label:'';badge.hidden=!value;badge.setAttribute('aria-label',value+' непрочитанных сообщений');});
+  }
+  async function refreshUnreadMessageCount(){
+    const request=++unreadMessagesRequest,uid=currentUser?.id;
+    if(!uid||!supabaseClient){paintUnreadMessageCount(0);return;}
+    const {count,error}=await supabaseClient.from('direct_messages').select('id',{count:'exact',head:true}).eq('receiver_id',uid).is('read_at',null);
+    if(request!==unreadMessagesRequest||currentUser?.id!==uid)return;
+    if(error){console.error('Could not refresh unread message count:',error);return;}
+    paintUnreadMessageCount(count||0);
   }
   async function loadChatList(){
     if(!currentUser||!supabaseClient)return;
@@ -1467,11 +1480,13 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     directMessagesChannel=supabaseClient.channel('squadra-dm-'+uid)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages'},payload=>{
         const row=payload?.new;if(!row||(row.sender_id!==uid&&row.receiver_id!==uid))return;
+        if(row.receiver_id===uid)void refreshUnreadMessageCount();
         const peerId=row.sender_id===uid?row.receiver_id:row.sender_id;
         const prefs=readChatPreferences();prefs.hidden=(prefs.hidden||[]).filter(id=>id!==peerId);writeChatPreferences(prefs);
         void loadChatList();
         if(row.sender_id!==uid&&document.getElementById('chatRecipient')?.value===peerId)void loadDirectMessages({silent:true});
       })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'direct_messages',filter:'receiver_id=eq.'+uid},()=>{void refreshUnreadMessageCount();})
       .subscribe((status,error)=>{
         if(generation!==realtimeGeneration)return;
         if(status==='SUBSCRIBED'){realtimeRetryDelay=3000;setChatConnectionStatus('connected');return;}
@@ -1524,7 +1539,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
         if(status==='SUBSCRIBED'){
           if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=null;}
           realtimeRetryDelay=3000;
-          void refreshFriendList();void refreshNotifications();
+          void refreshFriendList();void refreshNotifications();void refreshUnreadMessageCount();
           void loadChatList();
           if(document.getElementById('chatRecipient')?.value)loadDirectMessages();
           if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);
