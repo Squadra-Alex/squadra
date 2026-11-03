@@ -1649,3 +1649,29 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 .games-filter-controls > .custom-select-shell .custom-select-trigger {
   width:100%;
 }
+
+
+/* Admin moderation uses one focused action per row, with details in the review view. */
+.admin-report-entry .admin-entry-actions {gap:8px}
+.admin-post-entry .admin-entry-actions {gap:8px}
+.admin-edit-comments {border-top:1px solid var(--border);margin-top:18px;padding-top:16px}
+.admin-edit-comments h3 {margin:0 0 10px}
+.admin-edit-comment {padding:12px 0;border-bottom:1px solid var(--border)}
+.admin-edit-comment>div:first-child {display:flex;justify-content:space-between;gap:12px;align-items:center}
+.admin-edit-comment time,.report-chat-message time {color:var(--muted);font-size:12px}
+.admin-edit-comment p {margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.report-chat-panel {margin-top:12px;border:1px solid var(--border);border-radius:14px;padding:12px}
+.report-chat-messages {display:flex;flex-direction:column;gap:10px;max-height:320px;overflow:auto;overscroll-behavior:contain;padding:4px}
+.report-chat-message {align-self:flex-start;max-width:min(90%,680px);padding:10px 12px;border-radius:12px;background:var(--surface-2,#1a1a20);overflow-wrap:anywhere}
+.report-chat-message.is-own {align-self:flex-end;background:rgba(151,75,239,.18)}
+.report-chat-message>div {display:flex;gap:10px;align-items:center;justify-content:space-between}
+.report-chat-message p {margin:6px 0 0;white-space:pre-wrap}
+.report-chat-compose {display:flex;align-items:flex-end;gap:8px;margin-top:10px}
+.report-chat-compose textarea {flex:1;min-width:0;resize:vertical}
+#adminDetailBody .report-chat-messages {max-height:360px}
+#adminDetailBody .report-chat-compose .btn {flex:0 0 auto}
+.character-counter[hidden] {display:none!important}
+@media(max-width:520px) {
+  .report-chat-compose {flex-direction:column;align-items:stretch}
+  .report-chat-compose .btn {width:100%}
+}
