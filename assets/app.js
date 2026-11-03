@@ -1050,7 +1050,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const unread=rows.filter(n=>!n.read_at).length,badge=document.getElementById('notificationCount');
     if(badge){badge.textContent=unread?String(unread):'';badge.hidden=!unread;}
     const list=document.getElementById('notificationsList');
-    if(list)list.innerHTML=rows.map(n=>'<article class="card notification-card '+(n.read_at?'is-read':'')+'" onclick="openNotification(\''+n.id+'\')"><div class="notification-icon"><i class="fa-solid '+notificationIcon(n.source_type||n.kind)+'"></i></div><div class="notification-copy"><p>'+escapeHtml(n.body||'У тебя новое обновление.')+'</p><small class="subtitle">'+new Date(n.created_at).toLocaleString('ru-RU')+'</small></div><button class="btn btn-ghost" onclick="event.stopPropagation();markNotificationRead(\''+n.id+'\')">'+(n.read_at?'Открыть':'Прочитано')+'</button></article>').join('')||'<div class="empty-state"><i class="fa-regular fa-bell-slash"></i><p>Новых уведомлений пока нет.</p></div>';
+    if(list)list.innerHTML='<div class="notifications-toolbar"><span class="subtitle">'+(unread?unread+' непрочитанных':'Все прочитаны')+'</span><button class="btn btn-ghost" type="button" onclick="markAllNotificationsRead()" '+(unread?'':'disabled')+'>Прочитать все</button></div>'+rows.map(n=>'<article class="card notification-card '+(n.read_at?'is-read':'')+'" onclick="openNotification(\''+n.id+'\')"><div class="notification-icon"><i class="fa-solid '+notificationIcon(n.source_type||n.kind)+'"></i></div><div class="notification-copy"><p>'+escapeHtml(n.body||'У тебя новое обновление.')+'</p><small class="subtitle">'+new Date(n.created_at).toLocaleString('ru-RU')+'</small></div><button class="btn btn-ghost" onclick="event.stopPropagation();markNotificationRead(\''+n.id+'\')">'+(n.read_at?'Открыть':'Прочитано')+'</button></article>').join('')||'<div class="empty-state"><i class="fa-regular fa-bell-slash"></i><p>Новых уведомлений пока нет.</p></div>';
   }
   function reportMessageMarkup(rows,ownId) {
     return (rows||[]).map(message=>'<article class="report-chat-message '+(message.sender_id===ownId?'is-own':'')+'"><div><strong>'+(message.sender_id===ownId?'Вы':'Поддержка')+'</strong><time>'+escapeHtml(adminFormatDate(message.created_at))+'</time></div><p>'+escapeHtml(message.body||'')+'</p></article>').join('')||'<p class="subtitle">Переписка пока пустая. Напишите в поддержку, если нужно добавить подробности.</p>';
@@ -1087,6 +1087,12 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const {error}=await supabaseClient.from('notifications').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
     if(error){console.error(error);return showNotification('Не удалось отметить уведомление.');}
     await loadAccountData();
+  }
+  async function markAllNotificationsRead() {
+    if(!currentUser||!supabaseClient)return requireAccount();
+    const {error}=await supabaseClient.from('notifications').update({read_at:new Date().toISOString()}).eq('user_id',currentUser.id).is('read_at',null);
+    if(error){console.error(error);return showNotification('Не удалось отметить уведомления прочитанными.');}
+    showNotification('Все уведомления прочитаны.');await loadAccountData();
   }
 
   async function loadGameCatalog() {
@@ -1547,7 +1553,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   function filterAdminList(containerId,value) {
     const host=document.getElementById(containerId);if(!host)return;
     const query=String(value||'').trim().toLocaleLowerCase('ru');
-    host.querySelectorAll('.admin-entry').forEach(entry=>{entry.hidden=!!query&&!entry.textContent.toLocaleLowerCase('ru').includes(query);});
+    host.querySelectorAll('.admin-entry, tbody tr').forEach(entry=>{entry.hidden=!!query&&!entry.textContent.toLocaleLowerCase('ru').includes(query);});
   }
   function filterAdminReports() {
     const query=document.getElementById('adminReportsSearch')?.value||'';
@@ -1581,7 +1587,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const u=data.user||{},p=data.profile||{},st=data.settings||{},roles=(data.roles||[]).map(r=>r.role==='admin'?'Администратор':r.role==='moderator'?'Модератор':r.role).join(', ')||'Игрок';
     const banned=u.bannedUntil&&new Date(u.bannedUntil)>new Date()?'Заблокирован до '+adminFormatDate(u.bannedUntil):'Активен';
     const roleSet=(data.roles||[]).map(x=>x.role),isSelf=id===currentUser?.id,banAction=banned.startsWith('Заблокирован')?'unban':'ban';
-    const controls='<div class="admin-user-control-actions">'+(isSelf?'<span class="subtitle">Текущий аккаунт</span>':'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+banAction+'&quot;)">'+(banAction==='unban'?'Разблокировать':'Заблокировать')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('moderator')?'revoke_role':'grant_role')+'&quot;,&quot;moderator&quot;)">'+(roleSet.includes('moderator')?'Снять модератора':'Выдать модератора')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('admin')?'revoke_role':'grant_role')+'&quot;,&quot;admin&quot;)">'+(roleSet.includes('admin')?'Снять администратора':'Выдать администратора')+'</button>')+'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='blue'?'':'blue')+'&quot;)">'+(p.verified_color==='blue'?'Снять галочку':'Выдать синюю галочку')+'</button>'+(isSelf?'':'<button class="btn btn-danger" onclick="adminDeleteUser(&quot;'+id+'&quot;)"><i class="fa-solid fa-user-xmark"></i> Удалить аккаунт</button>')+'</div>';
+    const controls='<div class="admin-user-control-actions">'+(isSelf?'<span class="subtitle">Текущий аккаунт</span>':'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+banAction+'&quot;)">'+(banAction==='unban'?'Разблокировать':'Заблокировать')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('moderator')?'revoke_role':'grant_role')+'&quot;,&quot;moderator&quot;)">'+(roleSet.includes('moderator')?'Снять модератора':'Выдать модератора')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('admin')?'revoke_role':'grant_role')+'&quot;,&quot;admin&quot;)">'+(roleSet.includes('admin')?'Снять администратора':'Выдать администратора')+'</button>')+'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='blue'?'':'blue')+'&quot;)">'+(p.verified_color?'Снять галочку':'Выдать галочку')+'</button>'+(isSelf?'':'<button class="btn btn-danger" onclick="adminDeleteUser(&quot;'+id+'&quot;)"><i class="fa-solid fa-user-xmark"></i> Удалить аккаунт</button>')+'</div>';
     const values='<div class="admin-user-detail-toolbar"><span class="admin-user-id">ID: '+escapeHtml(u.id||id)+'</span><button class="btn btn-primary" onclick="adminOpenUserEditor()"><i class="fa-solid fa-pen-to-square"></i> Редактировать профиль</button></div>'+controls+'<div class="admin-detail-grid">'+adminDetailField('Имя профиля',p.display_name)+adminDetailField('Юзернейм',p.username?'@'+p.username:'—')+adminDetailField('Email',u.email)+adminDetailField('ID пользователя',u.id)+adminDetailField('Роль',roles)+adminDetailField('Статус аккаунта',banned)+adminDetailField('Провайдер входа',(u.providers||[]).join(', ')||'—')+adminDetailField('Зарегистрирован',adminFormatDate(u.createdAt))+adminDetailField('Последний вход',adminFormatDate(u.lastSignInAt))+adminDetailField('Email подтверждён',adminFormatDate(u.emailConfirmedAt))+adminDetailField('Создан профиль',adminFormatDate(p.created_at))+adminDetailField('Профиль обновлён',adminFormatDate(p.updated_at))+adminDetailField('Игра',p.game_name)+adminDetailField('Регион',p.region)+adminDetailField('Ранг',p.rank_name)+adminDetailField('Уровень',p.level)+adminDetailField('Рейтинг',p.rating)+adminDetailField('Матчи / победы',String(p.matches_played||0)+' / '+String(p.wins||0))+adminDetailField('K/D',p.kd)+adminDetailField('Проверка',p.verified_color?(p.verified_color==='blue'?'Синяя':'Зелёная')+' • '+adminFormatDate(p.verified_at):'Нет')+adminDetailField('Друзья',data.friendCount)+adminDetailField('Публикации',data.communityPostCount)+adminDetailField('Тема интерфейса',st.theme)+adminDetailField('Язык / регион',String(st.language||p.language||'—')+' / '+String(st.region||p.region||'—'))+adminDetailField('Профиль виден в поиске',st.discoverable===false?'Нет':'Да')+'</div><section class="admin-detail-section"><h3>О себе</h3><p class="admin-detail-bio">'+escapeHtml(p.bio||'Описание не заполнено.')+'</p></section><section class="admin-detail-section"><h3>Команды</h3>'+((data.teams||[]).map(x=>'<p>'+escapeHtml(x.teams?.name||'Команда')+(x.teams?.tag?' ['+escapeHtml(x.teams.tag)+']':'')+' • '+escapeHtml(x.role||'участник')+' • '+escapeHtml(x.teams?.game_name||'')+'</p>').join('')||'<p class="subtitle">Не состоит в командах.</p>')+'</section><section class="admin-detail-section"><h3>Последние матчи</h3>'+((data.matches||[]).map(m=>'<article class="admin-detail-row"><strong>'+escapeHtml(m.game_id||'Игра')+' • '+escapeHtml(m.status||'')+'</strong><span>'+escapeHtml(m.score_a??'—')+' : '+escapeHtml(m.score_b??'—')+' • '+adminFormatDate(m.played_at)+'</span></article>').join('')||'<p class="subtitle">Матчей пока нет.</p>')+'</section><section class="admin-detail-section"><h3>История активности</h3>'+adminActivityMarkup(data.activity)+'</section><section class="admin-detail-section"><h3>Настройки уведомлений</h3><p>'+['notify_messages','notify_team_invites','notify_tournaments','notify_marketing'].map((key,i)=>['Сообщения','Приглашения в команды','Турниры','Новости платформы'][i]+': '+(st[key]?'включены':'выключены')).join(' • ')+'</p></section>';
     adminDetailShell('Профиль игрока',values);
   }
@@ -1603,7 +1609,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       supabaseClient.from('profiles').select('game_name,region,rank_name')
     ]);
     adminPopulateSelect('adminEditGame',(gameRows.data||[]).map(row=>row.name),p.game_name);
-    adminPopulateSelect('adminEditRegion',(profileOptions.data||[]).map(row=>row.region),p.region);
+    adminPopulateSelect('adminEditRegion',[...new Set(['EU','Asia','NA','SA',...(profileOptions.data||[]).map(row=>row.region).filter(Boolean)])],p.region);
     adminPopulateSelect('adminEditRank',(profileOptions.data||[]).map(row=>row.rank_name),p.rank_name);
     document.getElementById('adminUserEditIdentity').textContent=(p.display_name||p.username||'Пользователь')+' • '+(u.email||'без email');
     document.getElementById('adminEditEmail').value=u.email||'';
@@ -1735,11 +1741,16 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(!isAdmin||!supabaseClient) return;
     let days;
     if(action==='ban') {
-      const answer=await askInput('На сколько дней заблокировать аккаунт?','7');
+      const answer=await askInput('Срок блокировки: число и h/ч для часов или d/д для дней (например 12ч или 7д).','7д');
       if(answer===null) return;
-      days=Math.max(1,Math.min(365,parseInt(answer,10)||7));
+      const match=String(answer).trim().match(/^(\d{1,4})\s*(h|ч|d|д)?$/i);
+      if(!match)return showNotification('Укажи срок, например 12ч или 7д.');
+      const amount=Number(match[1]),unit=(match[2]||'d').toLowerCase();
+      const durationHours=amount*(unit==='d'||unit==='д'?24:1);
+      if(!Number.isInteger(durationHours)||durationHours<1||durationHours>8760)return showNotification('Срок должен быть от 1 часа до 365 дней.');
+      days=durationHours/24;
     } else if(!await askConfirm('Подтвердить действие с аккаунтом?')) return;
-    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action,targetUserId,role,days,color:color||null}});
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action,targetUserId,role,days,durationHours:action==='ban'?Math.max(1,Math.round(days*24)):null,color:color||null}});
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось изменить аккаунт.');console.error('Admin user action failed:',error||data);showNotification(message);return;}
     showNotification(action==='ban'?'Аккаунт заблокирован.':action==='unban'?'Аккаунт разблокирован.':action==='grant_role'?'Роль назначена.':action==='verify'?(color?'Значок проверки выдан.':'Значок проверки снят.'):'Роль снята.');
     await loadAdminPanel();await adminInspectUser(targetUserId);
