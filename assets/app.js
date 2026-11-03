@@ -1482,7 +1482,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
           if(adminSelectedReportId===row.id&&payload.eventType!=='DELETE')adminInspectReport(row.id);
         }
       })
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{void refreshNotifications();if(payload.new?.body)showNotification(payload.new.body);})
+      .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{void refreshNotifications();if(payload.eventType==='INSERT'&&payload.new?.body)showNotification(payload.new.body);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId&&document.getElementById('adminDetailModal')?.classList.contains('active')&&!document.querySelector('#adminReportConversation [data-message-id="'+payload.new.id+'"]'))void loadAdminReportConversation(reportId);const panel=document.getElementById('report-chat-panel-'+reportId),host=document.getElementById('report-chat-messages-'+reportId);if(panel&&!panel.hidden&&host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]'))void loadMyReportConversation(reportId);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);})
       .subscribe((status,error)=>{
