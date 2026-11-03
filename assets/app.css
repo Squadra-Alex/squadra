@@ -1809,7 +1809,7 @@ body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:con
 #messages .chat-tools-menu .btn{text-align:left;white-space:nowrap}
 #messages .chat-header .player-profile-link{min-width:0;max-width:min(40vw,280px)}
 #messages .chat-header .player-profile-link strong,#messages .chat-header .player-profile-link small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#messages.chat-open .messenger{position:fixed!important;inset:64px 0 0!important;width:100vw!important;height:auto!important;max-height:none!important;min-height:0!important}
+
 #messages.chat-open .chat-input{display:flex!important;visibility:visible!important}
 .notification-card-actions{box-sizing:border-box;min-width:0;max-width:100%}
 .notification-card-actions .btn-primary{min-width:0}
