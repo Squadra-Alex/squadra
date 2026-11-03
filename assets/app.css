@@ -1990,3 +1990,41 @@ body>.container>main{
     padding:0!important;
   }
 }
+
+/* Final route-independent width lock for the app shell. */
+body > .container,
+body > main.container,
+body > div.container {
+  display:block!important;
+  width:calc(100% - 48px)!important;
+  max-width:1440px!important;
+  min-width:0!important;
+  margin:34px auto 64px!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+body > .container > main,
+body > main.container > main,
+body > div.container > main {
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+}
+body > .container > main > .section,
+body > main.container > main > .section,
+body > div.container > main > .section {
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:760px){
+  body > .container,
+  body > main.container,
+  body > div.container {
+    width:calc(100% - 24px)!important;
+    margin:14px auto 44px!important;
+  }
+}
