@@ -1366,7 +1366,14 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
        .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_events'},()=>{loadPlatformEvents();})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'community_reports',filter:'reporter_id=eq.'+uid},()=>loadAccountData())
+      .on('postgres_changes',{event:'*',schema:'public',table:'community_reports'},payload=>{
+        const row=payload?.new||payload?.old;if(!row)return;
+        if(row.reporter_id===uid)loadAccountData();
+        if(isModerator&&document.getElementById('admin')?.classList.contains('active')){
+          loadAdminPanel();
+          if(adminSelectedReportId===row.id&&payload.eventType!=='DELETE')adminInspectReport(row.id);
+        }
+      })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{const el=document.getElementById('notificationCount');if(el){el.textContent=String((Number(el.textContent)||0)+1);el.hidden=false;}loadAccountData();if(payload.new?.body)showNotification(payload.new.body);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId)loadAdminReportConversation(reportId);const panel=document.getElementById('report-chat-panel-'+reportId);if(panel&&!panel.hidden)loadMyReportConversation(reportId);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);})
@@ -1531,7 +1538,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const reportsEl=document.getElementById('adminReportsList');
     const reportStatusLabel={open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'};
     const reportReasonLabel={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'};
-    if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="admin-entry admin-report-entry"><div class="admin-entry-header"><div><strong>'+escapeHtml(reportReasonLabel[r.reason]||r.reason)+'</strong><div class="subtitle">'+new Date(r.created_at).toLocaleString('ru-RU')+' • Жалобу подал: '+escapeHtml(reportUserLabel(r.reporter_id))+'</div></div><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(reportStatusLabel[r.status]||r.status)+'</span></div><p class="admin-report-summary">'+escapeHtml(r.details||'Пользователь не добавил описание.')+'</p><div class="admin-entry-footer"><span class="subtitle">На пользователя: '+escapeHtml(r.reported_user_id?reportUserLabel(r.reported_user_id):'не указан')+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-comments"></i> Разобрать</button>+'</div></div></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
+    if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="admin-entry admin-report-entry"><div class="admin-entry-header"><div><strong>'+escapeHtml(reportReasonLabel[r.reason]||r.reason)+'</strong><div class="subtitle">'+new Date(r.created_at).toLocaleString('ru-RU')+' • Жалобу подал: '+escapeHtml(reportUserLabel(r.reporter_id))+'</div></div><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(reportStatusLabel[r.status]||r.status)+'</span></div><p class="admin-report-summary">'+escapeHtml(r.details||'Пользователь не добавил описание.')+'</p><div class="admin-entry-footer"><span class="subtitle">На пользователя: '+escapeHtml(r.reported_user_id?reportUserLabel(r.reported_user_id):'не указан')+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-comments"></i> Разобрать</button></div></div></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
     if(status){const summary='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';status.textContent=summary+(errors.length?' Не загрузилась часть данных: '+errorDetails.join(' • '):'');}
     await loadAdminGames();await loadAdminTeamsAndTournaments();await loadAdminRegistrationChart();
   }
