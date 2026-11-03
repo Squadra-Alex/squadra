@@ -1940,3 +1940,12 @@ aside li:has(#sidebarMessageCount) #sidebarMessageCount{margin-left:auto;flex:0 
   #messages.chat-open .chat-main{display:flex!important}
 }
 @media(max-width:760px){.container{width:calc(100% - 24px)!important;max-width:1440px!important;margin:14px auto!important;padding:0!important}}
+
+/* Keep the Groups tab inside the same centered page frame as every other tab. */
+#communityGroupsView{display:block;width:100%;max-width:1280px;min-width:0;margin:12px auto 24px;overflow-x:clip;box-sizing:border-box}
+#communityGroupsView[hidden]{display:none!important}
+#communityGroupsView #communityGroupsCard{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+#communityGroupsView #communityGroupsCard>*{min-width:0}
+#communityGroupsView #communityGroups{min-width:0;max-width:100%;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+#communityGroupsView .community-group-card{min-width:0;max-width:100%;overflow-wrap:anywhere}
+@media(min-width:761px){#communityGroupsView{max-width:min(1280px,100%)}}
