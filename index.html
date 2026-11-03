@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=realtime-chat-friends-20261103-2">
+<link rel="stylesheet" href="/assets/app.css?v=chat-mobile-polish-20261103-1">
 </head>
 <body>
 
@@ -45,7 +45,7 @@
       <li><a onclick="showSection('messages')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Сообщения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('achievements')"><i class="fa-solid fa-medal" aria-hidden="true"></i><span>Достижения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>История</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
-      <li><a onclick="showSection('notifications')"><i class="fa-solid fa-bell" aria-hidden="true"></i><span>Уведомления</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('notifications')"><i class="fa-solid fa-bell" aria-hidden="true"></i><span>Уведомления</span><span id="mobileNotificationCount" class="badge badge-danger" hidden></span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('settings')"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Настройки</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li class="nav-heading">ИГРОВОЕ</li>
       <li><a onclick="showSection('matchmaking')"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>Подбор игроков</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
@@ -235,7 +235,7 @@
 
     <!-- COMMUNITY -->
     <section id="community" class="section">
-      <h1><i class="fa-solid fa-comments"></i>Сообщество</h1><div class="feed-switch"><button id="feedAllButton" class="btn btn-primary" onclick="setCommunityFeedMode('all')">Все публикации</button><button id="feedFollowingButton" class="btn btn-ghost" onclick="setCommunityFeedMode('following')">Подписки</button><small>Подписка добавляет автора в отдельную ленту и сообщает о новых публикациях.</small></div>
+      <h1><i class="fa-solid fa-comments"></i>Сообщество</h1><div class="feed-switch"><button id="feedAllButton" class="btn btn-primary" onclick="setCommunityFeedMode('all')">Все публикации</button><button id="feedFollowingButton" class="btn btn-ghost" onclick="setCommunityFeedMode('following')">Подписки</button><button id="communityGroupsButton" class="btn btn-ghost" type="button" aria-expanded="false" onclick="toggleCommunityGroups()">Группы</button><small>Подписка добавляет автора в отдельную ленту и сообщает о новых публикациях.</small></div>
       <div class="grid" style="grid-template-columns: 2fr 1fr;">
         <div>
           <div class="card" style="margin-bottom:16px;">
@@ -263,8 +263,8 @@
               <div class="list-divider" style="color:var(--red); font-weight:600;">#LookingForTeam</div>
             </div>
           </div>
-          <div class="card">
-            <h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
+          <div class="card" id="communityGroupsCard" hidden>
+            <button class="btn btn-ghost community-groups-close" type="button" onclick="toggleCommunityGroups(false)" aria-label="Закрыть группы"><i class="fa-solid fa-xmark"></i></button><h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
             <div class="form-group" style="margin-top:12px;"><label for="communityGroupName">Создать группу</label><input id="communityGroupName" maxlength="80" placeholder="Название группы"></div>
             <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
             <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="О чём группа"></div>
@@ -575,7 +575,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=realtime-chat-friends-20261103-2"></script>
+<script src="/assets/app.js?v=chat-mobile-polish-20261103-1"></script>
 
 </body>
 </html>
