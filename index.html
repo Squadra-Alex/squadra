@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-2">
+<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-3">
 </head>
 <body>
 
@@ -236,7 +236,16 @@
     <!-- COMMUNITY -->
     <section id="community" class="section">
       <h1><i class="fa-solid fa-comments"></i>Сообщество</h1><div class="feed-switch"><button id="feedAllButton" class="btn btn-primary" onclick="setCommunityFeedMode('all')">Все публикации</button><button id="feedFollowingButton" class="btn btn-ghost" onclick="setCommunityFeedMode('following')">Подписки</button><button id="communityGroupsButton" class="btn btn-ghost" type="button" aria-expanded="false" onclick="toggleCommunityGroups()">Группы</button><small>Подписка добавляет автора в отдельную ленту и сообщает о новых публикациях.</small></div>
-      <div id="communityGroupsView" class="community-groups-view" hidden></div><div id="communityFeedGrid" class="grid" style="grid-template-columns: 2fr 1fr;">
+      <div id="communityGroupsView" class="community-groups-view" hidden><div class="card" id="communityGroupsCard" hidden>
+            <button class="btn btn-ghost community-groups-close" type="button" onclick="toggleCommunityGroups(false)" aria-label="Закрыть группы"><i class="fa-solid fa-xmark"></i></button><h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
+            <div class="community-group-form">
+              <div class="form-group"><label for="communityGroupName">Название</label><input id="communityGroupName" maxlength="80" placeholder="Например, CS2 Premier"></div>
+              <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
+              <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="Кого ищете и как играете"></div>
+              <button class="btn btn-primary" onclick="createCommunityGroup()"><i class="fa-solid fa-plus"></i> Создать группу</button>
+            </div>
+            <div id="communityGroups"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
+          </div></div><div id="communityFeedGrid" class="grid" style="grid-template-columns: 2fr 1fr;">
         <div>
           <div class="card" style="margin-bottom:16px;">
             <h3><i class="fa-solid fa-pen-to-square" style="color:var(--red); margin-right:8px;"></i>Создать публикацию</h3>
@@ -265,16 +274,7 @@
           </div>
             <section class="community-followed-authors" id="communityFollowedAuthors"><h3>Мои подписки</h3><p class="subtitle">Загружаем список…</p></section>
           </div>
-          <div class="card" id="communityGroupsCard" hidden>
-            <button class="btn btn-ghost community-groups-close" type="button" onclick="toggleCommunityGroups(false)" aria-label="Закрыть группы"><i class="fa-solid fa-xmark"></i></button><h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
-            <div class="community-group-form">
-              <div class="form-group"><label for="communityGroupName">Название</label><input id="communityGroupName" maxlength="80" placeholder="Например, CS2 Premier"></div>
-              <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
-              <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="Кого ищете и как играете"></div>
-              <button class="btn btn-primary" onclick="createCommunityGroup()"><i class="fa-solid fa-plus"></i> Создать группу</button>
-            </div>
-            <div id="communityGroups"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
-          </div>
+          
         </div>
       </div>
     </section>
@@ -577,7 +577,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=community-social-fixes-20261104-2"></script>
+<script src="/assets/app.js?v=community-social-fixes-20261104-3"></script>
 
 </body>
 </html>
