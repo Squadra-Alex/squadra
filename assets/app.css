@@ -1888,3 +1888,44 @@ aside li:has(#sidebarMessageCount){display:flex;align-items:center;gap:9px}
 aside li:has(#sidebarMessageCount) #sidebarMessageCount{margin-left:auto;flex:0 0 auto}
 .chat-sidebar-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .chat-sidebar-title input{flex-basis:100%}
+
+/* Community groups, author links and searchable social cards */
+.community-followed-authors{margin-top:14px;padding:16px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(145deg,color-mix(in srgb,var(--red) 5%,var(--bg-2)),var(--bg-2))}
+.community-followed-authors h3{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
+.community-followed-authors h3 span{font-size:12px;color:var(--muted)}
+.followed-author-list{display:grid;gap:8px}
+.followed-author,.friend-search-result{display:flex;align-items:center;gap:10px;min-width:0;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--bg-2)}
+.followed-author-profile{display:flex;align-items:center;gap:10px;min-width:0;flex:1;border:0;background:none;color:inherit;text-align:left;cursor:pointer}
+.followed-author-profile span,.friend-search-result>span{display:grid;min-width:0;gap:3px}
+.followed-author-profile small,.friend-search-result small{color:var(--muted)}
+.community-group-card{position:relative;min-width:0;padding:16px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(150deg,color-mix(in srgb,var(--red) 4%,var(--bg-2)),var(--bg-2))}
+.community-group-top{display:flex;align-items:center;gap:12px;padding-right:34px}
+.community-group-menu{position:absolute;right:12px;top:12px;z-index:5}
+.community-group-menu summary{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--border);border-radius:10px;cursor:pointer;list-style:none;color:var(--muted)}
+.community-group-menu summary::-webkit-details-marker{display:none}
+.community-group-menu-panel{position:absolute;right:0;top:40px;display:grid;gap:4px;min-width:178px;padding:6px;border:1px solid var(--border);border-radius:12px;background:var(--bg-2);box-shadow:0 14px 36px #0009}
+.community-group-menu-panel button{display:flex;align-items:center;gap:8px;padding:10px;border:0;border-radius:8px;background:transparent;color:var(--text);text-align:left;cursor:pointer}
+.community-group-menu-panel button:hover{background:var(--bg-3)}
+.community-group-menu-panel button.is-danger{color:#c77aff}
+.community-post-author{padding:0;border:0;background:none;color:var(--text);font:inherit;font-weight:800;cursor:pointer;text-align:left}
+.community-post-author:hover{color:var(--red)}
+.community-post-author small{margin-left:5px;color:var(--muted);font-size:12px;font-weight:500}
+.notification-target-highlight{outline:2px solid var(--red);outline-offset:3px;transition:outline-color .4s}
+@media(max-width:760px){.friend-search-result,.followed-author{flex-wrap:wrap}.friend-search-result>span,.followed-author-profile{flex-basis:calc(100% - 60px)}.friend-search-result .btn,.followed-author>.btn{flex:1;min-height:42px}.community-followed-authors{padding:13px}}
+/* Full-height mobile conversation: remove the blank gap and keep composer above system navigation. */
+@media(max-width:760px){
+  body:has(#messages.chat-open){overflow:hidden!important}
+  body:has(#messages.chat-open)>header,body:has(#messages.chat-open)>.site-header,body:has(#messages.chat-open) footer{display:none!important}
+  #messages.chat-open{position:fixed!important;z-index:13000!important;inset:0!important;width:100vw!important;height:100dvh!important;min-height:0!important;max-height:none!important;margin:0!important;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important;overflow:hidden!important;background:var(--bg-2)!important}
+  #messages.chat-open .messenger{position:relative!important;inset:auto!important;display:flex!important;flex-direction:column!important;width:100%!important;max-width:none!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;overflow:hidden!important}
+  #messages.chat-open .chat-main{display:flex!important;flex-direction:column!important;width:100%!important;min-width:0!important;height:100%!important;min-height:0!important}
+  #messages.chat-open .chat-header{position:relative!important;flex:0 0 auto!important;min-height:64px!important;width:100%!important;min-width:0!important;overflow:visible!important;gap:7px!important;padding:8px!important}
+  #messages.chat-open .chat-header .player-profile-link{flex:1 1 40px!important;min-width:0!important;max-width:none!important;overflow:hidden!important}
+  #messages.chat-open .chat-header .player-profile-link strong,#messages.chat-open .chat-header .player-profile-link small{display:block!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  #messages.chat-open .chat-header>.btn{flex:0 0 auto!important;padding:8px!important;font-size:12px!important;white-space:nowrap!important}
+  #messages.chat-open .chat-messages{flex:1 1 auto!important;width:100%!important;min-width:0!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;padding:12px 10px!important;overscroll-behavior:contain}
+  #messages.chat-open .message{width:fit-content!important;max-width:88%!important;min-width:0!important;overflow-wrap:anywhere!important}
+  #messages.chat-open .chat-input{position:relative!important;flex:0 0 auto!important;display:flex!important;align-items:flex-end!important;gap:8px!important;width:100%!important;min-width:0!important;padding:10px 10px calc(12px + env(safe-area-inset-bottom))!important;background:var(--bg-2)!important}
+  #messages.chat-open .chat-input textarea,#messages.chat-open .chat-input input{flex:1 1 auto!important;min-width:0!important;max-height:120px!important}
+  #messages.chat-open .chat-input button{flex:0 0 48px!important;min-height:48px!important}
+}
