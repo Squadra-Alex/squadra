@@ -28,6 +28,8 @@ Deno.serve(async (req: Request) => {
   const { data: authData, error: authError } = await admin.auth.getUser(token);
   if (authError || !authData.user) return response({ error: "Unauthorized" }, 401);
   const callerId = authData.user.id;
+  const blockedUntil = authData.user.banned_until ? Date.parse(authData.user.banned_until) : 0;
+  if (blockedUntil > Date.now()) return response({ error: "Аккаунт временно заблокирован: действия недоступны." }, 403);
 
   const { data: callerRoles, error: roleError } = await admin
     .from("user_roles")
