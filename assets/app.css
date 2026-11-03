@@ -1880,3 +1880,11 @@ body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:con
  #communityGroupsView #communityGroupsCard>.community-groups-close{right:12px;top:12px}
  #communityGroupsView #communityGroupsCard>.community-group-form,#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:1;grid-row:auto}
 }
+
+.message-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 6px;border-radius:999px;font-size:11px;font-weight:800;line-height:1;vertical-align:middle}
+.message-count-badge[hidden]{display:none!important}
+nav a .message-count-badge{margin-left:auto;flex:0 0 auto}
+aside li:has(#sidebarMessageCount){display:flex;align-items:center;gap:9px}
+aside li:has(#sidebarMessageCount) #sidebarMessageCount{margin-left:auto;flex:0 0 auto}
+.chat-sidebar-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.chat-sidebar-title input{flex-basis:100%}
