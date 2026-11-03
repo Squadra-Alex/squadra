@@ -520,6 +520,8 @@ create index if not exists community_report_messages_report_created_idx
   on public.community_report_messages(report_id,created_at);
 create index if not exists community_report_messages_sender_idx
   on public.community_report_messages(sender_id);
+create index if not exists community_report_messages_sender_idx
+  on public.community_report_messages(sender_id);
 alter table public.community_report_messages enable row level security;
 grant select on public.community_report_messages to authenticated;
 drop policy if exists "report participants read report messages" on public.community_report_messages;
@@ -535,7 +537,7 @@ begin
   foreach table_name in array array[
     'direct_messages','friendships','matches','community_posts','community_post_comments',
     'platform_events','platform_event_registrations','tournament_matches','community_reports',
-    'community_report_messages','notifications','community_group_messages','profiles','user_settings'
+    'community_report_messages','notifications','community_group_messages','profiles','user_settings','user_roles'
   ] loop
     if to_regclass('public.' || table_name) is not null
       and not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=table_name) then
