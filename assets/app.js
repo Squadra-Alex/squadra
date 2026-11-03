@@ -126,6 +126,7 @@
     document.getElementById('actionDialogSubmit').textContent=confirmText;
     document.getElementById('actionDialogEyebrow').textContent=eyebrow;
     inputEl.hidden=!input;inputEl.value=input?String(value||''):'';
+    const inputCounter=inputEl.nextElementSibling;if(inputCounter?.classList.contains('character-counter'))inputCounter.hidden=!input;
     return new Promise(resolve=>{actionDialogResolver=resolve;openModal('actionDialogModal');if(input){inputEl.focus();inputEl.select();}});
   }
   function askConfirm(message){return openActionDialog(message).then(Boolean);}
@@ -1039,18 +1040,48 @@ function initCustomSelects(root=document) {
     document.querySelectorAll('[data-tournament-id]').forEach(b=>{const on=ids.includes(b.dataset.tournamentId);b.disabled=on;b.textContent=on?'Вы зарегистрированы':'Участвовать';});
   }
 function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-people-group',group_message:'fa-comments',follow:'fa-user-plus',friend:'fa-user-group',comment:'fa-comment',match_confirmation:'fa-flag-checkered',match:'fa-chart-line',team_match_result:'fa-ranking-star'}[k]||'fa-bell');}
-  async function openNotification(id){const n=accountNotifications.find(x=>x.id===id);if(!n)return;await markNotificationRead(id);if(n.source_type==='community_report'){showSection('notifications');setTimeout(()=>document.getElementById('my-report-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),200);return;}if(n.source_type==='message'&&n.actor_id)return openChatWith(n.actor_id);if(n.source_type==='group'&&n.source_id)return openGroupChat(n.source_id);if(n.source_type==='player'&&(n.actor_id||n.source_id))return openPlayerProfile(n.actor_id||n.source_id);if(n.source_type==='team'){showSection('teams');return;}if(n.source_type==='post'){showSection('community');if(n.source_id)setTimeout(()=>document.getElementById('community-post-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}if(n.source_type==='match'){showSection('history');if(n.source_id)setTimeout(()=>document.getElementById('activity-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}showSection(({message:'messages',team_invite:'teams',group_message:'community',follow:'players',friend:'friends',comment:'community',match_confirmation:'history',match:'history',team_match_result:'teams'}[n.kind]||'notifications'));}
+  async function openNotification(id){const n=accountNotifications.find(x=>x.id===id);if(!n)return;await markNotificationRead(id);if(n.source_type==='community_report'){
+      if(isModerator){showSection('admin');await adminInspectReport(n.source_id);return;}
+      showSection('notifications');
+      setTimeout(()=>{const card=document.getElementById('my-report-'+n.source_id);card?.scrollIntoView({behavior:'smooth',block:'center'});if(n.kind==='report_message'){const button=card?.querySelector('[onclick*="toggleMyReportConversation"]');if(button&&button.getAttribute('aria-expanded')!=='true')toggleMyReportConversation(n.source_id,button);}},200);
+      return;
+    }if(n.source_type==='message'&&n.actor_id)return openChatWith(n.actor_id);if(n.source_type==='group'&&n.source_id)return openGroupChat(n.source_id);if(n.source_type==='player'&&(n.actor_id||n.source_id))return openPlayerProfile(n.actor_id||n.source_id);if(n.source_type==='team'){showSection('teams');return;}if(n.source_type==='post'){showSection('community');if(n.source_id)setTimeout(()=>document.getElementById('community-post-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}if(n.source_type==='match'){showSection('history');if(n.source_id)setTimeout(()=>document.getElementById('activity-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}showSection(({message:'messages',team_invite:'teams',group_message:'community',follow:'players',friend:'friends',comment:'community',match_confirmation:'history',match:'history',team_match_result:'teams'}[n.kind]||'notifications'));}
   function renderNotifications(rows) {
     const unread=rows.filter(n=>!n.read_at).length,badge=document.getElementById('notificationCount');
     if(badge){badge.textContent=unread?String(unread):'';badge.hidden=!unread;}
     const list=document.getElementById('notificationsList');
     if(list)list.innerHTML=rows.map(n=>'<article class="card notification-card '+(n.read_at?'is-read':'')+'" onclick="openNotification(\''+n.id+'\')"><div class="notification-icon"><i class="fa-solid '+notificationIcon(n.source_type||n.kind)+'"></i></div><div class="notification-copy"><p>'+escapeHtml(n.body||'У тебя новое обновление.')+'</p><small class="subtitle">'+new Date(n.created_at).toLocaleString('ru-RU')+'</small></div><button class="btn btn-ghost" onclick="event.stopPropagation();markNotificationRead(\''+n.id+'\')">'+(n.read_at?'Открыть':'Прочитано')+'</button></article>').join('')||'<div class="empty-state"><i class="fa-regular fa-bell-slash"></i><p>Новых уведомлений пока нет.</p></div>';
   }
+  function reportMessageMarkup(rows,ownId) {
+    return (rows||[]).map(message=>'<article class="report-chat-message '+(message.sender_id===ownId?'is-own':'')+'"><div><strong>'+(message.sender_id===ownId?'Вы':'Поддержка')+'</strong><time>'+escapeHtml(adminFormatDate(message.created_at))+'</time></div><p>'+escapeHtml(message.body||'')+'</p></article>').join('')||'<p class="subtitle">Переписка пока пустая. Напишите в поддержку, если нужно добавить подробности.</p>';
+  }
+  async function loadMyReportConversation(reportId) {
+    const host=document.getElementById('report-chat-messages-'+reportId);if(!host||!currentUser)return;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-list',reportId}});
+    if(error||data?.error){console.error('Could not load report conversation:',error||data);host.innerHTML='<p class="subtitle">Не удалось загрузить переписку. Попробуйте ещё раз.</p>';return;}
+    host.innerHTML=reportMessageMarkup(data.messages,currentUser.id);host.scrollTop=host.scrollHeight;
+  }
+  async function toggleMyReportConversation(reportId,button) {
+    const panel=document.getElementById('report-chat-panel-'+reportId);if(!panel)return;
+    panel.hidden=!panel.hidden;
+    if(!panel.hidden){button?.setAttribute('aria-expanded','true');await loadMyReportConversation(reportId);document.getElementById('report-chat-input-'+reportId)?.focus();}
+    else button?.setAttribute('aria-expanded','false');
+  }
+  async function sendMyReportMessage(reportId) {
+    const field=document.getElementById('report-chat-input-'+reportId),message=field?.value.trim()||'';
+    if(!message)return showNotification('Напишите сообщение поддержке.');
+    if(message.length>2000)return showNotification('Сообщение ограничено 2000 символами.');
+    const button=document.getElementById('report-chat-send-'+reportId);if(button)button.disabled=true;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-send',reportId,message}});
+    if(button)button.disabled=false;
+    if(error||data?.error){const text=await adminFunctionError(error,data,'Не удалось отправить сообщение.');console.error('Report message send failed:',error||data);showNotification(text);return;}
+    field.value='';await loadMyReportConversation(reportId);
+  }
   function renderMyCommunityReports(rows) {
     const host=document.getElementById('myCommunityReportsList');if(!host)return;
     const statuses={open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'};
     const reasons={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'};
-    host.innerHTML=rows.map(r=>'<article class="card my-report-card" id="my-report-'+escapeHtml(r.id)+'"><header><strong>'+escapeHtml(reasons[r.reason]||r.reason)+'</strong><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(statuses[r.status]||r.status)+'</span></header><p class="subtitle">Отправлена '+new Date(r.created_at).toLocaleString('ru-RU')+(r.reviewed_at?' • Обновлена '+new Date(r.reviewed_at).toLocaleString('ru-RU'):'')+'</p><p>'+escapeHtml(r.details||'Без дополнительного описания')+'</p>'+(r.moderator_reply?'<div class="my-report-reply"><strong>Ответ модерации</strong><p>'+escapeHtml(r.moderator_reply)+'</p></div>':'<p class="subtitle">Ответ модерации пока не добавлен.</p>')+'</article>').join('')||'<div class="empty-state"><p>Ты ещё не отправлял жалобы.</p></div>';
+    host.innerHTML=rows.map(r=>'<article class="card my-report-card" id="my-report-'+escapeHtml(r.id)+'"><header><strong>'+escapeHtml(reasons[r.reason]||r.reason)+'</strong><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(statuses[r.status]||r.status)+'</span></header><p class="subtitle">Отправлена '+new Date(r.created_at).toLocaleString('ru-RU')+(r.reviewed_at?' • Обновлена '+new Date(r.reviewed_at).toLocaleString('ru-RU'):'')+'</p><p>'+escapeHtml(r.details||'Без дополнительного описания')+'</p><button class="btn btn-ghost" type="button" aria-expanded="false" onclick="toggleMyReportConversation(&quot;'+r.id+'&quot;,this)"><i class="fa-solid fa-comments"></i> Переписка с поддержкой</button><section id="report-chat-panel-'+escapeHtml(r.id)+'" class="report-chat-panel" hidden><div id="report-chat-messages-'+escapeHtml(r.id)+'" class="report-chat-messages"><p class="subtitle">Загружаем переписку…</p></div><div class="report-chat-compose"><textarea id="report-chat-input-'+escapeHtml(r.id)+'" maxlength="2000" rows="2" placeholder="Напишите сообщение поддержке"></textarea><button id="report-chat-send-'+escapeHtml(r.id)+'" class="btn btn-primary" type="button" onclick="sendMyReportMessage(&quot;'+r.id+'&quot;)">Отправить</button></div></section></article>').join('')||'<div class="empty-state"><p>Ты ещё не отправлял жалобы.</p></div>';
   }
   async function markNotificationRead(id) {
     const {error}=await supabaseClient.from('notifications').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
@@ -1328,13 +1359,16 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'friendships',filter:'addressee_id=eq.'+uid},()=>loadAccountData())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'matches',filter:'player_a_id=eq.'+uid},()=>{loadPendingMatches();loadAccountData();})
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'matches',filter:'player_b_id=eq.'+uid},()=>{loadPendingMatches();loadAccountData();})
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_posts'},()=>{if(document.getElementById('community')?.classList.contains('active'))loadAccountData();})
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_post_comments'},()=>{if(document.getElementById('community')?.classList.contains('active'))loadAccountData();})
+      .on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},()=>{if(document.getElementById('community')?.classList.contains('active'))loadAccountData();})
+      .on('postgres_changes',{event:'*',schema:'public',table:'community_post_comments'},()=>{if(document.getElementById('community')?.classList.contains('active'))loadAccountData();})
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+uid},()=>loadAccountData())
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'user_settings',filter:'user_id=eq.'+uid},()=>loadAccountData())
        .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_events'},()=>{loadPlatformEvents();})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'community_reports',filter:'reporter_id=eq.'+uid},()=>loadAccountData())
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{const el=document.getElementById('notificationCount');if(el){el.textContent=String((Number(el.textContent)||0)+1);el.hidden=false;}loadAccountData();if(payload.new?.body)showNotification(payload.new.body);})
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId)loadAdminReportConversation(reportId);const panel=document.getElementById('report-chat-panel-'+reportId);if(panel&&!panel.hidden)loadMyReportConversation(reportId);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);})
       .subscribe((status,error)=>{
         if(generation!==realtimeGeneration)return;
@@ -1492,12 +1526,12 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(feedEl) feedEl.innerHTML=(feed.data||[]).map(p=>{
       const author=authors.get(p.user_id)||{};
       const media=p.media_url?(p.media_type==='video'?'<video class="admin-post-media" controls preload="metadata" src="'+escapeHtml(p.media_url)+'"></video>':'<img class="admin-post-media" loading="lazy" src="'+escapeHtml(p.media_url)+'" alt="Медиа публикации">'):'';
-      return '<article class="admin-entry admin-post-entry"><div class="admin-entry-header"><div><button class="player-profile-link" onclick="openPlayerProfile(&quot;'+p.user_id+'&quot;)"><strong>'+escapeHtml(author.display_name||author.username||'Игрок')+'</strong><small>@'+escapeHtml(author.username||'игрок')+'</small></button><div class="subtitle">'+new Date(p.created_at).toLocaleString('ru-RU')+(p.updated_at&&p.updated_at!==p.created_at?' • изменено '+new Date(p.updated_at).toLocaleString('ru-RU'):'')+'</div></div><span class="badge badge-info">'+(p.media_type?escapeHtml(p.media_type==='video'?'Видео':'Фото'):'Публикация')+'</span></div><p class="admin-post-preview">'+escapeHtml(p.body||'Без текста')+'</p>'+media+'<div class="admin-entry-footer"><span class="subtitle">♥ '+(likeCounts.get(p.id)||0)+' • Комментарии '+(commentCounts.get(p.id)||0)+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectPost(&quot;'+p.id+'&quot;)">Подробнее</button><button class="btn btn-ghost" onclick="adminEditPost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-pen"></i> Редактировать</button><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+p.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить</button></div></div></article>';
+      return '<article class="admin-entry admin-post-entry"><div class="admin-entry-header"><div><button class="player-profile-link" onclick="openPlayerProfile(&quot;'+p.user_id+'&quot;)"><strong>'+escapeHtml(author.display_name||author.username||'Игрок')+'</strong><small>@'+escapeHtml(author.username||'игрок')+'</small></button><div class="subtitle">'+new Date(p.created_at).toLocaleString('ru-RU')+(p.updated_at&&p.updated_at!==p.created_at?' • изменено '+new Date(p.updated_at).toLocaleString('ru-RU'):'')+'</div></div><span class="badge badge-info">'+(p.media_type?escapeHtml(p.media_type==='video'?'Видео':'Фото'):'Публикация')+'</span></div><p class="admin-post-preview">'+escapeHtml(p.body||'Без текста')+'</p>'+media+'<div class="admin-entry-footer"><span class="subtitle">♥ '+(likeCounts.get(p.id)||0)+' • Комментарии '+(commentCounts.get(p.id)||0)+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectPost(&quot;'+p.id+'&quot;)">Открыть публикацию</button></div></div></article>';
     }).join('')||'<p class="subtitle">Публикаций пока нет.</p>';
     const reportsEl=document.getElementById('adminReportsList');
     const reportStatusLabel={open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'};
     const reportReasonLabel={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'};
-    if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="admin-entry admin-report-entry"><div class="admin-entry-header"><div><strong>'+escapeHtml(reportReasonLabel[r.reason]||r.reason)+'</strong><div class="subtitle">'+new Date(r.created_at).toLocaleString('ru-RU')+' • Жалобу подал: '+escapeHtml(reportUserLabel(r.reporter_id))+'</div></div><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(reportStatusLabel[r.status]||r.status)+'</span></div><p class="admin-report-summary">'+escapeHtml(r.details||'Пользователь не добавил описание.')+'</p><div class="admin-entry-footer"><span class="subtitle">На пользователя: '+escapeHtml(r.reported_user_id?reportUserLabel(r.reported_user_id):'не указан')+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectReport(&quot;'+r.id+'&quot;)">Открыть жалобу</button>'+(r.status!=='reviewing'?'<button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button>':'')+(r.status!=='resolved'?'<button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решено</button>':'')+(r.status!=='dismissed'?'<button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button>':'')+'<button class="btn btn-danger" onclick="adminDeleteReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить жалобу</button>'+'</div></div></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
+    if(reportsEl) reportsEl.innerHTML=(reports.data||[]).map(r=>'<article class="admin-entry admin-report-entry"><div class="admin-entry-header"><div><strong>'+escapeHtml(reportReasonLabel[r.reason]||r.reason)+'</strong><div class="subtitle">'+new Date(r.created_at).toLocaleString('ru-RU')+' • Жалобу подал: '+escapeHtml(reportUserLabel(r.reporter_id))+'</div></div><span class="badge '+(r.status==='open'?'badge-warning':'badge-info')+'">'+escapeHtml(reportStatusLabel[r.status]||r.status)+'</span></div><p class="admin-report-summary">'+escapeHtml(r.details||'Пользователь не добавил описание.')+'</p><div class="admin-entry-footer"><span class="subtitle">На пользователя: '+escapeHtml(r.reported_user_id?reportUserLabel(r.reported_user_id):'не указан')+'</span><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminInspectReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-comments"></i> Разобрать</button>+'</div></div></article>').join('')||'<p class="subtitle">Жалоб пока нет.</p>';
     if(status){const summary='Показаны последние '+(profiles.data||[]).length+' игроков и '+(feed.data||[]).length+' публикаций.';status.textContent=summary+(errors.length?' Не загрузилась часть данных: '+errorDetails.join(' • '):'');}
     await loadAdminGames();await loadAdminTeamsAndTournaments();await loadAdminRegistrationChart();
   }
@@ -1539,7 +1573,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const u=data.user||{},p=data.profile||{},st=data.settings||{},roles=(data.roles||[]).map(r=>r.role==='admin'?'Администратор':r.role==='moderator'?'Модератор':r.role).join(', ')||'Игрок';
     const banned=u.bannedUntil&&new Date(u.bannedUntil)>new Date()?'Заблокирован до '+adminFormatDate(u.bannedUntil):'Активен';
     const roleSet=(data.roles||[]).map(x=>x.role),isSelf=id===currentUser?.id,banAction=banned.startsWith('Заблокирован')?'unban':'ban';
-    const controls='<div class="admin-user-control-actions">'+(isSelf?'<span class="subtitle">Текущий аккаунт</span>':'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+banAction+'&quot;)">'+(banAction==='unban'?'Разблокировать':'Заблокировать')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('moderator')?'revoke_role':'grant_role')+'&quot;,&quot;moderator&quot;)">'+(roleSet.includes('moderator')?'Снять модератора':'Выдать модератора')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('admin')?'revoke_role':'grant_role')+'&quot;,&quot;admin&quot;)">'+(roleSet.includes('admin')?'Снять администратора':'Выдать администратора')+'</button>')+'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='blue'?'':'blue')+'&quot;)">'+(p.verified_color==='blue'?'Снять синюю галочку':'Выдать синюю галочку')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='green'?'':'green')+'&quot;)">'+(p.verified_color==='green'?'Снять зелёную галочку':'Выдать зелёную галочку')+'</button>'+(isSelf?'':'<button class="btn btn-danger" onclick="adminDeleteUser(&quot;'+id+'&quot;)"><i class="fa-solid fa-user-xmark"></i> Удалить аккаунт</button>')+'</div>';
+    const controls='<div class="admin-user-control-actions">'+(isSelf?'<span class="subtitle">Текущий аккаунт</span>':'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+banAction+'&quot;)">'+(banAction==='unban'?'Разблокировать':'Заблокировать')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('moderator')?'revoke_role':'grant_role')+'&quot;,&quot;moderator&quot;)">'+(roleSet.includes('moderator')?'Снять модератора':'Выдать модератора')+'</button><button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;'+(roleSet.includes('admin')?'revoke_role':'grant_role')+'&quot;,&quot;admin&quot;)">'+(roleSet.includes('admin')?'Снять администратора':'Выдать администратора')+'</button>')+'<button class="btn btn-ghost" onclick="adminUserAction(&quot;'+id+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(p.verified_color==='blue'?'':'blue')+'&quot;)">'+(p.verified_color==='blue'?'Снять галочку':'Выдать синюю галочку')+'</button>'+(isSelf?'':'<button class="btn btn-danger" onclick="adminDeleteUser(&quot;'+id+'&quot;)"><i class="fa-solid fa-user-xmark"></i> Удалить аккаунт</button>')+'</div>';
     const values='<div class="admin-user-detail-toolbar"><span class="admin-user-id">ID: '+escapeHtml(u.id||id)+'</span><button class="btn btn-primary" onclick="adminOpenUserEditor()"><i class="fa-solid fa-pen-to-square"></i> Редактировать профиль</button></div>'+controls+'<div class="admin-detail-grid">'+adminDetailField('Имя профиля',p.display_name)+adminDetailField('Юзернейм',p.username?'@'+p.username:'—')+adminDetailField('Email',u.email)+adminDetailField('ID пользователя',u.id)+adminDetailField('Роль',roles)+adminDetailField('Статус аккаунта',banned)+adminDetailField('Провайдер входа',(u.providers||[]).join(', ')||'—')+adminDetailField('Зарегистрирован',adminFormatDate(u.createdAt))+adminDetailField('Последний вход',adminFormatDate(u.lastSignInAt))+adminDetailField('Email подтверждён',adminFormatDate(u.emailConfirmedAt))+adminDetailField('Создан профиль',adminFormatDate(p.created_at))+adminDetailField('Профиль обновлён',adminFormatDate(p.updated_at))+adminDetailField('Игра',p.game_name)+adminDetailField('Регион',p.region)+adminDetailField('Ранг',p.rank_name)+adminDetailField('Уровень',p.level)+adminDetailField('Рейтинг',p.rating)+adminDetailField('Матчи / победы',String(p.matches_played||0)+' / '+String(p.wins||0))+adminDetailField('K/D',p.kd)+adminDetailField('Проверка',p.verified_color?(p.verified_color==='blue'?'Синяя':'Зелёная')+' • '+adminFormatDate(p.verified_at):'Нет')+adminDetailField('Друзья',data.friendCount)+adminDetailField('Публикации',data.communityPostCount)+adminDetailField('Тема интерфейса',st.theme)+adminDetailField('Язык / регион',String(st.language||p.language||'—')+' / '+String(st.region||p.region||'—'))+adminDetailField('Профиль виден в поиске',st.discoverable===false?'Нет':'Да')+'</div><section class="admin-detail-section"><h3>О себе</h3><p class="admin-detail-bio">'+escapeHtml(p.bio||'Описание не заполнено.')+'</p></section><section class="admin-detail-section"><h3>Команды</h3>'+((data.teams||[]).map(x=>'<p>'+escapeHtml(x.teams?.name||'Команда')+(x.teams?.tag?' ['+escapeHtml(x.teams.tag)+']':'')+' • '+escapeHtml(x.role||'участник')+' • '+escapeHtml(x.teams?.game_name||'')+'</p>').join('')||'<p class="subtitle">Не состоит в командах.</p>')+'</section><section class="admin-detail-section"><h3>Последние матчи</h3>'+((data.matches||[]).map(m=>'<article class="admin-detail-row"><strong>'+escapeHtml(m.game_id||'Игра')+' • '+escapeHtml(m.status||'')+'</strong><span>'+escapeHtml(m.score_a??'—')+' : '+escapeHtml(m.score_b??'—')+' • '+adminFormatDate(m.played_at)+'</span></article>').join('')||'<p class="subtitle">Матчей пока нет.</p>')+'</section><section class="admin-detail-section"><h3>История активности</h3>'+adminActivityMarkup(data.activity)+'</section><section class="admin-detail-section"><h3>Настройки уведомлений</h3><p>'+['notify_messages','notify_team_invites','notify_tournaments','notify_marketing'].map((key,i)=>['Сообщения','Приглашения в команды','Турниры','Новости платформы'][i]+': '+(st[key]?'включены':'выключены')).join(' • ')+'</p></section>';
     adminDetailShell('Профиль игрока',values);
   }
@@ -1547,9 +1581,22 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const original=adminSelectedUserData?.profile||{},changed=(document.getElementById('adminEditDisplayName')?.value.trim()||'')!==(original.display_name||'')||(document.getElementById('adminEditUsername')?.value.trim().replace(/^@/,'')||'')!==(original.username||'');
     const warning=document.getElementById('adminEditVerificationWarning');if(warning)warning.hidden=!(changed&&original.verified_color);
   }
-  function adminOpenUserEditor() {
+  function adminPopulateSelect(id,values,current) {
+    const select=document.getElementById(id);if(!select)return;
+    const items=[...new Set([...(values||[]).map(value=>String(value||'').trim()).filter(Boolean),String(current||'').trim()].filter(Boolean))];
+    select.replaceChildren(...items.map(value=>new Option(value,value)));
+    select.value=current||'';
+  }
+  async function adminOpenUserEditor() {
     if(!isAdmin||!adminSelectedUserData)return;
     const u=adminSelectedUserData.user||{},p=adminSelectedUserData.profile||{},st=adminSelectedUserData.settings||{};
+    const [gameRows,profileOptions]=await Promise.all([
+      supabaseClient.from('games').select('name').eq('is_active',true).order('sort_order'),
+      supabaseClient.from('profiles').select('game_name,region,rank_name')
+    ]);
+    adminPopulateSelect('adminEditGame',(gameRows.data||[]).map(row=>row.name),p.game_name);
+    adminPopulateSelect('adminEditRegion',(profileOptions.data||[]).map(row=>row.region),p.region);
+    adminPopulateSelect('adminEditRank',(profileOptions.data||[]).map(row=>row.rank_name),p.rank_name);
     document.getElementById('adminUserEditIdentity').textContent=(p.display_name||p.username||'Пользователь')+' • '+(u.email||'без email');
     document.getElementById('adminEditEmail').value=u.email||'';
     document.getElementById('adminEditDisplayName').value=p.display_name||'';
@@ -1610,8 +1657,24 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     await loadAdminPanel();await adminInspectUser(adminSelectedUserData.user.id);
   }
 
+  let adminSelectedReportId=null;
+  async function loadAdminReportConversation(reportId) {
+    const host=document.getElementById('adminReportConversation');if(!host||adminSelectedReportId!==reportId)return;
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-list',reportId}});
+    if(error||data?.error){console.error('Could not load admin report messages:',error||data);host.innerHTML='<p class="subtitle">Не удалось загрузить переписку.</p>';return;}
+    host.innerHTML=reportMessageMarkup(data.messages,currentUser?.id);host.scrollTop=host.scrollHeight;
+  }
+  async function adminSendReportMessage(reportId) {
+    const field=document.getElementById('adminReportMessage'),message=field?.value.trim()||'';
+    if(!message)return showNotification('Напишите ответ пользователю.');
+    if(message.length>2000)return showNotification('Сообщение ограничено 2000 символами.');
+    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-send',reportId,message}});
+    if(error||data?.error){const text=await adminFunctionError(error,data,'Не удалось отправить сообщение.');console.error('Admin report message failed:',error||data);showNotification(text);return;}
+    field.value='';await loadAdminReportConversation(reportId);await loadAdminPanel();
+  }
   async function adminInspectReport(id) {
-    if(!isAdmin||!supabaseClient)return;
+    if(!isModerator||!supabaseClient)return;
+    adminSelectedReportId=id;
     adminDetailShell('Загружаю жалобу…','<div class="admin-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> Загружаю связанные данные</div>');
     const {data:r,error}=await supabaseClient.from('community_reports').select('id,reporter_id,post_id,reported_user_id,reason,details,status,reviewed_by,created_at,reviewed_at,moderator_reply').eq('id',id).maybeSingle();
     if(error||!r){adminDetailShell('Жалоба недоступна','<p class="subtitle">Не удалось загрузить жалобу.</p>');return;}
@@ -1624,8 +1687,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const player=userId=>{const p=byId.get(userId);return userId?'<button class="player-profile-link" onclick="closeModal(&quot;adminDetailModal&quot;);openPlayerProfile(&quot;'+userId+'&quot;)"><strong>'+escapeHtml(p?.display_name||p?.username||'Игрок')+'</strong><small>'+(p?.username?'@'+escapeHtml(p.username):escapeHtml(userId))+'</small></button>':'<span class="subtitle">Не указан</span>';};
     const postMarkup=post.data?'<section class="admin-detail-section"><div class="admin-entry-header"><h3>Связанная публикация</h3><button class="btn btn-ghost" onclick="closeModal(&quot;adminDetailModal&quot;);adminInspectPost(&quot;'+post.data.id+'&quot;)">Открыть пост</button><button class="btn btn-danger" onclick="adminDeletePost(&quot;'+post.data.id+'&quot;)">Удалить публикацию</button></div><p class="admin-detail-bio">'+escapeHtml(post.data.body||'Публикация без текста')+'</p>'+(post.data.media_url?post.data.media_type==='video'?'<video class="admin-post-media" controls src="'+escapeHtml(post.data.media_url)+'"></video>':'<img class="admin-post-media" src="'+escapeHtml(post.data.media_url)+'" alt="Медиа публикации">':'')+'<p class="subtitle">Автор: '+player(post.data.user_id)+'</p></section>':r.post_id?'<p class="subtitle">Связанный пост удалён или недоступен.</p>':'<p class="subtitle">Жалоба не привязана к публикации.</p>';
     const reason={spam:'Спам',abuse:'Оскорбления или травля',cheating:'Читы',other:'Другое'}[r.reason]||r.reason;
-    const html='<div class="admin-detail-grid">'+adminDetailField('Категория',reason)+adminDetailField('Статус',({open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'})[r.status]||r.status)+adminDetailField('Создана',adminFormatDate(r.created_at))+adminDetailField('Обработана',adminFormatDate(r.reviewed_at))+adminDetailField('ID жалобы',r.id)+'</div><section class="admin-detail-section"><h3>Кто отправил</h3>'+player(r.reporter_id)+'</section><section class="admin-detail-section"><h3>На кого жалуются</h3>'+player(r.reported_user_id)+'</section><section class="admin-detail-section"><h3>Подробности жалобы</h3><p class="admin-detail-bio">'+escapeHtml(r.details||'Заявитель не добавил описание.')+'</p></section>'+postMarkup+'<section class="admin-detail-section"><h3>Ответ отправителю</h3>'+(r.moderator_reply?'<div class="my-report-reply"><p>'+escapeHtml(r.moderator_reply)+'</p></div>':'<p class="subtitle">Ответ ещё не отправлен.</p>')+'<textarea id="adminReportReply" maxlength="1000" rows="4" placeholder="Напиши, что проверено и какое решение принято"></textarea><div class="admin-entry-actions"><button class="btn btn-primary" onclick="adminReplyToReport(&quot;'+r.id+'&quot;,&quot;'+r.status+'&quot;)">Отправить ответ пользователю</button></div></section><section class="admin-detail-section"><h3>Решение модерации</h3><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решена</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button><button class="btn btn-danger" onclick="adminDeleteReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить жалобу</button></div></section>';
-    adminDetailShell('Разбор жалобы',html);
+    const html='<div class="admin-detail-grid">'+adminDetailField('Категория',reason)+adminDetailField('Статус',({open:'Новая',reviewing:'В работе',resolved:'Решена',dismissed:'Отклонена'})[r.status]||r.status)+adminDetailField('Создана',adminFormatDate(r.created_at))+adminDetailField('Обработана',adminFormatDate(r.reviewed_at))+adminDetailField('ID жалобы',r.id)+'</div><section class="admin-detail-section"><h3>Кто отправил</h3>'+player(r.reporter_id)+'</section><section class="admin-detail-section"><h3>На кого жалуются</h3>'+player(r.reported_user_id)+'</section><section class="admin-detail-section"><h3>Подробности жалобы</h3><p class="admin-detail-bio">'+escapeHtml(r.details||'Заявитель не добавил описание.')+'</p></section>'+postMarkup+'<section class="admin-detail-section"><h3>Переписка по жалобе</h3><div id="adminReportConversation" class="report-chat-messages"><p class="subtitle">Загружаем переписку…</p></div><div class="report-chat-compose"><textarea id="adminReportMessage" maxlength="2000" rows="2" placeholder="Ответить пользователю"></textarea><button class="btn btn-primary" onclick="adminSendReportMessage(&quot;'+r.id+'&quot;)">Отправить</button></div></section><section class="admin-detail-section"><h3>Решение модерации</h3><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;reviewing&quot;)">В работу</button><button class="btn btn-primary" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;resolved&quot;)">Решена</button><button class="btn btn-ghost" onclick="reviewCommunityReport(&quot;'+r.id+'&quot;,&quot;dismissed&quot;)">Отклонить</button><button class="btn btn-danger" onclick="adminDeleteReport(&quot;'+r.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить жалобу</button></div></section>';
+    adminDetailShell('Разбор жалобы',html);await loadAdminReportConversation(id);
   }
   async function adminInspectPost(id) {
     if(!isAdmin||!supabaseClient)return;
@@ -1763,13 +1826,25 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const isPost=type==='post',field=document.getElementById('adminContentEditBody');
     document.getElementById('adminContentEditTitle').textContent=isPost?'Редактировать публикацию':'Редактировать комментарий';
     document.getElementById('adminContentEditHint').textContent=isPost?'Изменение будет видно всем пользователям.':'Изменение комментария будет видно всем пользователям.';
-    field.maxLength=isPost?5000:2000;field.value=body||'';openModal('adminContentEditModal');field.focus();
+    field.maxLength=isPost?5000:2000;field.value=body||'';
+    const commentsPanel=document.getElementById('adminContentEditComments');if(commentsPanel){commentsPanel.hidden=!isPost;const list=document.getElementById('adminContentEditCommentsList');if(list)list.innerHTML=isPost?'<p class="subtitle">Загружаем комментарии…</p>':'';}
+    openModal('adminContentEditModal');field.focus();
   }
   async function adminEditPost(postId) {
     if(!isAdmin||!supabaseClient)return;
     const {data,error}=await supabaseClient.from('community_posts').select('id,body').eq('id',postId).maybeSingle();
     if(error||!data){console.error('Could not load post to edit:',error);showNotification('Не удалось открыть публикацию для редактирования.');return;}
     adminOpenContentEditor('post',postId,postId,data.body);
+    await loadAdminEditComments(postId);
+  }
+  async function loadAdminEditComments(postId) {
+    const host=document.getElementById('adminContentEditCommentsList');if(!host)return;
+    const {data:comments,error}=await supabaseClient.from('community_post_comments').select('id,user_id,body,created_at').eq('post_id',postId).order('created_at',{ascending:true});
+    if(error){console.error('Could not load post comments for editing:',error);host.innerHTML='<p class="subtitle">Не удалось загрузить комментарии.</p>';return;}
+    const ids=[...new Set((comments||[]).map(comment=>comment.user_id))];
+    const profiles=ids.length?await supabaseClient.from('profiles').select('id,username,display_name').in('id',ids):{data:[]};
+    const names=new Map((profiles.data||[]).map(profile=>[profile.id,profile]));
+    host.innerHTML=(comments||[]).map(comment=>{const author=names.get(comment.user_id)||{};return '<article class="admin-edit-comment"><div><strong>'+escapeHtml(author.display_name||author.username||'Игрок')+'</strong><time>'+escapeHtml(adminFormatDate(comment.created_at))+'</time></div><p>'+escapeHtml(comment.body)+'</p><div class="admin-entry-actions"><button class="btn btn-ghost" onclick="adminEditComment(&quot;'+comment.id+'&quot;,&quot;'+postId+'&quot;)">Изменить</button><button class="btn btn-danger" onclick="adminDeleteComment(&quot;'+comment.id+'&quot;,&quot;'+postId+'&quot;)">Удалить</button></div></article>';}).join('')||'<p class="subtitle">У этой публикации пока нет комментариев.</p>';
   }
   async function adminEditComment(commentId,postId) {
     if(!isAdmin||!supabaseClient)return;
@@ -1794,7 +1869,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить этот комментарий? Это действие сразу скроет его для всех пользователей.'))return;
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'comment-delete',contentId:commentId}});
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось удалить комментарий.');console.error('Comment delete failed:',error||data);showNotification(message);return;}
-    showNotification('Комментарий удалён.');await loadAdminPanel();await adminInspectPost(postId);
+    showNotification('Комментарий удалён.');await loadAdminPanel();
+    if(document.getElementById('adminContentEditModal')?.classList.contains('active')&&adminContentEditContext?.type==='post'&&adminContentEditContext.postId===postId){await loadAdminEditComments(postId);return;}
+    await adminInspectPost(postId);
   }
   async function adminDeletePost(postId) {
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить эту публикацию и все её комментарии для всех пользователей?')) return;
