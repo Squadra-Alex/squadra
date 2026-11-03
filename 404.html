@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SQUADRA — Киберспортивная платформа</title>
-<meta name="robots" content="noindex">
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=admin-account-tools-20261103">
+<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-6">
 </head>
 <body>
 
@@ -43,10 +42,10 @@
       <li><a onclick="showSection('profile')"><i class="fa-solid fa-user" aria-hidden="true"></i><span>Профиль</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('library')"><i class="fa-solid fa-book" aria-hidden="true"></i><span>Библиотека</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('friends')"><i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Друзья</span><span id="friendRequestCount" class="badge badge-danger" hidden></span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
-      <li><a onclick="showSection('messages')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Сообщения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('messages')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Сообщения</span><span id="headerMessageCount" class="badge badge-danger message-count-badge" hidden></span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('achievements')"><i class="fa-solid fa-medal" aria-hidden="true"></i><span>Достижения</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>История</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
-      <li><a onclick="showSection('notifications')"><i class="fa-solid fa-bell" aria-hidden="true"></i><span>Уведомления</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
+      <li><a onclick="showSection('notifications')"><i class="fa-solid fa-bell" aria-hidden="true"></i><span>Уведомления</span><span id="mobileNotificationCount" class="badge badge-danger" hidden></span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li><a onclick="showSection('settings')"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Настройки</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
       <li class="nav-heading">ИГРОВОЕ</li>
       <li><a onclick="showSection('matchmaking')"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span>Подбор игроков</span><i class="fa-solid fa-chevron-right nav-chevron" aria-hidden="true"></i></a></li>
@@ -68,7 +67,7 @@
       <li class="active" onclick="showSection('profile')"><i class="fa-solid fa-user"></i> Профиль</li>
       <li onclick="showSection('library')"><i class="fa-solid fa-gamepad"></i> Библиотека</li>
       <li onclick="showSection('friends')"><i class="fa-solid fa-users"></i> Друзья</li>
-      <li onclick="showSection('messages')"><i class="fa-solid fa-comment-dots"></i> Сообщения</li>
+      <li onclick="showSection('messages')"><i class="fa-solid fa-comment-dots"></i> <span>Сообщения</span><span id="sidebarMessageCount" class="badge badge-danger message-count-badge" hidden></span></li>
       <li onclick="showSection('achievements')"><i class="fa-solid fa-trophy"></i> Достижения</li>
       <li onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left"></i> История</li>
       <li onclick="showSection('notifications')"><i class="fa-solid fa-bell"></i> Уведомления <span id="notificationCount" class="badge badge-danger"></span></li>
@@ -172,7 +171,7 @@
       <p class="subtitle">Найди свою следующую дисциплину</p>
 
       <div class="games-filter-controls" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <input id="gameSearch" placeholder="Поиск игры..." style="max-width:300px;" oninput="renderGames()" maxlength="80">
+        <input id="gameSearch" maxlength="80" placeholder="Поиск игры..." style="max-width:300px;" oninput="renderGames()">
         <select id="gameGenre" style="max-width:200px;" onchange="renderGames()">
           <option value="">Все жанры</option><option value="FPS">FPS</option><option value="MOBA">MOBA</option><option value="Battle Royale">Battle Royale</option><option value="Спорт">Спорт</option><option value="RPG">RPG</option>
         </select>
@@ -191,7 +190,7 @@
 
       <div class="card" style="margin-bottom:24px;">
         <div class="grid grid-4">
-          <div class="form-group"><label>Никнейм</label><input id="plName" placeholder="Введите ник..." oninput="filterPlayers()" maxlength="24"></div>
+          <div class="form-group"><label>Никнейм</label><input id="plName" maxlength="24" placeholder="Введите ник..." oninput="filterPlayers()"></div>
           <div class="form-group"><label>Игра</label><select id="plGame" onchange="filterPlayers()"><option value="">Любая</option><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
           <div class="form-group"><label>Ранг</label><select id="plRank" onchange="filterPlayers()"><option value="">Любой</option><option>Bronze</option><option>Silver</option><option>Gold</option><option>Diamond</option><option>Master</option><option>Grandmaster</option></select></div>
           <div class="form-group"><label>Регион</label><select id="plRegion" onchange="filterPlayers()"><option value="">Любой</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
@@ -213,7 +212,7 @@
       <div class="grid grid-2" id="teamsGrid"><p class="subtitle">Войди, чтобы увидеть команды.</p></div>
       <h2 style="margin-top:30px;"><i class="fa-solid fa-magnifying-glass"></i>Найти команду</h2>
       <div class="team-directory-filters">
-        <div class="team-search-field"><input id="teamDirectorySearch" placeholder="Название команды или тег" oninput="loadTeamDirectory()" maxlength="80"></div>
+        <div class="team-search-field"><input id="teamDirectorySearch" maxlength="80" placeholder="Название команды или тег" oninput="loadTeamDirectory()"></div>
         <div class="team-filter-field"><select id="teamDirectoryGame" onchange="loadTeamDirectory()"><option value="">Все игры</option></select></div>
         <div class="team-filter-field"><select id="teamDirectoryRegion" onchange="loadTeamDirectory()"><option value="">Все регионы</option><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
       </div>
@@ -236,12 +235,21 @@
 
     <!-- COMMUNITY -->
     <section id="community" class="section">
-      <h1><i class="fa-solid fa-comments"></i>Сообщество</h1><div class="feed-switch"><button id="feedAllButton" class="btn btn-primary" onclick="setCommunityFeedMode('all')">Все публикации</button><button id="feedFollowingButton" class="btn btn-ghost" onclick="setCommunityFeedMode('following')">Подписки</button><small>Подписка добавляет автора в отдельную ленту и сообщает о новых публикациях.</small></div>
-      <div class="grid" style="grid-template-columns: 2fr 1fr;">
+      <h1><i class="fa-solid fa-comments"></i>Сообщество</h1><div class="feed-switch"><button id="feedAllButton" class="btn btn-primary" onclick="setCommunityFeedMode('all')">Все публикации</button><button id="feedFollowingButton" class="btn btn-ghost" onclick="setCommunityFeedMode('following')">Подписки</button><button id="communityGroupsButton" class="btn btn-ghost" type="button" aria-expanded="false" onclick="toggleCommunityGroups()">Группы</button><small>Подписка добавляет автора в отдельную ленту и сообщает о новых публикациях.</small></div>
+      <div id="communityGroupsView" class="community-groups-view" hidden><div class="card" id="communityGroupsCard" hidden>
+            <button class="btn btn-ghost community-groups-close" type="button" onclick="toggleCommunityGroups(false)" aria-label="Закрыть группы"><i class="fa-solid fa-xmark"></i></button><h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
+            <div class="community-group-form">
+              <div class="form-group"><label for="communityGroupName">Название</label><input id="communityGroupName" maxlength="80" placeholder="Например, CS2 Premier"></div>
+              <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
+              <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="Кого ищете и как играете"></div>
+              <button class="btn btn-primary" onclick="createCommunityGroup()"><i class="fa-solid fa-plus"></i> Создать группу</button>
+            </div>
+            <div id="communityGroups"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
+          </div></div><div id="communityFeedGrid" class="grid" style="grid-template-columns: 2fr 1fr;">
         <div>
           <div class="card" style="margin-bottom:16px;">
             <h3><i class="fa-solid fa-pen-to-square" style="color:var(--red); margin-right:8px;"></i>Создать публикацию</h3>
-            <textarea id="communityPostBody" rows="3" placeholder="Что нового на арене?" style="margin-top:10px;" maxlength="3000"></textarea>
+            <textarea id="communityPostBody" rows="3" maxlength="3000" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
             <input id="communityMediaFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" hidden onchange="selectCommunityMediaFile(this)">
             <div id="communityMediaPreview" class="subtitle" style="display:none;margin:10px 0;"></div>
             <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
@@ -264,14 +272,9 @@
               <div class="list-divider" style="color:var(--red); font-weight:600;">#LookingForTeam</div>
             </div>
           </div>
-          <div class="card">
-            <h3><i class="fa-solid fa-user-group" style="color:var(--red); margin-right:8px;"></i>Группы</h3>
-            <div class="form-group" style="margin-top:12px;"><label for="communityGroupName">Создать группу</label><input id="communityGroupName" maxlength="80" placeholder="Название группы"></div>
-            <div class="form-group"><label for="communityGroupGame">Игра</label><select id="communityGroupGame"><option value="">Выбери игру</option></select></div>
-            <div class="form-group"><label for="communityGroupDescription">Описание</label><input id="communityGroupDescription" maxlength="300" placeholder="О чём группа"></div>
-            <button class="btn btn-primary" onclick="createCommunityGroup()">Создать группу</button>
-            <div id="communityGroups" style="margin-top:10px;"><p class="subtitle">Войди, чтобы вступить в группу.</p></div>
+            <section class="community-followed-authors" id="communityFollowedAuthors"><h3>Мои подписки</h3><p class="subtitle">Загружаем список…</p></section>
           </div>
+          
         </div>
       </div>
     </section>
@@ -293,15 +296,16 @@
     <!-- MESSAGES / CHAT -->
     <section id="messages" class="section">
       <div class="section-heading"><div><h1><i class="fa-solid fa-comment-dots"></i>Сообщения</h1><p class="subtitle">Личные диалоги обновляются в реальном времени. <span id="chatRealtimeStatus" class="chat-connection-status"><i class="fa-solid fa-circle"></i> Подключаемся</span></p></div><button class="btn btn-primary" onclick="openModal('newChatModal')"><i class="fa-solid fa-plus"></i> Новый чат</button></div>
-      <div class="messenger"><aside class="chat-sidebar"><div class="chat-sidebar-title"><strong>Чаты</strong><input id="chatSearch" placeholder="Поиск по диалогам" oninput="filterChatList()" maxlength="80"></div><div id="chatList" class="chat-list"><p class="subtitle">Войди, чтобы увидеть переписки.</p></div></aside>
+      <div class="messenger"><aside class="chat-sidebar"><div class="chat-sidebar-title"><strong>Чаты</strong><span id="chatUnreadCount" class="badge badge-danger message-count-badge" hidden></span><input id="chatSearch" maxlength="80" placeholder="Поиск по диалогам" oninput="filterChatList()"></div><div id="chatList" class="chat-list"><p class="subtitle">Войди, чтобы увидеть переписки.</p></div></aside>
         <div class="chat-main"><input id="chatRecipient" type="hidden"><div class="chat-header" id="activeChatHeader"><span class="subtitle">Выбери диалог или начни новый</span></div><div class="chat-messages" id="chatMessages"><p class="subtitle">Здесь появятся сообщения.</p></div><div class="chat-input"><textarea id="chatInput" rows="1" maxlength="4000" placeholder="Введите сообщение..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea><button class="btn btn-primary" aria-label="Отправить сообщение" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button></div></div></div>
-      <div class="modal" id="newChatModal"><div class="modal-content"><button class="modal-close" onclick="closeModal('newChatModal')">×</button><h2>Новый чат</h2><p class="subtitle">Найди игрока по Squadra-нику и открой профиль перед перепиской.</p><input id="newChatSearch" placeholder="Например, whunx" oninput="searchChatPlayers()" maxlength="24"><div id="newChatResults" class="chat-search-results"></div></div></div>
+      <div class="modal" id="newChatModal"><div class="modal-content"><button class="modal-close" onclick="closeModal('newChatModal')">×</button><h2>Новый чат</h2><p class="subtitle">Найди игрока по Squadra-нику и открой профиль перед перепиской.</p><input id="newChatSearch" maxlength="24" placeholder="Например, whunx" oninput="searchChatPlayers()"><div id="newChatResults" class="chat-search-results"></div></div></div>
     </section>
 
     <!-- FRIENDS -->
     <section id="friends" class="section">
       <div class="section-heading"><div><h1><i class="fa-solid fa-users"></i>Друзья</h1><p class="subtitle">Друзья, приглашения и новые знакомства — в одном месте.</p></div></div>
       <div class="friends-toolbar"><label class="friends-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="friendsSearch" type="search" autocomplete="off" placeholder="Найти друга или заявку…" oninput="filterFriends()" aria-label="Поиск по друзьям"></label><div class="friends-filters" role="group" aria-label="Фильтр списка друзей"><button class="btn btn-ghost active" type="button" data-friend-filter="all" onclick="filterFriends('all')">Все</button><button class="btn btn-ghost" type="button" data-friend-filter="friends" onclick="filterFriends('friends')">Друзья</button><button class="btn btn-ghost" type="button" data-friend-filter="requests" onclick="filterFriends('requests')">Заявки</button></div></div>
+      <div id="friendSearchResults" class="friend-search-results"></div>
       <div class="grid grid-3" id="friendsGrid"><p class="subtitle">Войди, чтобы увидеть друзей.</p></div>
     </section>
 
@@ -343,10 +347,7 @@
     <!-- HISTORY -->
     <section id="history" class="section">
       <h1><i class="fa-solid fa-clock-rotate-left"></i>История активности</h1>
-      <table>
-        <thead><tr><th>Дата</th><th>Действие</th><th>Игра</th><th>Результат</th><th>Рейтинг</th></tr></thead>
-        <tbody id="historyBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">Войди, чтобы увидеть историю.</td></tr></tbody>
-      </table><h2 style="margin-top:24px;">Результаты на подтверждение</h2><div id="pendingMatches"><p class="subtitle">Войди, чтобы увидеть заявки.</p></div>
+      <div id="historyBody" class="activity-history-list"><div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Войди, чтобы увидеть историю</strong></div></div><h2 style="margin-top:24px;">Результаты на подтверждение</h2><div id="pendingMatches"><p class="subtitle">Войди, чтобы увидеть заявки.</p></div>
     </section>
 
     <!-- EVENTS -->
@@ -365,7 +366,7 @@
     </section>
 
     <!-- SETTINGS -->
-    <section id="notifications" class="section"><h1><i class="fa-solid fa-bell"></i>Уведомления</h1><div id="notificationsList"><p class="subtitle">Войди, чтобы увидеть уведомления.</p></div></section>
+    <section id="notifications" class="section"><h1><i class="fa-solid fa-bell"></i>Уведомления</h1><div id="notificationsList"><p class="subtitle">Войди, чтобы увидеть уведомления.</p></div><div class="card my-reports-panel"><h2>Мои жалобы</h2><p class="subtitle">Статус проверки и ответы модерации.</p><div id="myCommunityReportsList"><p class="subtitle">Войди, чтобы увидеть свои жалобы.</p></div></div></section>
 
     <section id="settings" class="section">
       <h1><i class="fa-solid fa-gear"></i>Настройки</h1>
@@ -378,7 +379,7 @@
           <div class="form-group"><label>Язык</label><select id="settingsLanguage"><option value="ru">Русский</option><option value="en">English</option></select></div>
           <div class="form-group"><label>Регион</label><select id="settingsRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
           <div class="form-group"><label>Основная игра</label><select id="settingsGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div><div class="form-group"><label for="settingsTheme">Цветовая тема</label><select id="settingsTheme"><option value="default">Squadra — по умолчанию</option><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="green">Зелёная</option><option value="blue">Синяя</option><option value="purple">Фиолетовая</option><option value="yellow">Жёлтая</option></select></div>
-          <div class="form-group" style="grid-column:1/-1;"><label>Аватар профиля</label><div class="avatar-picker"><input id="settingsAvatarFile" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="updateAvatarFileName(this)"><label class="btn btn-ghost avatar-pick-button" for="settingsAvatarFile"><i class="fa-solid fa-image"></i> Выбрать изображение</label><span id="avatarFileName" class="avatar-file-name" aria-live="polite">Файл не выбран</span></div><small class="subtitle">JPG, PNG, WEBP или GIF, до 5 МБ</small></div>
+          <div class="form-group" style="grid-column:1/-1;"><label>Аватар профиля</label><div class="avatar-picker"><input id="settingsAvatarFile" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="updateAvatarFileName(this)"><label class="btn btn-ghost avatar-pick-button" for="settingsAvatarFile"><i class="fa-solid fa-image"></i> Выбрать изображение</label><span id="avatarFileName" class="avatar-file-name" aria-live="polite">Файл не выбран</span><button id="clearAvatarFile" class="btn btn-ghost" type="button" onclick="clearAvatarFile()" hidden><i class="fa-solid fa-xmark"></i> Отменить файл</button></div><small class="subtitle">JPG, PNG, WEBP или GIF, до 5 МБ</small></div>
           <div class="form-group" style="grid-column:1/-1;"><label>О себе</label><textarea id="settingsBio" rows="3" maxlength="500" placeholder="Расскажи о себе"></textarea></div>
         </div>
         <h3 style="margin-top:20px;">Уведомления</h3>
@@ -431,7 +432,7 @@
           <section class="admin-workspace-section" id="adminTab-users">
             <div id="adminUsersCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">АККАУНТЫ И ДОСТУП</p><h2>Пользователи</h2></div><span class="admin-card-icon"><i class="fa-solid fa-users"></i></span></div>
               <p id="adminUsersSummary" class="subtitle"></p>
-              <div class="admin-toolbar"><input id="adminUsersSearch" maxlength="100" placeholder="Поиск по нику, email, игре или региону…" oninput="filterAdminList(&quot;adminUsersBody&quot;,this.value)" aria-label="Поиск пользователей"></div>
+              <div class="admin-toolbar"><input id="adminUsersSearch" name="adminUsersSearch" type="search" autocomplete="off" maxlength="100" placeholder="Поиск по нику, email, игре или региону…" oninput="filterAdminList(&quot;adminUsersBody&quot;,this.value)" aria-label="Поиск пользователей"></div>
               <div class="admin-table-wrap"><table><thead><tr><th>Игрок</th><th>Игра</th><th>Регион</th><th>Ранг</th><th>Уровень</th><th>Рейтинг</th><th>Создан</th><th>Управление аккаунтом</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
             </div>
           </section>
@@ -488,7 +489,7 @@
       <div class="form-group"><label for="adminEditRank">Ранг</label><select id="adminEditRank"><option value="">Выберите ранг</option></select></div>
       <div class="form-group"><label for="adminEditLevel">Уровень</label><input id="adminEditLevel" type="number" min="1" max="100" step="1"></div>
       <div class="form-group"><label for="adminEditRating">Рейтинг</label><input id="adminEditRating" type="number" min="0" max="100000" step="1"></div>
-      <div class="form-group"><label for="adminEditVerified">Значок верификации</label><select id="adminEditVerified"><option value="">Без значка</option><option value="blue">Синяя галочка</option></select></div>
+      <div class="form-group"><label for="adminEditVerified">Значок верификации</label><select id="adminEditVerified"><option value="">Без значка</option><option value="blue">Галочка выдана</option></select></div>
       <div class="form-group"><label for="adminEditTheme">Тема интерфейса</label><select id="adminEditTheme"><option value="default">Squadra</option><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="green">Зелёная</option><option value="blue">Синяя</option><option value="purple">Фиолетовая</option><option value="yellow">Жёлтая</option></select></div>
       <div class="form-group admin-edit-preferences"><label>Настройки аккаунта</label><label><input id="adminEditNotifyMessages" type="checkbox"> Уведомления о сообщениях</label><label><input id="adminEditNotifyTeamInvites" type="checkbox"> Приглашения в команды</label><label><input id="adminEditNotifyTournaments" type="checkbox"> Уведомления о турнирах</label><label><input id="adminEditNotifyMarketing" type="checkbox"> Новости платформы</label><label><input id="adminEditDiscoverable" type="checkbox"> Показывать в поиске</label></div>
       <div class="form-group admin-edit-bio"><label for="adminEditBio">О себе</label><textarea id="adminEditBio" maxlength="400" rows="4"></textarea><small class="subtitle">До 400 символов</small></div>
@@ -552,8 +553,8 @@
     <button class="modal-close" onclick="closeModal('createTeamModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Создать команду</h2>
     <div class="form-group"><label>Название команды</label><input id="teamName" maxlength="60" placeholder="Например: Phoenix Squad"></div>
-    <div class="form-group"><label>Тег</label><input id="teamTag" maxlength="12" placeholder="[PS]"></div>
-    <div class="form-group"><label>Игра</label><select id="teamGame"><option value="">Загрузка игр…</option></select></div>
+    <div class="form-group"><label>Тег</label><input id="teamTag" maxlength="12" placeholder="[PS]" aria-describedby="teamTagHint"><small id="teamTagHint" class="subtitle">Скобки добавятся автоматически</small></div>
+    <div class="form-group"><label>Игра</label><select id="teamGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
     <div class="form-group"><label>Регион</label><select id="teamRegion"><option>EU</option><option>NA</option><option>Asia</option><option>CIS</option></select></div>
     <div class="form-group"><label>Описание</label><textarea id="teamDescription" rows="3" maxlength="1000" placeholder="Расскажите о команде..."></textarea></div>
     <button class="btn btn-primary" style="width:100%;" onclick="createTeam()"><i class="fa-solid fa-shield-halved"></i> Создать</button>
@@ -565,7 +566,7 @@
     <button class="modal-close" onclick="closeModal('createTournamentModal')"><i class="fa-solid fa-xmark"></i></button>
     <h2 style="font-family:Oswald; text-transform:uppercase;">Создать турнир</h2>
     <div class="form-group"><label>Название</label><input id="tournamentName" maxlength="100" placeholder="Например: Squadra Open"></div>
-    <div class="form-group"><label>Игра</label><select id="tournamentGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>League of Legends</option></select></div>
+    <div class="form-group"><label>Игра</label><select id="tournamentGame"><option>Загрузка игр…</option></select></div>
     <div class="grid grid-2"><div class="form-group"><label>Команд</label><input id="tournamentLimit" type="number" min="2" max="256" value="16"></div><div class="form-group"><label>Начало</label><input id="tournamentStarts" type="datetime-local"></div></div>
     <div class="form-group"><label>Призовой фонд</label><input id="tournamentPrize" maxlength="80" placeholder="Например: ₽ 50 000"></div>
     <div class="form-group"><label>Описание</label><textarea id="tournamentDescription" rows="3" maxlength="2000" placeholder="Правила и информация о турнире"></textarea></div>
@@ -576,24 +577,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=admin-account-tools-20261103"></script>
+<script src="/assets/app.js?v=community-social-fixes-20261104-6"></script>
 
-<script>
-(function () {
-  const routes = { '/games':'games', '/players':'players', '/teams':'teams', '/tournaments':'tournaments', '/community':'community', '/ranking':'ranking', '/profile':'profile', '/library':'library', '/friends':'friends', '/messages':'messages', '/achievements':'achievements', '/history':'history', '/notifications':'notifications', '/settings':'settings', '/matchmaking':'matchmaking', '/events':'events', '/admin':'admin' };
-  const run = () => {
-    const raw = location.pathname;
-    const path = raw.length > 1 && raw.endsWith('/') ? raw.slice(0, -1) : raw;
-    if (path === '/') return;
-    const playerId = path.startsWith('/players/') ? path.slice(9) : '';
-    const groupId = path.startsWith('/groups/') ? path.slice(8) : '';
-    if (/^[0-9a-f-]{36}$/i.test(playerId) && typeof showSection === 'function') showSection('playerProfile', { fromLocation: true, profileId: playerId });
-    else if (/^[0-9a-f-]{36}$/i.test(groupId) && typeof showSection === 'function') showSection('groupPage', { fromLocation: true, profileId: groupId });
-    else if (routes[path] && typeof showSection === 'function') showSection(routes[path], { fromLocation: true });
-  };
-  if (document.readyState === 'complete') setTimeout(run, 0);
-  else window.addEventListener('load', run, { once: true });
-})();
-</script>
 </body>
 </html>
