@@ -1489,7 +1489,7 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
   body:has(#messages.chat-open) footer{display:none!important}
   #messages.chat-open{
     position:fixed!important;z-index:1100!important;
-    inset:68px 0 0!important;width:100vw!important;height:auto!important;
+    inset:56px 0 0!important;width:100vw!important;height:auto!important;
     min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;
     overflow:hidden!important;background:var(--bg-2)!important;
   }
@@ -1834,4 +1834,38 @@ body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:con
  #messages.active .chat-main{display:flex!important;flex-direction:column!important;width:auto!important;height:100%!important;min-height:0!important}
  #messages.active .chat-messages{display:flex!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important}
  #messages.active .chat-input{display:flex!important;flex:0 0 auto!important}
+}
+
+/* Community group directory: compact create panel and polished group cards. */
+#communityGroupsView #communityGroupsCard{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);align-items:start;gap:14px;padding:22px;border:1px solid var(--border-hi);border-radius:20px;background:linear-gradient(145deg,color-mix(in srgb,var(--red) 5%,var(--bg-2)),var(--bg-2) 45%);box-shadow:0 18px 46px rgba(0,0,0,.22)}
+#communityGroupsView #communityGroupsCard>h3,#communityGroupsView #communityGroupsCard>.community-groups-close{grid-column:1/-1}
+#communityGroupsView #communityGroupsCard>.form-group,#communityGroupsView #communityGroupsCard>button.btn-primary{grid-column:1}
+#communityGroupsView #communityGroupsCard>.form-group{margin:0!important}
+#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:2;grid-row:2/7;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));align-content:start;gap:12px;margin:0!important}
+.community-group-card{display:flex;flex-direction:column;gap:12px;min-width:0;padding:16px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(155deg,rgba(255,255,255,.035),rgba(255,255,255,.012));transition:transform .18s ease,border-color .18s ease,background .18s ease}
+.community-group-card:hover{transform:translateY(-2px);border-color:var(--border-hi);background:color-mix(in srgb,var(--red) 5%,var(--bg-2))}
+.community-group-top{display:flex;align-items:center;gap:12px;min-width:0}
+.community-group-icon{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border-radius:14px;background:color-mix(in srgb,var(--red) 15%,var(--bg-3));color:var(--red);font-size:19px}
+.community-group-title{min-width:0}.community-group-title h3{margin:0 0 3px;font-size:16px}.community-group-title p{margin:0;color:var(--muted);font-size:12px}.community-group-description{margin:0;color:var(--muted);font-size:13px;line-height:1.5;min-height:38px}
+.community-group-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:auto}.community-group-actions .btn{min-height:36px;padding:7px 10px;font-size:12px}
+.community-groups-empty,.event-empty,.activity-empty{display:grid;place-items:center;gap:9px;min-height:190px;padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border-hi);border-radius:16px;background:color-mix(in srgb,var(--bg-3) 50%,transparent)}
+.community-groups-empty i,.event-empty i,.activity-empty i{font-size:25px;color:var(--red)}
+#historyBody.activity-history-list{display:grid;gap:10px}
+.activity-card{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(110deg,color-mix(in srgb,var(--red) 4%,var(--bg-2)),var(--bg-2))}
+.activity-icon{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border-radius:12px;background:color-mix(in srgb,var(--red) 14%,var(--bg-3));color:var(--red)}
+.activity-copy{display:grid;gap:4px;min-width:0;flex:1}.activity-copy span,.activity-card time{color:var(--muted);font-size:12px}.activity-card time{white-space:nowrap}
+.event-card{position:relative;display:flex;flex-direction:column;gap:12px;min-height:240px;padding:20px;overflow:hidden;background:radial-gradient(ellipse at 100% 0%,color-mix(in srgb,var(--red) 12%,transparent),transparent 42%),var(--bg-2)}
+.event-card:before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:4px;background:var(--red)}
+.event-card.is-live:before{background:#37d68a}.event-card.is-complete:before{background:#898893}.event-card.is-cancelled:before{background:#f05c65}
+.event-card-top,.event-card-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.event-date,.event-game,.event-attendance,.event-status-copy{color:var(--muted);font-size:13px}
+.event-card h3{margin:0;font-size:20px}.event-game,.event-description{margin:0}.event-game i,.event-attendance i{color:var(--red);margin-right:5px}.event-description{color:var(--muted);line-height:1.55;flex:1}
+.event-actions{display:flex;gap:8px;flex-wrap:wrap}.event-prize{color:var(--red);font-size:16px}
+@media(max-width:760px){
+ #communityGroupsView #communityGroupsCard{grid-template-columns:minmax(0,1fr);padding:15px}
+ #communityGroupsView #communityGroupsCard>h3,#communityGroupsView #communityGroupsCard>.community-groups-close,#communityGroupsView #communityGroupsCard>.form-group,#communityGroupsView #communityGroupsCard>button.btn-primary,#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:1;grid-row:auto}
+ #communityGroupsView #communityGroupsCard>#communityGroups{grid-template-columns:minmax(0,1fr)}
+ .community-group-card{padding:14px}
+ .activity-card{align-items:flex-start;padding:12px}.activity-card time{font-size:11px}
+ .event-card{min-height:0;padding:17px}.event-card-footer{align-items:flex-start}
 }
