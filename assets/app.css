@@ -2046,3 +2046,19 @@ body > .container > main {
     margin-right:0!important;
   }
 }
+
+/* Constrain the visible page panel itself; some route layouts expand their shell. */
+body > .container > main > .section.active {
+  width:min(1440px, calc(100vw - 48px))!important;
+  max-width:1440px!important;
+  min-width:0!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:760px){
+  body > .container > main > .section.active {
+    width:100%!important;
+    max-width:100%!important;
+  }
+}
