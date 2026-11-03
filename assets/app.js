@@ -69,7 +69,7 @@
   const sectionRoutes={home:'/',games:'/games',players:'/players',teams:'/teams',tournaments:'/tournaments',community:'/community',ranking:'/ranking',profile:'/profile',library:'/library',friends:'/friends',messages:'/messages',achievements:'/achievements',history:'/history',notifications:'/notifications',settings:'/settings',matchmaking:'/matchmaking',events:'/events',admin:'/admin'};
   function routeSection(path){const p=(path||'/').replace(/\/+$/,'')||'/';if(/^\/players\/[0-9a-f-]{36}$/i.test(p))return{section:'playerProfile',id:p.split('/').pop()};if(/^\/groups\/[0-9a-f-]{36}$/i.test(p))return{section:'groupPage',id:p.split('/').pop()};return{section:Object.keys(sectionRoutes).find(k=>sectionRoutes[k]===p)||'home'};}
   function applyLocationRoute(){const r=routeSection(location.pathname);if(r.section==='admin'&&!authInitialized){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById('admin')?.classList.add('active');const s=document.getElementById('adminStatus');if(s)s.textContent='Проверяем права доступа…';return;}if(r.section==='admin'&&!isModerator){if(currentUser&&!isAdmin){showNotification('Панель доступна только администраторам.');showSection('home',{replace:true});}else if(!currentUser){showSection('home',{replace:true});openModal('loginModal');}return;}showSection(r.section,{fromLocation:true,profileId:r.id});}
-  function showSection(id,options={}){if(id!=='messages'){directChatLoadGeneration++;document.getElementById('messages')?.classList.remove('chat-open');document.body.classList.remove('mobile-chat-open');}if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events')loadPlatformEvents();if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');if(id==='community'&&currentUser)queueCommunityFeedRefresh();if(id==='friends'&&currentUser)void refreshFriendList();if(id==='notifications'&&currentUser)void refreshNotifications();document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);if(!options.skipScroll)window.scrollTo({top:0,behavior:'smooth'});}
+  function showSection(id,options={}){if(id!=='messages'){directChatLoadGeneration++;document.getElementById('messages')?.classList.remove('chat-open');document.body.classList.remove('mobile-chat-open');}if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events')loadPlatformEvents();if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');if(id==='community'&&currentUser)queueCommunityFeedRefresh();if(id==='friends'&&currentUser)void refreshFriendList();if(id==='notifications'&&currentUser){void refreshNotifications();void refreshMyReports();}document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);if(!options.skipScroll)window.scrollTo({top:0,behavior:'smooth'});}
   window.addEventListener('popstate',applyLocationRoute);
   function toggleNavigation(force){const open=typeof force==='boolean'?force:!document.body.classList.contains('nav-open');document.body.classList.toggle('nav-open',open);if(open)document.body.classList.remove('mobile-chat-open');const b=document.getElementById('menuToggle');if(b){b.setAttribute('aria-expanded',String(open));b.innerHTML='<i class="fa-solid '+(open?'fa-xmark':'fa-bars')+'"></i>';}}
   function syncModalLock(){document.body.classList.toggle('modal-open',!!document.querySelector('.modal.active'));}
@@ -158,18 +158,26 @@
   // CHAT (имитация WebSocket)
   async function sendMessage() {
     if (!currentUser) return requireAccount();
-    const receiverId = document.getElementById('chatRecipient')?.value;
-    const input = document.getElementById('chatInput');
-    const body = input?.value.trim();
-    if (!receiverId) return showNotification('Выбери друга для переписки.');
-    if (!body) return;
+    const receiverId=document.getElementById('chatRecipient')?.value,input=document.getElementById('chatInput'),body=input?.value.trim();
+    if(!receiverId)return showNotification('Выбери друга для переписки.');
+    if(!body)return;
     const prefs=readChatPreferences();prefs.hidden=(prefs.hidden||[]).filter(id=>id!==receiverId);writeChatPreferences(prefs);
-    const { data:message,error } = await supabaseClient.from('direct_messages').insert({ sender_id:currentUser.id, receiver_id:receiverId, body }).select('id,sender_id,receiver_id,body,created_at,read_at').single();
-    if (error) { console.error(error); return showNotification(error.code==='42501'?'Аккаунт заблокирован: отправка сообщений недоступна.':'Не удалось отправить сообщение.'); }
-    input.value=''; input.dispatchEvent(new Event('input',{bubbles:true}));
-    const box=document.getElementById('chatMessages');
-    if(box&&document.getElementById('chatRecipient')?.value===receiverId&&message&&!box.querySelector('[data-message-id="'+message.id+'"]')){box.querySelector('.chat-loading')?.remove();if(box.querySelector('.subtitle'))box.replaceChildren();box.insertAdjacentHTML('beforeend','<article class="message own" data-message-id="'+escapeHtml(message.id)+'"><div class="author">Вы • '+new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</div><div class="message-body">'+escapeHtml(message.body)+'</div></article>');box.scrollTop=box.scrollHeight;}
-    const item=[...document.querySelectorAll('.chat-list-item')].find(x=>x.getAttribute('onclick')?.includes(receiverId));if(item){item.querySelector('small').textContent=body;item.querySelector('time').textContent=new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}else void loadChatList();
+    const box=document.getElementById('chatMessages'),tempId='pending-'+crypto.randomUUID(),now=new Date();
+    if(box&&document.getElementById('chatRecipient')?.value===receiverId){
+      box.querySelector('.chat-loading')?.remove();if(box.querySelector('.subtitle'))box.replaceChildren();
+      box.insertAdjacentHTML('beforeend','<article class="message own is-pending" data-message-id="'+tempId+'"><div class="author">Вы • '+now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+' · отправка</div><div class="message-body">'+escapeHtml(body)+'</div></article>');box.scrollTop=box.scrollHeight;
+    }
+    input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));
+    const {data:message,error}=await supabaseClient.from('direct_messages').insert({sender_id:currentUser.id,receiver_id:receiverId,body}).select('id,sender_id,receiver_id,body,created_at,read_at').single();
+    const bubble=box?.querySelector('[data-message-id="'+tempId+'"]');
+    if(error){
+      bubble?.remove();console.error(error);if(input&&!input.value)input.value=body;
+      return showNotification(error.code==='42501'?'Аккаунт заблокирован: отправка сообщений недоступна.':'Не удалось отправить сообщение.');
+    }
+    if(bubble&&message){bubble.dataset.messageId=message.id;bubble.classList.remove('is-pending');const time=bubble.querySelector('.author');if(time)time.textContent='Вы • '+new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
+    const item=[...document.querySelectorAll('.chat-list-item')].find(x=>x.getAttribute('onclick')?.includes(receiverId));
+    if(item){const small=item.querySelector('small'),time=item.querySelector('time');if(small)small.textContent=body;if(time)time.textContent=new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
+    else void loadChatList();
   }
 
   function matchScore(p, ratingTol, role, region, time) {
@@ -682,7 +690,10 @@ function initCustomSelects(root=document) {
   }
   function renderHistory(rows) {
     const el=document.getElementById('historyBody');if(!el)return;
-    el.innerHTML=rows.map(r=>'<tr id="activity-'+(r.metadata?.match_id||r.metadata?.entity_id||'')+'"><td>'+new Date(r.created_at).toLocaleDateString('ru-RU')+'</td><td>'+escapeHtml(r.action)+'</td><td>'+escapeHtml(r.game_name)+'</td><td>'+escapeHtml(r.result)+'</td><td>'+(r.rating_delta??'—')+'</td></tr>').join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);">История появится после добавления игровых событий.</td></tr>';
+    const important=/Создал команду|Создал турнир|Зарегистрировал команду на турнир|Принял приглашение в команду|Подал заявку в команду|Добавил игрока в друзья|Принял заявку в друзья|Отправил заявку в друзья|Создал публикацию|Обновил профиль|Обновил настройки аккаунта/;
+    const visible=(rows||[]).filter(r=>important.test(r.action||'')).slice(0,30);
+    const iconFor=action=>/команду/.test(action)?'fa-people-group':/турнир/.test(action)?'fa-trophy':/друзья/.test(action)?'fa-user-group':/публикацию/.test(action)?'fa-comments': 'fa-user-pen';
+    el.innerHTML=visible.map(r=>'<article class="activity-card"><span class="activity-icon"><i class="fa-solid '+iconFor(r.action||'')+'"></i></span><div class="activity-copy"><strong>'+escapeHtml(r.action)+'</strong><span>'+escapeHtml([r.game_name,r.result].filter(Boolean).join(' • ')||'Действие в аккаунте')+'</span></div><time>'+new Date(r.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></article>').join('')||'<div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Пока нет важных событий</strong><span>Здесь появятся действия с командами, друзьями и публикациями.</span></div>';
   }
   function renderAchievements(rows) {
     const card=a=>'<article class="card achievement-card '+(a.unlocked_at?'unlocked':'')+'"><div class="achievement-icon"><i class="fa-solid '+escapeHtml(a.icon)+'"></i></div><div><h3>'+escapeHtml(a.title)+'</h3><p class="subtitle">'+escapeHtml(a.description)+'</p><div class="progress"><div class="progress-bar" style="width:'+Math.min(100,Math.round((a.progress||0)*100/a.target))+'%"></div></div><small>'+fmt(a.progress||0)+' / '+fmt(a.target)+' • '+(a.unlocked_at?'Открыто':'Осталось '+fmt(Math.max(0,a.target-(a.progress||0))))+'</small></div></article>';
@@ -1080,8 +1091,8 @@ function initCustomSelects(root=document) {
     const members=membersResult.data||[];
     el.innerHTML=(groupsResult.data||[]).map(g=>{
       const joined=members.some(m=>m.group_id===g.id&&m.user_id===currentUser.id),count=members.filter(m=>m.group_id===g.id).length,owner=g.owner_id===currentUser.id;
-      return '<div class="list-divider friend-row"><div><strong>'+escapeHtml(g.name)+'</strong><div style="font-size:12px;color:var(--muted)">'+escapeHtml(g.game_name)+' • '+count+' участников</div><small class="subtitle">'+escapeHtml(g.description||'')+'</small></div><div><button class="btn '+(joined?'btn-primary':'btn-ghost')+'" style="padding:6px 12px;font-size:11px" onclick="toggleCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;,'+joined+')">'+(joined?'В группе':'Вступить')+'</button>'+(joined?'<button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="openGroupChat(&quot;'+escapeHtml(g.id)+'&quot;)">Чат</button>':'')+(owner?'<button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="editCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)">Изменить</button><button class="btn btn-ghost" style="padding:6px 12px;font-size:11px" onclick="deleteCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)">Удалить</button>':'')+'</div><div id="group-chat-'+escapeHtml(g.id)+'"></div></div>';
-    }).join('')||'<p class="subtitle">Групп пока нет. Создай первую.</p>';
+      return '<article class="community-group-card"><div class="community-group-top"><span class="community-group-icon"><i class="fa-solid fa-people-group"></i></span><div class="community-group-title"><h3>'+escapeHtml(g.name)+'</h3><p>'+escapeHtml(g.game_name)+' <span>•</span> '+count+' '+(count===1?'участник':'участников')+'</p></div></div><p class="community-group-description">'+escapeHtml(g.description||'Группа для игроков '+g.game_name)+'</p><div class="community-group-actions"><button class="btn '+(joined?'btn-primary':'btn-ghost')+'" onclick="toggleCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;,'+joined+')">'+(joined?'<i class="fa-solid fa-check"></i> В группе':'<i class="fa-solid fa-right-to-bracket"></i> Вступить')+'</button>'+(joined?'<button class="btn btn-ghost" onclick="openGroupChat(&quot;'+escapeHtml(g.id)+'&quot;)"><i class="fa-regular fa-comments"></i> Чат</button>':'')+(owner?'<button class="btn btn-ghost" onclick="editCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)"><i class="fa-solid fa-pen"></i> Изменить</button><button class="btn btn-danger" onclick="deleteCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)"><i class="fa-solid fa-trash"></i></button>':'')+'</div><div id="group-chat-'+escapeHtml(g.id)+'"></div></article>';
+    }).join('')||'<div class="community-groups-empty"><i class="fa-solid fa-user-group"></i><strong>Пока нет групп</strong><span>Создай группу и пригласи игроков.</span></div>';
   }
   async function createCommunityGroup() {
     if(!currentUser)return requireAccount();
@@ -1187,10 +1198,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(!message)return showNotification('Напишите сообщение поддержке.');
     if(message.length>2000)return showNotification('Сообщение ограничено 2000 символами.');
     const button=document.getElementById('report-chat-send-'+reportId);if(button)button.disabled=true;
-    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-send',reportId,message}});
+    const {data,error}=await supabaseClient.from('community_report_messages').insert({report_id:reportId,sender_id:currentUser.id,body:message}).select('id,report_id,sender_id,body,created_at').single();
     if(button)button.disabled=false;
-    if(error||data?.error){const text=await adminFunctionError(error,data,'Не удалось отправить сообщение.');console.error('Report message send failed:',error||data);showNotification(text);return;}
-    field.value='';const host=document.getElementById('report-chat-messages-'+reportId),panel=document.getElementById('report-chat-panel-'+reportId);if(host&&!panel?.hidden&&data?.message&&!host.querySelector('[data-message-id="'+data.message.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data.message],currentUser.id));host.scrollTop=host.scrollHeight;}
+    if(error){console.error('Report message send failed:',error);showNotification(error.code==='42501'?'Аккаунт заблокирован: отправка сообщений недоступна.':'Не удалось отправить сообщение.');return;}
+    field.value='';const host=document.getElementById('report-chat-messages-'+reportId),panel=document.getElementById('report-chat-panel-'+reportId);if(host&&!panel?.hidden&&!host.querySelector('[data-message-id="'+data.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data],currentUser.id));host.scrollTop=host.scrollHeight;}
   }
   function renderMyCommunityReports(rows) {
     const host=document.getElementById('myCommunityReportsList');if(!host)return;
@@ -1332,26 +1343,28 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
   async function loadPlatformEvents() {
     const el=document.getElementById('eventsGrid');if(!el||!supabaseClient)return;
-    const [ev,tr]=await Promise.all([
+    const [ev,tr,games]=await Promise.all([
       supabaseClient.from('platform_events').select('id,owner_id,title,event_type,game_id,starts_at,description,registration_limit').order('starts_at'),
-      supabaseClient.from('tournaments').select('id,name,game_name,status,starts_at,prize,description').order('starts_at',{ascending:true,nullsFirst:false})
+      supabaseClient.from('tournaments').select('id,name,game_name,status,starts_at,prize,description').order('starts_at',{ascending:true,nullsFirst:false}),
+      supabaseClient.from('games').select('id,name').eq('is_active',true).order('name')
     ]);
     if(ev.error)console.error(ev.error);
-    const games=await supabaseClient.from('games').select('id,name').eq('is_active',true).order('name');
     const names=new Map((games.data||[]).map(g=>[g.id,g.name]));
-    const select=document.getElementById('platformEventGame');
-    if(select){const old=select.value;select.innerHTML='<option value="">Без привязки к игре</option>'+(games.data||[]).map(g=>'<option value="'+escapeHtml(g.id)+'">'+escapeHtml(g.name)+'</option>').join('');select.value=old;}
+    const select=document.getElementById('platformEventGame');if(select){const old=select.value;select.innerHTML='<option value="">Без привязки к игре</option>'+(games.data||[]).map(g=>'<option value="'+escapeHtml(g.id)+'">'+escapeHtml(g.name)+'</option>').join('');select.value=old;}
     const rows=ev.data||[],ids=rows.map(e=>e.id);
     const regs=currentUser&&ids.length?await supabaseClient.from('platform_event_registrations').select('event_id,user_id').in('event_id',ids):{data:[]};
     const counts=new Map(),mine=new Set();(regs.data||[]).forEach(x=>{counts.set(x.event_id,(counts.get(x.event_id)||0)+1);if(x.user_id===currentUser?.id)mine.add(x.event_id);});
     const list=[...rows.map(e=>({...e,_event:true})),...(tr.data||[]).map(t=>({...t,_tournament:true}))].sort((x,y)=>new Date(x.starts_at||0)-new Date(y.starts_at||0));
+    const statusLabel={upcoming:'Скоро',registration:'Регистрация',live:'Идёт',completed:'Завершено',cancelled:'Отменено'};
     el.innerHTML=list.map(e=>{
+      const start=e.starts_at?new Date(e.starts_at):null,started=start&&start.getTime()<=Date.now(),dateText=start&&!Number.isNaN(start.getTime())?start.toLocaleString('ru-RU',{weekday:'short',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}):'Дата не задана';
       if(e._event){
-        const count=counts.get(e.id)||0,full=e.registration_limit&&count>=e.registration_limit,joined=mine.has(e.id);
-        return '<article class="card"><span class="badge badge-info">'+escapeHtml(({event:'Событие',championship:'Чемпионат',league:'Лига',meetup:'Встреча'})[e.event_type]||'Событие')+'</span><h3>'+escapeHtml(e.title)+'</h3><p class="subtitle">'+escapeHtml(names.get(e.game_id)||'Все игры')+' • '+new Date(e.starts_at).toLocaleString('ru-RU')+' • '+count+(e.registration_limit?'/'+e.registration_limit:'')+' участников</p><p>'+escapeHtml(e.description||'')+'</p>'+(currentUser?(joined?'<button class="btn btn-ghost" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,true)">Отменить участие</button>':!full?'<button class="btn btn-primary" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,false)">Участвовать</button>':'<span class="badge badge-warning">Мест нет</span>'):'<button class="btn btn-primary" onclick="requireAccount()">Войти для участия</button>')+((e.owner_id===currentUser?.id||isAdmin)?'<button class="btn btn-ghost" onclick="deletePlatformEvent(&quot;'+e.id+'&quot;)">Удалить</button>':'')+'</article>';
+        const count=counts.get(e.id)||0,full=e.registration_limit&&count>=e.registration_limit,joined=mine.has(e.id),type=({event:'Событие',championship:'Чемпионат',league:'Лига',meetup:'Встреча'})[e.event_type]||'Событие';
+        return '<article class="card event-card"><div class="event-card-top"><span class="badge badge-info"><i class="fa-solid fa-calendar-check"></i> '+type+'</span><span class="event-date"><i class="fa-regular fa-clock"></i> '+escapeHtml(dateText)+'</span></div><h3>'+escapeHtml(e.title)+'</h3><p class="event-game"><i class="fa-solid fa-gamepad"></i> '+escapeHtml(names.get(e.game_id)||'Все игры')+'</p><p class="event-description">'+escapeHtml(e.description||'Описание появится скоро.')+'</p><div class="event-card-footer"><span class="event-attendance"><i class="fa-solid fa-user-group"></i> '+count+(e.registration_limit?'/'+e.registration_limit:'')+' участников</span><div class="event-actions">'+(currentUser?(joined?'<button class="btn btn-ghost" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,true)">Отменить участие</button>':!full?'<button class="btn btn-primary" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,false)">Участвовать</button>':'<span class="badge badge-warning">Мест нет</span>'):'<button class="btn btn-primary" onclick="requireAccount()">Войти для участия</button>')+((e.owner_id===currentUser?.id||isAdmin)?'<button class="btn btn-danger" onclick="deletePlatformEvent(&quot;'+e.id+'&quot;)">Удалить</button>':'')+'</div></div></article>';
       }
-      return '<article class="card"><span class="badge badge-warning">'+escapeHtml(tournamentStatusLabel(e.status))+'</span><h3>'+escapeHtml(e.name)+'</h3><p class="subtitle">'+escapeHtml(e.game_name)+' • '+(e.starts_at?new Date(e.starts_at).toLocaleString('ru-RU'):'дата не задана')+'</p>'+(e.description?'<p>'+escapeHtml(e.description)+'</p>':'')+(e.prize?'<strong>'+escapeHtml(e.prize)+'</strong>':'')+(e.status==='registration'?'<button class="btn btn-primary" onclick="registerForTournament(&quot;'+escapeHtml(e.id)+'&quot;)">Записаться в турнир</button>':'')+'</article>';
-    }).join('')||'<p class="subtitle">Событий пока нет. Создай первое.</p>';
+      const status=e.status||'upcoming',tone=status==='live'?'is-live':status==='completed'?'is-complete':status==='cancelled'?'is-cancelled':'';
+      return '<article class="card event-card tournament-event '+tone+'"><div class="event-card-top"><span class="badge '+(status==='registration'?'badge-warning':'badge-info')+'">'+escapeHtml(statusLabel[status]||tournamentStatusLabel(status))+'</span><span class="event-date"><i class="fa-regular fa-clock"></i> '+escapeHtml(dateText)+'</span></div><h3>'+escapeHtml(e.name)+'</h3><p class="event-game"><i class="fa-solid fa-gamepad"></i> '+escapeHtml(e.game_name)+'</p><p class="event-description">'+escapeHtml(e.description||'Турнир сообщества Squadra.')+'</p><div class="event-card-footer">'+(e.prize?'<strong class="event-prize"><i class="fa-solid fa-trophy"></i> '+escapeHtml(e.prize)+'</strong>':'<span></span>')+(status==='registration'?'<button class="btn btn-primary" onclick="registerForTournament(&quot;'+escapeHtml(e.id)+'&quot;)">Записаться в турнир</button>':'<span class="event-status-copy">'+(status==='live'?'Турнир уже идёт':status==='completed'?'Турнир завершён':status==='cancelled'?'Турнир отменён':'Скоро начало')+'</span>')+'</div></article>';
+    }).join('')||'<div class="event-empty"><i class="fa-solid fa-calendar-days"></i><strong>Событий пока нет</strong><span>Создай первое событие или возвращайся позже.</span></div>';
   }
   async function createPlatformEvent() {
     if(!currentUser)return requireAccount();
@@ -1490,7 +1503,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+uid},async()=>{const {data}=await supabaseClient.from('profiles').select('*').eq('id',uid).maybeSingle();if(data&&currentUser?.id===uid){accountProfile=data;renderAccountProfile(data);}})
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'user_settings',filter:'user_id=eq.'+uid},async()=>{const {data}=await supabaseClient.from('user_settings').select('*').eq('user_id',uid).maybeSingle();if(data&&currentUser?.id===uid)setTheme(data.theme);})
       .on('postgres_changes',{event:'*',schema:'public',table:'user_roles',filter:'user_id=eq.'+uid},async()=>{await loadAdminAccess();if(isModerator&&document.getElementById('admin')?.classList.contains('active'))loadAdminPanel();})
-       .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_events'},()=>{loadPlatformEvents();})
+       .on('postgres_changes',{event:'*',schema:'public',table:'teams'},()=>{if(document.getElementById('teams')?.classList.contains('active'))void loadTeamDirectory();if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();})
+       .on('postgres_changes',{event:'*',schema:'public',table:'tournaments'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();if(document.getElementById('tournaments')?.classList.contains('active'))void loadCreatedTournaments();})
+       .on('postgres_changes',{event:'*',schema:'public',table:'platform_events'},()=>{if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
+       .on('postgres_changes',{event:'*',schema:'public',table:'platform_event_registrations'},()=>{if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
       .on('postgres_changes',{event:'*',schema:'public',table:'community_reports'},payload=>{
@@ -1810,9 +1826,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const field=document.getElementById('adminReportMessage'),message=field?.value.trim()||'';
     if(!message)return showNotification('Напишите ответ пользователю.');
     if(message.length>2000)return showNotification('Сообщение ограничено 2000 символами.');
-    const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'report-message-send',reportId,message}});
-    if(error||data?.error){const text=await adminFunctionError(error,data,'Не удалось отправить сообщение.');console.error('Admin report message failed:',error||data);showNotification(text);return;}
-    field.value='';const host=document.getElementById('adminReportConversation');if(host&&document.getElementById('adminDetailModal')?.classList.contains('active')&&data?.message&&!host.querySelector('[data-message-id="'+data.message.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data.message],currentUser.id));host.scrollTop=host.scrollHeight;}
+    const {data,error}=await supabaseClient.from('community_report_messages').insert({report_id:reportId,sender_id:currentUser.id,body:message}).select('id,report_id,sender_id,body,created_at').single();
+    if(error){console.error('Admin report message failed:',error);return showNotification(error.code==='42501'?'Аккаунт заблокирован: отправка сообщений недоступна.':'Не удалось отправить сообщение.');}
+    field.value='';const host=document.getElementById('adminReportConversation');if(host&&!host.querySelector('[data-message-id="'+data.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([data],currentUser.id));host.scrollTop=host.scrollHeight;}
   }
   async function adminInspectReport(id) {
     if(!isModerator||!supabaseClient)return;
