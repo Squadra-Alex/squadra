@@ -1965,3 +1965,28 @@ aside li:has(#sidebarMessageCount) #sidebarMessageCount{margin-left:auto;flex:0 
  #communityGroupsView #communityGroupsCard>h3,#communityGroupsView #communityGroupsCard>.community-groups-close,#communityGroupsView #communityGroupsCard>.community-group-form,#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:1;grid-row:auto}
  #communityGroupsView #communityGroupsCard>#communityGroups{max-height:min(62dvh,600px);grid-template-columns:minmax(0,1fr)}
 }
+/* Restore the centered desktop frame for every route, regardless of section-specific styles. */
+body>.container{
+  display:block!important;
+  width:min(1440px,calc(100vw - 48px))!important;
+  max-width:1440px!important;
+  min-width:0!important;
+  margin:34px auto 64px!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+body>.container>main{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+}
+@media(max-width:760px){
+  body>.container{
+    width:calc(100vw - 24px)!important;
+    max-width:1440px!important;
+    margin:14px auto 44px!important;
+    padding:0!important;
+  }
+}
