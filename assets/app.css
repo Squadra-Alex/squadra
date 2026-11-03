@@ -1869,3 +1869,14 @@ body.mobile-chat-open #messages.chat-open .chat-messages{overscroll-behavior:con
  .activity-card{align-items:flex-start;padding:12px}.activity-card time{font-size:11px}
  .event-card{min-height:0;padding:17px}.event-card-footer{align-items:flex-start}
 }
+
+#communityGroupsView #communityGroupsCard{position:relative}
+#communityGroupsView #communityGroupsCard>.community-groups-close{position:absolute;right:18px;top:18px;float:none;z-index:1}
+#communityGroupsView #communityGroupsCard>.community-group-form{grid-column:1;grid-row:2;display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:16px;background:rgba(0,0,0,.12)}
+#communityGroupsView #communityGroupsCard>.community-group-form .form-group{margin:0!important}
+#communityGroupsView #communityGroupsCard>.community-group-form .btn{justify-self:start}
+#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:2;grid-row:2;align-self:stretch}
+@media(max-width:760px){
+ #communityGroupsView #communityGroupsCard>.community-groups-close{right:12px;top:12px}
+ #communityGroupsView #communityGroupsCard>.community-group-form,#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:1;grid-row:auto}
+}
