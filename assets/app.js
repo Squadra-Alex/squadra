@@ -688,6 +688,7 @@ function initCustomSelects(root=document) {
     document.getElementById('profileAchievementsCount').textContent=mapped.filter(a=>a.unlocked_at).length;
     document.getElementById('profileRecentAchievements').innerHTML=mapped.filter(a=>a.unlocked_at).slice(0,4).map(card).join('')||'<p class="subtitle">Пока нет открытых достижений.</p>';
   }
+  function toggleCommunityGroups(force){const card=document.getElementById('communityGroupsCard'),button=document.getElementById('communityGroupsButton');if(!card)return;const open=typeof force==='boolean'?force:card.hidden;card.hidden=!open;card.classList.toggle('community-groups-open',open);button?.classList.toggle('btn-primary',open);button?.classList.toggle('btn-ghost',!open);button?.setAttribute('aria-expanded',String(open));document.body.classList.toggle('modal-open',open||!!document.querySelector('.modal.active'));if(open)card.querySelector('input')?.focus();}
   function setCommunityFeedMode(mode){communityFeedMode=mode==='following'?'following':'all';document.getElementById('feedAllButton')?.classList.toggle('btn-primary',communityFeedMode==='all');document.getElementById('feedAllButton')?.classList.toggle('btn-ghost',communityFeedMode!=='all');document.getElementById('feedFollowingButton')?.classList.toggle('btn-primary',communityFeedMode==='following');document.getElementById('feedFollowingButton')?.classList.toggle('btn-ghost',communityFeedMode!=='following');renderCommunity(communityPostRows,communityLiked,communityCommentRows);}
   function renderCommunity(rows,liked,comments=[]) {
     communityPostRows=rows;communityLiked=liked;communityCommentRows=comments;
@@ -1150,8 +1151,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       return;
     }if(n.source_type==='message'&&n.actor_id)return openChatWith(n.actor_id);if(n.source_type==='group'&&n.source_id)return openGroupChat(n.source_id);if(n.source_type==='player'&&(n.actor_id||n.source_id))return openPlayerProfile(n.actor_id||n.source_id);if(n.source_type==='team'){showSection('teams');return;}if(n.source_type==='post'){showSection('community');if(n.source_id)setTimeout(()=>document.getElementById('community-post-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}if(n.source_type==='match'){showSection('history');if(n.source_id)setTimeout(()=>document.getElementById('activity-'+n.source_id)?.scrollIntoView({behavior:'smooth',block:'center'}),250);return;}showSection(({message:'messages',team_invite:'teams',group_message:'community',follow:'players',friend:'friends',comment:'community',match_confirmation:'history',match:'history',team_match_result:'teams'}[n.kind]||'notifications'));}
   function renderNotifications(rows) {
-    const all=rows||[],unread=all.filter(n=>!n.read_at).length,badge=document.getElementById('notificationCount');
-    if(badge){badge.textContent=unread?String(unread):'';badge.hidden=!unread;badge.setAttribute('aria-label',unread+' непрочитанных уведомлений');}
+    const all=rows||[],unread=all.filter(n=>!n.read_at).length;
+    document.querySelectorAll('#notificationCount,#mobileNotificationCount').forEach(badge=>{badge.textContent=unread?String(unread):'';badge.hidden=!unread;badge.setAttribute('aria-label',unread+' непрочитанных уведомлений');});
     const hideRead=!!currentUser&&localStorage.getItem('squadra-hide-read-notifications-'+currentUser.id)==='1';
     const visible=hideRead?all.filter(n=>!n.read_at):all;
     const list=document.getElementById('notificationsList');if(!list)return;
