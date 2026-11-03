@@ -496,3 +496,48 @@ create index if not exists user_achievements_achievement_id_idx on public.user_a
 
 -- Moderator responses are visible to report authors.
 alter table public.community_reports add column if not exists moderator_reply text;
+
+-- Account moderation and support conversation fields used by the live app.
+alter table public.profiles add column if not exists verified_color text;
+alter table public.profiles add column if not exists verified_at timestamptz;
+alter table public.profiles add column if not exists verified_by uuid references auth.users(id) on delete set null;
+update public.profiles set verified_color='blue',verified_at=coalesce(verified_at,now()) where verified_color='green';
+alter table public.profiles drop constraint if exists profiles_verified_color_check;
+alter table public.profiles add constraint profiles_verified_color_check check (verified_color is null or verified_color='blue');
+
+alter table public.notifications add column if not exists source_type text;
+alter table public.notifications add column if not exists source_id text;
+alter table public.notifications add column if not exists actor_id uuid references auth.users(id) on delete set null;
+
+create table if not exists public.community_report_messages (
+  id uuid primary key default gen_random_uuid(),
+  report_id uuid not null references public.community_reports(id) on delete cascade,
+  sender_id uuid not null references auth.users(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists community_report_messages_report_created_idx
+  on public.community_report_messages(report_id,created_at);
+alter table public.community_report_messages enable row level security;
+grant select on public.community_report_messages to authenticated;
+drop policy if exists "report participants read report messages" on public.community_report_messages;
+create policy "report participants read report messages" on public.community_report_messages
+  for select to authenticated using (
+    exists (select 1 from public.community_reports r where r.id=report_id and r.reporter_id=(select auth.uid()))
+    or exists (select 1 from public.user_roles ur where ur.user_id=(select auth.uid()) and ur.role in ('admin','moderator'))
+  );
+
+do $$
+declare table_name text;
+begin
+  foreach table_name in array array[
+    'direct_messages','friendships','matches','community_posts','community_post_comments',
+    'platform_events','platform_event_registrations','tournament_matches','community_reports',
+    'community_report_messages','notifications','community_group_messages','profiles','user_settings'
+  ] loop
+    if to_regclass('public.' || table_name) is not null
+      and not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=table_name) then
+      execute format('alter publication supabase_realtime add table public.%I',table_name);
+    end if;
+  end loop;
+end $$;
