@@ -1666,12 +1666,22 @@ body[data-theme="light"] .admin-sidebar,body[data-theme="light"] .admin-topbar {
 .report-chat-message.is-own {align-self:flex-end;background:rgba(151,75,239,.18)}
 .report-chat-message>div {display:flex;gap:10px;align-items:center;justify-content:space-between}
 .report-chat-message p {margin:6px 0 0;white-space:pre-wrap}
-.report-chat-compose {display:flex;align-items:flex-end;gap:8px;margin-top:10px}
-.report-chat-compose textarea {flex:1;min-width:0;resize:vertical}
+.report-chat-compose {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:10px;width:100%;min-width:0}
+.report-chat-compose textarea {display:block;width:100%;min-width:0;min-height:88px;max-height:220px;box-sizing:border-box;resize:vertical;flex:none;white-space:pre-wrap;overflow-wrap:anywhere}
 #adminDetailBody .report-chat-messages {max-height:360px}
-#adminDetailBody .report-chat-compose .btn {flex:0 0 auto}
+#adminDetailBody .report-chat-compose .btn {min-width:100px}
 .character-counter[hidden] {display:none!important}
+.admin-edit-grid input[type=number] {-moz-appearance:textfield;appearance:textfield}
+.admin-edit-grid input[type=number]::-webkit-inner-spin-button,.admin-edit-grid input[type=number]::-webkit-outer-spin-button {-webkit-appearance:none;margin:0}
+.admin-user-control-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+.admin-user-control-actions .btn {width:100%;justify-content:center}
+.admin-user-control-actions .btn:last-child {grid-column:1/-1}
+.notifications-toolbar {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}
+select {appearance:none;padding-right:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b879ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:15px}
 @media(max-width:520px) {
-  .report-chat-compose {flex-direction:column;align-items:stretch}
+  .report-chat-compose {grid-template-columns:minmax(0,1fr)}
+  .report-chat-compose textarea {min-height:96px}
   .report-chat-compose .btn {width:100%}
+  .admin-user-control-actions {grid-template-columns:minmax(0,1fr)}
+  .admin-user-control-actions .btn:last-child {grid-column:auto}
 }
