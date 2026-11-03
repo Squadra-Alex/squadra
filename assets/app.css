@@ -1949,3 +1949,19 @@ aside li:has(#sidebarMessageCount) #sidebarMessageCount{margin-left:auto;flex:0 
 #communityGroupsView #communityGroups{min-width:0;max-width:100%;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
 #communityGroupsView .community-group-card{min-width:0;max-width:100%;overflow-wrap:anywhere}
 @media(min-width:761px){#communityGroupsView{max-width:min(1280px,100%)}}
+
+/* The Groups button is a real tab: keep its panel compact and prevent its list from stretching the page. */
+#communityGroupsView{display:block;width:100%;max-width:min(1120px,100%);min-width:0;min-height:0;margin:12px auto 24px;overflow:visible;box-sizing:border-box}
+#communityGroupsView[hidden]{display:none!important}
+#communityGroupsView #communityGroupsCard{display:grid!important;grid-template-columns:minmax(260px,320px) minmax(0,1fr);align-items:start;gap:16px;width:100%;max-width:100%;min-width:0;min-height:0;margin:0 auto;padding:20px;box-sizing:border-box}
+#communityGroupsView #communityGroupsCard>h3,#communityGroupsView #communityGroupsCard>.community-groups-close{grid-column:1/-1}
+#communityGroupsView #communityGroupsCard>.community-group-form{grid-column:1;grid-row:2;min-width:0}
+#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:2;grid-row:2;min-width:0;max-width:100%;max-height:min(68dvh,680px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;align-content:start;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+#communityGroupsView .community-group-card{min-width:0;max-width:100%;overflow-wrap:anywhere}
+#communityFeedGrid[hidden],#communityGroupsView[hidden]{display:none!important}
+@media(max-width:760px){
+ #communityGroupsView{max-width:100%;margin:8px auto 16px}
+ #communityGroupsView #communityGroupsCard{grid-template-columns:minmax(0,1fr);gap:12px;padding:14px}
+ #communityGroupsView #communityGroupsCard>h3,#communityGroupsView #communityGroupsCard>.community-groups-close,#communityGroupsView #communityGroupsCard>.community-group-form,#communityGroupsView #communityGroupsCard>#communityGroups{grid-column:1;grid-row:auto}
+ #communityGroupsView #communityGroupsCard>#communityGroups{max-height:min(62dvh,600px);grid-template-columns:minmax(0,1fr)}
+}
