@@ -169,13 +169,19 @@
       box.insertAdjacentHTML('beforeend','<article class="message own is-pending" data-message-id="'+tempId+'"><div class="author">Вы • '+now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+' · отправка</div><div class="message-body">'+escapeHtml(body)+'</div></article>');box.scrollTop=box.scrollHeight;
     }
     input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));
-    const {data:message,error}=await supabaseClient.from('direct_messages').insert({sender_id:currentUser.id,receiver_id:receiverId,body}).select('id,sender_id,receiver_id,body,created_at,read_at').single();
+    const accepted=(accountFriends||[]).some(f=>f.status==='accepted'&&(f.requester_id===receiverId||f.addressee_id===receiverId));
+    const result=accepted
+      ? await supabaseClient.from('direct_messages').insert({sender_id:currentUser.id,receiver_id:receiverId,body}).select('id,sender_id,receiver_id,body,created_at,read_at').single()
+      : await supabaseClient.rpc('send_initial_message',{p_receiver:receiverId,p_body:body});
+    const message=Array.isArray(result.data)?result.data[0]:result.data,error=result.error;
     const bubble=box?.querySelector('[data-message-id="'+tempId+'"]');
     if(error){
       bubble?.remove();console.error(error);if(input&&!input.value)input.value=body;
-      return showNotification(error.code==='42501'?'Аккаунт заблокирован: отправка сообщений недоступна.':'Не удалось отправить сообщение.');
+      const detail=String(error.message||'');
+      return showNotification(error.code==='42501'?'Аккаунт заблокирован или запрос уже отправлен.':detail.includes('FRIEND_REQUEST_REQUIRED')?'Сначала отправь или прими заявку в друзья.':detail.includes('duplicate key')?'Запрос уже отправлен. Дождись ответа игрока.':'Не удалось отправить сообщение.');
     }
     if(bubble&&message){bubble.dataset.messageId=message.id;bubble.classList.remove('is-pending');const time=bubble.querySelector('.author');if(time)time.textContent='Вы • '+new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
+    if(!accepted){const field=document.getElementById('chatInput');if(field){field.disabled=true;field.placeholder='Запрос отправлен. Ожидай ответа…';}showNotification('Первое сообщение отправлено как запрос. Продолжить чат можно после принятия заявки в друзья.');void refreshFriendList();}
     const item=[...document.querySelectorAll('.chat-list-item')].find(x=>x.getAttribute('onclick')?.includes(receiverId));
     if(item){const small=item.querySelector('small'),time=item.querySelector('time');if(small)small.textContent=body;if(time)time.textContent=new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
     else void loadChatList();
@@ -601,13 +607,17 @@ function initCustomSelects(root=document) {
     const el=document.getElementById('friendsGrid');if(!el)return;
     const incoming=(rows||[]).filter(f=>f.status==='pending'&&f.addressee_id===currentUser?.id).length,badge=document.getElementById('friendRequestCount');
     if(badge){badge.textContent=incoming?String(incoming):'';badge.hidden=!incoming;badge.setAttribute('aria-label',incoming+' заявок в друзья');}
-    el.innerHTML=(rows||[]).map(f=>{const accepted=f.status==='accepted',other=f.requester_id===currentUser.id?f.addressee_id:f.requester_id,p=f.friend_profile||{},rate=p.matches_played?Math.round(100*p.wins/p.matches_played):0,verify=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'"></i>':'';return '<article class="card friend-card" data-friend-status="'+(accepted?'accepted':'pending')+'"><div class="friend-card-head"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div class="friend-card-info"><button class="player-profile-link" onclick="openPlayerProfile(\''+other+'\')"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong>'+verify+'</button><p class="subtitle">@'+escapeHtml(p.username||'')+' <span class="friend-state '+(accepted?'is-friend':'is-pending')+'">'+(accepted?'Друг':'Заявка')+'</span></p><p class="friend-summary">'+escapeHtml(p.game_name||'Игра не выбрана')+' · '+escapeHtml(p.region||'—')+' · '+escapeHtml(p.rank_name||'Unranked')+'</p><div class="friend-stats"><span>'+fmt(p.rating||0)+' Elo</span><span>'+rate+'% побед</span><span>Уровень '+(p.level||1)+'</span></div></div></div><div class="friend-card-actions"><button class="btn btn-ghost" onclick="openPlayerProfile(\''+other+'\')">Профиль</button>'+(f.status==='pending'&&f.addressee_id===currentUser.id?'<button class="btn btn-primary" onclick="respondFriend(\''+f.id+'\',\'accepted\')"><i class="fa-solid fa-check"></i> Принять</button>':'')+(accepted?'<button class="btn btn-ghost" onclick="openChatWith(\''+other+'\')"><i class="fa-solid fa-comment"></i> Написать</button>':'')+(f.status==='pending'?'<button class="btn btn-ghost" onclick="removeFriend(\''+f.id+'\')">'+(f.requester_id===currentUser.id?'Отменить запрос':'Отклонить')+'</button>':'')+(accepted?'<button class="btn btn-danger friend-remove" onclick="removeFriend(\''+f.id+'\')"><i class="fa-solid fa-user-minus"></i> Удалить</button>':'')+'</div></article>';}).join('')||'<div class="empty-state friend-empty"><i class="fa-solid fa-user-group"></i><strong>Здесь будут твои друзья</strong><p>Найди игроков и отправь заявку, чтобы начать общаться.</p><button class="btn btn-primary" onclick="showSection(\'players\')">Найти игроков</button></div>';
+    el.innerHTML=(rows||[]).map(f=>{const accepted=f.status==='accepted',other=f.requester_id===currentUser.id?f.addressee_id:f.requester_id,p=f.friend_profile||{},rate=p.matches_played?Math.round(100*p.wins/p.matches_played):0,verify=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'"></i>':'',staff=p.roles?.includes('admin')?'<span class="staff-badge admin">Администратор</span>':p.roles?.includes('moderator')?'<span class="staff-badge moderator">Модератор</span>':'';return '<article class="card friend-card" data-friend-status="'+(accepted?'accepted':'pending')+'"><div class="friend-card-head"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><div class="friend-card-info"><button class="player-profile-link" onclick="openPlayerProfile(\''+other+'\')"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong>'+verify+staff+'</button><p class="subtitle">@'+escapeHtml(p.username||'')+' <span class="friend-state '+(accepted?'is-friend':'is-pending')+'">'+(accepted?'Друг':'Заявка')+'</span></p><p class="friend-summary">'+escapeHtml(p.game_name||'Игра не выбрана')+' · '+escapeHtml(p.region||'—')+' · '+escapeHtml(p.rank_name||'Unranked')+'</p><div class="friend-stats"><span>'+fmt(p.rating||0)+' Elo</span><span>'+rate+'% побед</span><span>Уровень '+(p.level||1)+'</span></div></div></div><div class="friend-card-actions"><button class="btn btn-ghost" onclick="openPlayerProfile(\''+other+'\')">Профиль</button>'+(f.status==='pending'&&f.addressee_id===currentUser.id?'<button class="btn btn-primary" onclick="respondFriend(\''+f.id+'\',\'accepted\')"><i class="fa-solid fa-check"></i> Принять</button>':'')+(accepted?'<button class="btn btn-ghost" onclick="openChatWith(\''+other+'\')"><i class="fa-solid fa-comment"></i> Написать</button>':'')+(f.status==='pending'?'<button class="btn btn-ghost" onclick="removeFriend(\''+f.id+'\')">'+(f.requester_id===currentUser.id?'Отменить запрос':'Отклонить')+'</button>':'')+(accepted?'<button class="btn btn-danger friend-remove" onclick="removeFriend(\''+f.id+'\')"><i class="fa-solid fa-user-minus"></i> Удалить</button>':'')+'</div></article>';}).join('')||'<div class="empty-state friend-empty"><i class="fa-solid fa-user-group"></i><strong>Здесь будут твои друзья</strong><p>Найди игроков и отправь заявку, чтобы начать общаться.</p><button class="btn btn-primary" onclick="showSection(\'players\')">Найти игроков</button></div>';
     filterFriends(friendFilter);
   }
   async function loadFriendProfiles(rows) {
     const ids=[...new Set(rows.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id))];if(!ids.length)return rows;
-    const {data}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url,game_name,region,rank_name,rating,matches_played,wins,level,verified_color').in('id',ids);
-    const byId=Object.fromEntries((data||[]).map(p=>[p.id,p]));
+    const [{data},{data:roleRows}]=await Promise.all([
+      supabaseClient.from('profiles').select('id,username,display_name,avatar_url,game_name,region,rank_name,rating,matches_played,wins,level,verified_color').in('id',ids),
+      supabaseClient.from('user_roles').select('user_id,role').in('user_id',ids).in('role',['admin','moderator'])
+    ]);
+    const rolesById={};(roleRows||[]).forEach(r=>{rolesById[r.user_id]=rolesById[r.user_id]||[];rolesById[r.user_id].push(r.role);});
+    const byId=Object.fromEntries((data||[]).map(p=>[p.id,{...p,roles:rolesById[p.id]||[]}]));
     return rows.map(f=>({...f,friend_profile:byId[f.requester_id===currentUser.id?f.addressee_id:f.requester_id]}));
   }
   async function refreshFriendList(){
@@ -616,7 +626,7 @@ function initCustomSelects(root=document) {
     const {data,error}=await supabaseClient.from('friendships').select('*').or('requester_id.eq.'+uid+',addressee_id.eq.'+uid).order('created_at',{ascending:false});
     if(error){console.error('Could not refresh friends:',error);return;}
     if(currentUser?.id!==uid)return;
-    accountFriends=await loadFriendProfiles(data||[]);renderFriends(accountFriends);fillChatRecipients(accountFriends);
+    accountFriends=await loadFriendProfiles(data||[]);renderFriends(accountFriends);fillChatRecipients(accountFriends);void loadMessageRequests();
   }
   async function renderFollowedAuthors(){
     const host=document.getElementById('communityFollowedAuthors');if(!host||!currentUser||!supabaseClient)return;
@@ -702,8 +712,9 @@ function initCustomSelects(root=document) {
     const el=document.getElementById('historyBody');if(!el)return;
     const important=/Создал команду|Создал турнир|Зарегистрировал команду на турнир|Принял приглашение в команду|Подал заявку в команду|Добавил игрока в друзья|Принял заявку в друзья|Отправил заявку в друзья|Создал публикацию|Обновил профиль|Обновил настройки аккаунта/;
     const visible=(rows||[]).filter(r=>important.test(r.action||'')).slice(0,30);
+    const resultLabel=value=>({pending:'Ожидает ответа',accepted:'Принято',rejected:'Отклонено',confirmed:'Подтверждено'}[String(value||'').toLowerCase()]||value||'Действие в аккаунте');
     const iconFor=action=>/команду/.test(action)?'fa-people-group':/турнир/.test(action)?'fa-trophy':/друзья/.test(action)?'fa-user-group':/публикацию/.test(action)?'fa-comments': 'fa-user-pen';
-    el.innerHTML=visible.map(r=>'<article class="activity-card"><span class="activity-icon"><i class="fa-solid '+iconFor(r.action||'')+'"></i></span><div class="activity-copy"><strong>'+escapeHtml(r.action)+'</strong><span>'+escapeHtml([r.game_name,r.result].filter(Boolean).join(' • ')||'Действие в аккаунте')+'</span></div><time>'+new Date(r.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></article>').join('')||'<div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Пока нет важных событий</strong><span>Здесь появятся действия с командами, друзьями и публикациями.</span></div>';
+    el.innerHTML=visible.map(r=>'<article class="activity-card"><span class="activity-icon"><i class="fa-solid '+iconFor(r.action||'')+'"></i></span><div class="activity-copy"><strong>'+escapeHtml(r.action)+'</strong><span>'+escapeHtml([r.game_name,resultLabel(r.result)].filter(Boolean).join(' • '))+'</span></div><time>'+new Date(r.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></article>').join('')||'<div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Пока нет важных событий</strong><span>Здесь появятся действия с командами, друзьями и публикациями.</span></div>';
   }
   function renderAchievements(rows) {
     const card=a=>'<article class="card achievement-card '+(a.unlocked_at?'unlocked':'')+'"><div class="achievement-icon"><i class="fa-solid '+escapeHtml(a.icon)+'"></i></div><div><h3>'+escapeHtml(a.title)+'</h3><p class="subtitle">'+escapeHtml(a.description)+'</p><div class="progress"><div class="progress-bar" style="width:'+Math.min(100,Math.round((a.progress||0)*100/a.target))+'%"></div></div><small>'+fmt(a.progress||0)+' / '+fmt(a.target)+' • '+(a.unlocked_at?'Открыто':'Осталось '+fmt(Math.max(0,a.target-(a.progress||0))))+'</small></div></article>';
@@ -742,13 +753,16 @@ function initCustomSelects(root=document) {
     if(!id){box.innerHTML='<div class="empty-state"><i class="fa-regular fa-comments"></i><p>Выбери диалог слева или найди игрока по Squadra-нику.</p></div>';return;}
     if(!uid||!supabaseClient)return;
     if(!silent||!box.querySelector('.message')){box.setAttribute('aria-busy','true');if(!silent)box.innerHTML='<div class="chat-loading"><i class="fa-solid fa-spinner fa-spin"></i><span>Загружаю переписку…</span></div>';}
-    const {data,error}=await supabaseClient.from('direct_messages').select('id,sender_id,receiver_id,body,created_at,read_at').or('and(sender_id.eq.'+uid+',receiver_id.eq.'+id+'),and(sender_id.eq.'+id+',receiver_id.eq.'+uid+')').order('created_at',{ascending:false}).limit(100);
+    const {data,error}=await supabaseClient.from('direct_messages').select('id,sender_id,receiver_id,body,created_at,read_at,request_friendship_id').or('and(sender_id.eq.'+uid+',receiver_id.eq.'+id+'),and(sender_id.eq.'+id+',receiver_id.eq.'+uid+')').order('created_at',{ascending:false}).limit(100);
     if(request!==directChatLoadGeneration||document.getElementById('chatRecipient')?.value!==id)return;
     if(error){console.error('Could not load direct messages:',error);box.innerHTML='<p class="subtitle">Не удалось загрузить переписку. Проверь соединение и повтори попытку.</p>';box.removeAttribute('aria-busy');return;}
     const prefs=readChatPreferences(), cutoff=Number(prefs.cleared?.[id]||0);
     const messages=(data||[]).reverse().filter(m=>new Date(m.created_at).getTime()>cutoff);
     box.innerHTML=messages.map(m=>'<article class="message '+(m.sender_id===uid?'own':'')+'" data-message-id="'+escapeHtml(m.id)+'"><div class="author">'+(m.sender_id===uid?'Вы':'Собеседник')+' • '+new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</div><div class="message-body">'+escapeHtml(m.body)+'</div></article>').join('')||'<p class="subtitle">Начни переписку.</p>';
     box.scrollTop=box.scrollHeight;box.removeAttribute('aria-busy');
+    const activeInput=document.getElementById('chatInput');
+    const relation=(accountFriends||[]).find(f=>(f.requester_id===id||f.addressee_id===id)&&f.status==='pending'&&f.message_request);
+    if(activeInput){const waiting=!!relation&&relation.requester_id===uid;activeInput.disabled=waiting;activeInput.placeholder=waiting?'Запрос отправлен. Ожидай ответа…':'Введите сообщение…';}
     void supabaseClient.from('direct_messages').update({read_at:new Date().toISOString()}).eq('receiver_id',uid).eq('sender_id',id).is('read_at',null).then(({error:readError})=>{
       if(readError)console.warn('Could not mark direct messages as read:',readError);
       void refreshUnreadMessageCount();void loadChatList();
@@ -763,8 +777,8 @@ function initCustomSelects(root=document) {
   async function openChatWith(id){
     if(!id||!currentUser)return;
     if(document.getElementById('chatRecipient')?.value===id&&document.getElementById('messages')?.classList.contains('chat-open'))return;
-    const friend=(accountFriends||[]).find(f=>f.status==='accepted'&&(f.requester_id===id||f.addressee_id===id));
-    if(id!==currentUser.id&&!friend){showNotification('Сначала добавь игрока в друзья и дождись принятия заявки.');return;}
+    const relation=(accountFriends||[]).find(f=>(f.requester_id===id||f.addressee_id===id)&&f.status==='pending'&&f.message_request);
+    if(relation&&relation.addressee_id===currentUser.id){openMessageRequests();showNotification('Сначала прими запрос на переписку.');return;}
     showSection('messages',{skipScroll:true});
     document.getElementById('messages')?.classList.add('chat-open');
     document.body.classList.add('mobile-chat-open');
@@ -782,7 +796,13 @@ function initCustomSelects(root=document) {
     if(request!==chatProfileLoadGeneration||document.getElementById('chatRecipient')?.value!==id)return;
     if(error||!p){host.innerHTML='<button type="button" class="mobile-chat-back" onclick="closeMobileChat()" aria-label="К списку чатов"><i class="fa-solid fa-arrow-left"></i></button><span class="subtitle">Игрок недоступен</span>';return;}
     const nickname=readChatPreferences().nicknames?.[id]||'';
-    host.innerHTML='<button type="button" class="mobile-chat-back" onclick="closeMobileChat()" aria-label="К списку чатов"><i class="fa-solid fa-arrow-left"></i></button><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><button class="player-profile-link" onclick="openPlayerProfile(\''+p.id+'\')"><strong>'+escapeHtml(nickname||p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></button><button class="btn btn-ghost" onclick="openPlayerProfile(\''+p.id+'\')">Профиль</button><details class="chat-tools"><summary class="btn btn-ghost" aria-label="Действия чата"><i class="fa-solid fa-ellipsis"></i></summary><div class="chat-tools-menu"><button class="btn btn-ghost" onclick="editChatNickname(\''+p.id+'\')">Задать имя</button><button class="btn btn-ghost" onclick="clearChatHistory(\''+p.id+'\')">Очистить историю</button><button class="btn btn-danger" onclick="deleteChatForMe(\''+p.id+'\')">Удалить чат</button></div></details>';
+    host.innerHTML='<button type="button" class="mobile-chat-back" onclick="closeMobileChat()" aria-label="К списку чатов"><i class="fa-solid fa-arrow-left"></i></button><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><button class="player-profile-link" onclick="openPlayerProfile(\''+p.id+'\')"><strong>'+escapeHtml(nickname||p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></button><button class="btn btn-ghost" onclick="openPlayerProfile(\''+p.id+'\')">Профиль</button><details class="chat-tools"><summary class="btn btn-ghost" aria-label="Действия чата" onclick="positionChatTools(this)"><i class="fa-solid fa-ellipsis"></i></summary><div class="chat-tools-menu"><button class="btn btn-ghost" onclick="editChatNickname(\''+p.id+'\')">Задать имя</button><button class="btn btn-ghost" onclick="clearChatHistory(\''+p.id+'\')">Очистить историю</button><button class="btn btn-danger" onclick="deleteChatForMe(\''+p.id+'\')">Удалить чат</button></div></details>';
+  }
+  function positionChatTools(summary){
+    setTimeout(()=>{const details=summary?.closest('.chat-tools'),menu=details?.querySelector('.chat-tools-menu');if(!menu)return;
+      if(!details.open){menu.style.removeProperty('position');menu.style.removeProperty('top');menu.style.removeProperty('right');return;}
+      if(innerWidth<=760){const rect=summary.getBoundingClientRect(),height=Math.min(menu.scrollHeight,innerHeight-100);menu.style.position='fixed';menu.style.top=Math.max(8,Math.min(rect.bottom+6,innerHeight-height-8))+'px';menu.style.right=Math.max(8,innerWidth-rect.right)+'px';menu.style.left='auto';menu.style.maxHeight=(innerHeight-100)+'px';}
+    },0);
   }
   let unreadMessagesRequest=0;
   function paintUnreadMessageCount(count){
@@ -827,7 +847,28 @@ function initCustomSelects(root=document) {
     }).join('')||'<div class="empty-state chat-empty"><strong>Чаты скрыты</strong><p>Начни переписку, чтобы открыть диалог снова.</p></div>';
   }
   function filterChatList(){const q=(document.getElementById('chatSearch')?.value||'').toLocaleLowerCase('ru');document.querySelectorAll('.chat-list-item').forEach(el=>el.hidden=!el.textContent.toLocaleLowerCase('ru').includes(q));}
-  async function searchChatPlayers(){clearTimeout(chatSearchTimer);const sequence=++chatSearchGeneration;chatSearchTimer=setTimeout(async()=>{const field=document.getElementById('newChatSearch'),q=(field?.value||'').trim(),host=document.getElementById('newChatResults');if(!host)return;if(!currentUser||!supabaseClient){host.innerHTML='<p class="subtitle">Войди, чтобы начать новый чат.</p>';return;}if(q.length<2){host.innerHTML='<p class="subtitle">Введи не менее 2 символов.</p>';return;}host.setAttribute('aria-busy','true');const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').ilike('username','%'+q.replace(/[%_]/g,'')+'%').neq('id',currentUser.id).order('display_name').limit(8);if(sequence!==chatSearchGeneration||(field?.value||'').trim()!==q)return;if(error){console.error('New chat search failed:',error);host.innerHTML='<p class="subtitle">Не удалось выполнить поиск. Попробуй ещё раз.</p>';host.removeAttribute('aria-busy');return;}host.innerHTML=(data||[]).map(p=>{const accepted=(accountFriends||[]).some(f=>f.status==='accepted'&&(f.requester_id===p.id||f.addressee_id===p.id));return '<article class="chat-search-result"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><button class="btn btn-ghost" type="button" onclick="openPlayerProfile(\''+p.id+'\')">Профиль</button>'+(accepted?'<button class="btn btn-primary" type="button" onclick="closeModal(\'newChatModal\');openChatWith(\''+p.id+'\')">Написать</button>':'<button class="btn btn-ghost" type="button" onclick="addFriend(\''+p.id+'\')">Добавить в друзья</button>')+'</article>';}).join('')||'<div class="empty-state"><p>Игрок не найден. Проверь ник и попробуй ещё раз.</p></div>';host.removeAttribute('aria-busy');},220);}
+  async function loadMessageRequests(){
+    const host=document.getElementById('messageRequestsList'),badge=document.getElementById('messageRequestCount');
+    if(!currentUser||!supabaseClient){if(badge){badge.hidden=true;badge.textContent='';}return;}
+    const uid=currentUser.id;
+    const {data:relations,error}=await supabaseClient.from('friendships').select('id,requester_id,addressee_id,created_at').eq('addressee_id',uid).eq('status','pending').eq('message_request',true).order('created_at',{ascending:false}).limit(50);
+    if(error){console.warn('Could not load message requests:',error);if(host)host.innerHTML='<p class="subtitle">Не удалось загрузить запросы.</p>';return;}
+    const ids=(relations||[]).map(r=>r.id);
+    if(badge){badge.textContent=ids.length?String(ids.length):'';badge.hidden=!ids.length;badge.setAttribute('aria-label',ids.length+' запросов на переписку');}
+    if(!host)return;
+    if(!ids.length){host.innerHTML='<div class="empty-state"><i class="fa-regular fa-comments"></i><strong>Запросов пока нет</strong><span>Первые сообщения от незнакомых игроков появятся здесь.</span></div>';return;}
+    const [{data:messages},{data:profiles}]=await Promise.all([
+      supabaseClient.from('direct_messages').select('id,request_friendship_id,sender_id,body,created_at').in('request_friendship_id',ids).order('created_at',{ascending:false}),
+      supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',[...new Set(relations.map(r=>r.requester_id))])
+    ]);
+    const messageByRequest=new Map((messages||[]).map(m=>[m.request_friendship_id,m]));
+    const profileById=new Map((profiles||[]).map(p=>[p.id,p]));
+    host.innerHTML=relations.map(r=>{const m=messageByRequest.get(r.id),p=profileById.get(r.requester_id)||{};
+      return '<article class="message-request-card"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt=""><div class="message-request-copy"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong><small>@'+escapeHtml(p.username||'')+'</small><p>'+escapeHtml(m?.body||'Запрос на переписку')+'</p></div><div class="message-request-actions"><button class="btn btn-primary" onclick="respondFriend(\''+r.id+'\',\'accepted\').then(()=>openChatWith(\''+r.requester_id+'\'))">Принять и добавить</button><button class="btn btn-ghost" onclick="respondFriend(\''+r.id+'\',\'rejected\')">Отклонить</button></div></article>';
+    }).join('');
+  }
+  function openMessageRequests(){openModal('messageRequestsModal');void loadMessageRequests();}
+  function searchChatPlayers(){clearTimeout(chatSearchTimer);const sequence=++chatSearchGeneration;chatSearchTimer=setTimeout(async()=>{const field=document.getElementById('newChatSearch'),q=(field?.value||'').trim(),host=document.getElementById('newChatResults');if(!host)return;if(!currentUser||!supabaseClient){host.innerHTML='<p class="subtitle">Войди, чтобы начать новый чат.</p>';return;}if(q.length<2){host.innerHTML='<p class="subtitle">Введи не менее 2 символов.</p>';return;}host.setAttribute('aria-busy','true');const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').ilike('username','%'+q.replace(/[%_]/g,'')+'%').neq('id',currentUser.id).order('display_name').limit(8);if(sequence!==chatSearchGeneration||(field?.value||'').trim()!==q)return;if(error){console.error('New chat search failed:',error);host.innerHTML='<p class="subtitle">Не удалось выполнить поиск. Попробуй ещё раз.</p>';host.removeAttribute('aria-busy');return;}host.innerHTML=(data||[]).map(p=>{const accepted=(accountFriends||[]).some(f=>f.status==='accepted'&&(f.requester_id===p.id||f.addressee_id===p.id));return '<article class="chat-search-result"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><div class="chat-search-actions"><button class="btn btn-ghost" type="button" onclick="openPlayerProfile(\''+p.id+'\')">Профиль</button><button class="btn btn-primary" type="button" onclick="closeModal(\'newChatModal\');openChatWith(\''+p.id+'\')">Написать</button>'+(accepted?'':'<button class="btn btn-ghost" type="button" onclick="addFriend(\''+p.id+'\')">Добавить в друзья</button>')+'</div></article>';}).join('')||'<div class="empty-state"><p>Игрок не найден. Проверь ник и попробуй ещё раз.</p></div>';host.removeAttribute('aria-busy');},220);}
   async function addFriend(id) {
     if(!currentUser)return requireAccount();
     const {error}=await supabaseClient.from('friendships').insert({requester_id:currentUser.id,addressee_id:id});
@@ -837,7 +878,9 @@ function initCustomSelects(root=document) {
   async function respondFriend(id,status) {
     const {error}=await supabaseClient.from('friendships').update({status}).eq('id',id).eq('addressee_id',currentUser.id);
     if(error)return showNotification('Не удалось обновить запрос.');
-    await Promise.all([refreshFriendList(),refreshNotifications()]);
+    await Promise.all([refreshFriendList(),refreshNotifications(),loadChatList()]);
+    if(status==='accepted')showNotification('Заявка принята. Переписка теперь доступна.');
+    else if(status==='rejected')showNotification('Запрос отклонён.');
   }
   async function removeFriend(id) {
     if(!currentUser||!supabaseClient)return requireAccount();
