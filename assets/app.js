@@ -713,11 +713,11 @@ function initCustomSelects(root=document) {
   }
   function renderHistory(rows) {
     const el=document.getElementById('historyBody');if(!el)return;
-    const important=/Создал команду|Создал турнир|Зарегистрировал команду на турнир|Принял приглашение в команду|Подал заявку в команду|Добавил игрока в друзья|Принял заявку в друзья|Отправил заявку в друзья|Создал публикацию|Обновил профиль|Обновил настройки аккаунта/;
+    const important=/Создал команду|Создал турнир|Зарегистрировал команду на турнир|Принял приглашение в команду|Подал заявку в команду|Добавил игрока в друзья|Принял заявку в друзья|Отправил заявку в друзья|Обновил профиль|Обновил настройки аккаунта/;
     const visible=(rows||[]).filter(r=>important.test(r.action||'')).slice(0,30);
     const resultLabel=value=>({pending:'Ожидает ответа',accepted:'Принято',rejected:'Отклонено',confirmed:'Подтверждено'}[String(value||'').toLowerCase()]||value||'Действие в аккаунте');
     const iconFor=action=>/команду/.test(action)?'fa-people-group':/турнир/.test(action)?'fa-trophy':/друзья/.test(action)?'fa-user-group':/публикацию/.test(action)?'fa-comments': 'fa-user-pen';
-    el.innerHTML=visible.map(r=>'<article class="activity-card"><span class="activity-icon"><i class="fa-solid '+iconFor(r.action||'')+'"></i></span><div class="activity-copy"><strong>'+escapeHtml(r.action)+'</strong><span>'+escapeHtml([r.game_name,resultLabel(r.result)].filter(Boolean).join(' • '))+'</span></div><time>'+new Date(r.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></article>').join('')||'<div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Пока нет важных событий</strong><span>Здесь появятся действия с командами, друзьями и публикациями.</span></div>';
+    el.innerHTML=visible.map(r=>'<article class="activity-card"><span class="activity-icon"><i class="fa-solid '+iconFor(r.action||'')+'"></i></span><div class="activity-copy"><strong>'+escapeHtml(r.action)+'</strong><span>'+escapeHtml([r.game_name,r.metadata?.target_name||r.metadata?.recipient_name||r.metadata?.friend_name||r.metadata?.username,resultLabel(r.result)].filter(Boolean).join(' • '))+'</span></div><time>'+new Date(r.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></article>').join('')||'<div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Пока нет важных событий</strong><span>Здесь появятся действия с командами, друзьями и публикациями.</span></div>';
   }
   function renderAchievements(rows) {
     const card=a=>'<article class="card achievement-card '+(a.unlocked_at?'unlocked':'')+'"><div class="achievement-icon"><i class="fa-solid '+escapeHtml(a.icon)+'"></i></div><div><h3>'+escapeHtml(a.title)+'</h3><p class="subtitle">'+escapeHtml(a.description)+'</p><div class="progress"><div class="progress-bar" style="width:'+Math.min(100,Math.round((a.progress||0)*100/a.target))+'%"></div></div><small>'+fmt(a.progress||0)+' / '+fmt(a.target)+' • '+(a.unlocked_at?'Открыто':'Осталось '+fmt(Math.max(0,a.target-(a.progress||0))))+'</small></div></article>';
@@ -776,7 +776,21 @@ function initCustomSelects(root=document) {
   function setChatNickname(peerId,value){const prefs=readChatPreferences();prefs.nicknames=prefs.nicknames||{};const nickname=String(value||'').trim().slice(0,40);if(nickname)prefs.nicknames[peerId]=nickname;else delete prefs.nicknames[peerId];writeChatPreferences(prefs);void Promise.allSettled([loadChatList(),loadChatProfile(peerId)]);showNotification(nickname?'Имя для чата сохранено.':'Показано исходное имя игрока.')}
   async function editChatNickname(peerId){const current=readChatPreferences().nicknames?.[peerId]||'';const value=await openActionDialog('Введи имя для этого чата. Оставь поле пустым, чтобы вернуть исходное имя.',{input:true,value:current,confirmText:'Сохранить',eyebrow:'ИМЯ В ЧАТЕ'});if(value!==null)setChatNickname(peerId,value)}
   async function clearChatHistory(peerId){if(!await askConfirm('Скрыть историю этого чата на этом устройстве? У собеседника сообщения останутся.'))return;const prefs=readChatPreferences();prefs.cleared=prefs.cleared||{};prefs.cleared[peerId]=Date.now();writeChatPreferences(prefs);await loadDirectMessages();showNotification('История скрыта на этом устройстве.')}
-  async function deleteChatForMe(peerId){if(!await askConfirm('Убрать этот чат из твоего списка? Сообщения останутся у собеседника.'))return;const prefs=readChatPreferences();prefs.hidden=prefs.hidden||[];if(!prefs.hidden.includes(peerId))prefs.hidden.push(peerId);writeChatPreferences(prefs);if(document.getElementById('chatRecipient')?.value===peerId)closeMobileChat();await loadChatList();showNotification('Чат скрыт из списка.')}
+  async function deleteChatForMe(peerId){
+    if(!currentUser||!peerId||!await askConfirm('Удалить чат у себя? Если собеседник тоже удалит его, переписка будет стёрта у обоих.'))return;
+    const {error}=await supabaseClient.from('direct_chat_states').upsert({user_id:currentUser.id,peer_id:peerId,hidden_at:new Date().toISOString()},{onConflict:'user_id,peer_id'});
+    if(error){console.error('Could not hide chat:',error);return showNotification('Не удалось удалить чат. Повтори попытку.');}
+    const {data:states,error:stateError}=await supabaseClient.from('direct_chat_states').select('user_id').or('and(user_id.eq.'+currentUser.id+',peer_id.eq.'+peerId+'),and(user_id.eq.'+peerId+',peer_id.eq.'+currentUser.id+')');
+    if(stateError)console.error(stateError);
+    const bothHidden=new Set((states||[]).map(x=>x.user_id)).size>=2;
+    if(bothHidden){
+      const {error:deleteError}=await supabaseClient.from('direct_messages').delete().or('and(sender_id.eq.'+currentUser.id+',receiver_id.eq.'+peerId+'),and(sender_id.eq.'+peerId+',receiver_id.eq.'+currentUser.id+')');
+      if(deleteError){console.error('Could not erase fully deleted chat:',deleteError);return showNotification('Оба скрыли чат, но историю пока не удалось стереть.');}
+    }
+    if(document.getElementById('chatRecipient')?.value===peerId)closeMobileChat();
+    await loadChatList();
+    showNotification(bothHidden?'Чат удалён у обоих, история переписки стёрта.':'Чат скрыт у тебя. Удаление у обоих: 1 из 2.');
+  }
   async function openChatWith(id){
     if(!id||!currentUser)return;
     if(document.getElementById('chatRecipient')?.value===id&&document.getElementById('messages')?.classList.contains('chat-open'))return;
@@ -827,7 +841,10 @@ function initCustomSelects(root=document) {
     const {data:rows,error}=await supabaseClient.from('direct_messages').select('sender_id,receiver_id,body,created_at,read_at').or('sender_id.eq.'+uid+',receiver_id.eq.'+uid).order('created_at',{ascending:false}).limit(200);
     if(request!==chatListLoadGeneration)return;
     if(error){console.error('Could not load chat list:',error);host.innerHTML='<p class="subtitle">Не удалось загрузить диалоги.</p>';return;}
-    const latest=new Map(),unreadByPeer=new Map(),latestUnreadByPeer=new Map(),prefs=readChatPreferences(),hidden=new Set(prefs.hidden||[]);
+    const {data:hiddenRows,error:hiddenError}=await supabaseClient.from('direct_chat_states').select('peer_id').eq('user_id',uid);
+    if(request!==chatListLoadGeneration)return;
+    if(hiddenError)console.error('Could not load hidden chats:',hiddenError);
+    const latest=new Map(),unreadByPeer=new Map(),latestUnreadByPeer=new Map(),hidden=new Set((hiddenRows||[]).map(x=>x.peer_id)),prefs=readChatPreferences();
     (rows||[]).forEach(m=>{
       const peer=m.sender_id===uid?m.receiver_id:m.sender_id;
       if(!latest.has(peer))latest.set(peer,m);
@@ -1575,6 +1592,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
         if(row.sender_id!==uid&&document.getElementById('chatRecipient')?.value===peerId)void loadDirectMessages({silent:true});
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'direct_messages',filter:'receiver_id=eq.'+uid},()=>{void refreshUnreadMessageCount();})
+      .on('postgres_changes',{event:'*',schema:'public',table:'direct_chat_states'},payload=>{
+        const row=payload?.new||payload?.old;if(row?.user_id===uid||row?.peer_id===uid)void loadChatList();
+      })
       .subscribe((status,error)=>{
         if(generation!==realtimeGeneration)return;
         if(status==='SUBSCRIBED'){realtimeRetryDelay=3000;setChatConnectionStatus('connected');return;}
@@ -2015,13 +2035,17 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       if(!Number.isInteger(durationHours)||durationHours<1||durationHours>8760)return showNotification('Срок должен быть от 1 часа до 365 дней.');
       days=durationHours/24;
     } else if(!await askConfirm('Подтвердить действие с аккаунтом?')) return;
+    const verifyButton=action==='verify'?document.getElementById('adminVerifyButton'):null;
+    const previousVerify=adminSelectedUserData?.profile?.verified_color??null;
+    if(verifyButton){verifyButton.disabled=true;verifyButton.textContent='Сохраняю…';}
+    if(action==='verify'&&adminSelectedUserData?.profile&&adminSelectedUserData.user?.id===targetUserId)adminSelectedUserData.profile.verified_color=color||null;
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action,targetUserId,role,days,durationHours:action==='ban'?Math.max(1,Math.round(days*24)):null,color:color||null}});
-    if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось изменить аккаунт.');console.error('Admin user action failed:',error||data);showNotification(message);return;}
+    if(error||data?.error){if(verifyButton){verifyButton.disabled=false;verifyButton.textContent=previousVerify?'Снять галочку':'Выдать галочку';}if(action==='verify'&&adminSelectedUserData?.profile)adminSelectedUserData.profile.verified_color=previousVerify;const message=await adminFunctionError(error,data,'Не удалось изменить аккаунт.');console.error('Admin user action failed:',error||data);showNotification(message);return;}
     showNotification(action==='ban'?'Аккаунт заблокирован.':action==='unban'?'Аккаунт разблокирован.':action==='grant_role'?'Роль назначена.':action==='verify'?(color?'Значок проверки выдан.':'Значок проверки снят.'):'Роль снята.');
     if(action==='verify'&&adminSelectedUserData?.profile&&adminSelectedUserData.user?.id===targetUserId){
       adminSelectedUserData.profile.verified_color=color||null;
       const button=document.getElementById('adminVerifyButton');
-      if(button){button.textContent=color?'Снять галочку':'Выдать галочку';button.setAttribute('onclick','adminUserAction(&quot;'+targetUserId+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(color?'':'blue')+'&quot;)');}
+      if(button){button.disabled=false;button.textContent=color?'Снять галочку':'Выдать галочку';button.setAttribute('onclick','adminUserAction(&quot;'+targetUserId+'&quot;,&quot;verify&quot;,&quot;&quot;,&quot;'+(color?'':'blue')+'&quot;)');}
       const detail=[...document.querySelectorAll('#adminDetailBody .admin-detail-field')].find(x=>x.querySelector('span')?.textContent==='Проверка');
       if(detail){const value=detail.querySelector('strong');if(value)value.textContent=color?'Синяя • '+new Date().toLocaleString('ru-RU'):'Нет';}
       return;
