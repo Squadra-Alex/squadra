@@ -1187,8 +1187,9 @@ function initCustomSelects(root=document) {
     const limit=Number(document.getElementById('tournamentLimit').value);
     if(name.length<3)return showNotification('Название турнира должно содержать минимум 3 символа.');
     if(!Number.isInteger(limit)||limit<2||limit>256)return showNotification('Укажи от 2 до 256 команд.');
-    const starts=document.getElementById('tournamentStarts').value;
-    const payload={id:'user-'+crypto.randomUUID(),owner_id:currentUser.id,name,game_name:document.getElementById('tournamentGame').value,status:'registration',prize:document.getElementById('tournamentPrize').value.trim(),description:document.getElementById('tournamentDescription').value.trim(),participant_limit:limit,starts_at:starts?new Date(starts).toISOString():null};
+    const starts=document.getElementById('tournamentStarts').value,prize=document.getElementById('tournamentPrize').value.trim();
+    if(prize&&!/^\\d+$/.test(prize))return showNotification('Призовой фонд может содержать только цифры.');
+    const payload={id:'user-'+crypto.randomUUID(),owner_id:currentUser.id,name,game_name:document.getElementById('tournamentGame').value,status:'registration',prize,description:document.getElementById('tournamentDescription').value.trim(),participant_limit:limit,starts_at:starts?new Date(starts).toISOString():null};
     const {error}=await supabaseClient.from('tournaments').insert(payload);
     if(error){console.error('Could not create tournament:',error);return showNotification('Не удалось создать турнир. Проверь заполнение и права доступа.');}
     closeModal('createTournamentModal');document.getElementById('tournamentName').value='';document.getElementById('tournamentDescription').value='';
