@@ -1234,7 +1234,7 @@ function initCustomSelects(root=document) {
     const description=(await askInput('Описание группы:',g.description||''))??(g.description||'');
     const game=(await askInput('Игра группы:',g.game_name||''))??g.game_name;
     const avatar_url=(await askInput('Ссылка на аватар группы (оставь пустым, чтобы убрать):',g.avatar_url||''))??g.avatar_url;
-    const {error}=await supabaseClient.from('community_groups').update({name:name.trim().slice(0,80),description:description.slice(0,300),game_name:game.trim().slice(0,60),avatar_url:avatar_url.trim()||null}).eq('id',id).eq('owner_id',currentUser.id);
+    const {error}=await supabaseClient.from('community_groups').update({name:name.trim().slice(0,80),description:description.slice(0,300),game_name:game.trim().slice(0,60),avatar_url:String(avatar_url||'').trim()||null}).eq('id',id).eq('owner_id',currentUser.id);
     if(error){console.error(error);return showNotification('Не удалось изменить группу.');}
     await loadCommunityGroups();showNotification('Группа обновлена.');
   }
