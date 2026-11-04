@@ -2174,3 +2174,7 @@ body > .container > main > .section.active {
 .group-page-avatar{width:64px;height:64px;object-fit:cover;border-radius:16px;margin:0 0 12px}
 .group-page-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .comment-send{min-width:42px}
+
+#players{touch-action:pan-y;overflow-y:visible!important}
+#players>table,#players>table tbody,#players>table tr{touch-action:pan-y}
+#players>table{overscroll-behavior-y:auto}
