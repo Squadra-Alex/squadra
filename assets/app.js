@@ -1475,6 +1475,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   let activeCommunityGroup=null;
 
   function setChatConnectionStatus(state){const el=document.getElementById('chatRealtimeStatus');if(!el)return;el.classList.toggle('is-connected',state==='connected');el.classList.toggle('is-reconnecting',state==='reconnecting');el.innerHTML=state==='connected'?'<i class="fa-solid fa-circle"></i> Онлайн':state==='reconnecting'?'<i class="fa-solid fa-rotate fa-spin"></i> Переподключение':'<i class="fa-solid fa-circle"></i> Не в сети';}
+  function isRealtimeForeground() {
+    return document.visibilityState==='visible'&&document.hasFocus();
+  }
   function stopRealtime() {
     realtimeGeneration++;
     if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=null;}
@@ -1482,16 +1485,18 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     realtimeChannel=null;
     directMessagesChannel=null;
     realtimeUserId=null;
-    setChatConnectionStatus('reconnecting');
-    if(supabaseClient)channels.forEach(channel=>supabaseClient.removeChannel(channel));
+    setChatConnectionStatus('offline');
+    if(supabaseClient)channels.forEach(channel=>{
+      void supabaseClient.removeChannel(channel).catch(error=>console.warn('Squadra Realtime channel cleanup failed:',error));
+    });
   }
   function scheduleRealtimeReconnect(uid,generation) {
-    if(realtimeRetryTimer)return;
+    if(!isRealtimeForeground()||realtimeRetryTimer)return;
     const delay=realtimeRetryDelay;
     realtimeRetryDelay=Math.min(realtimeRetryDelay*2,30000);
     realtimeRetryTimer=setTimeout(()=>{
       realtimeRetryTimer=null;
-      if(generation!==realtimeGeneration||currentUser?.id!==uid)return;
+      if(generation!==realtimeGeneration||currentUser?.id!==uid||!isRealtimeForeground())return;
       stopRealtime();
       setupRealtime();
     },delay);
@@ -1519,6 +1524,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
   function setupRealtime() {
     if(!supabaseClient||!currentUser)return;
+    if(!isRealtimeForeground()){
+      if(realtimeChannel||directMessagesChannel||realtimeRetryTimer)stopRealtime();
+      return;
+    }
     const uid=currentUser.id;
     if(realtimeChannel&&realtimeUserId===uid){if(!directMessagesChannel)setupDirectMessagesRealtime(uid,realtimeGeneration);return;}
     if(realtimeChannel||directMessagesChannel)stopRealtime();
@@ -1573,14 +1582,23 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       });
   }
 
-  document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState!=='visible'||!currentUser)return;
+  function resumeForegroundRealtime() {
+    if(!currentUser||!isRealtimeForeground())return;
+    setupRealtime();
     void refreshNotifications();void refreshFriendList();void loadChatList();
     if(document.getElementById('chatRecipient')?.value)void loadDirectMessages();
     if(activeCommunityGroup)void loadGroupMessages(activeCommunityGroup);
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(isRealtimeForeground())resumeForegroundRealtime();
+    else stopRealtime();
   });
+  window.addEventListener('blur',stopRealtime);
+  window.addEventListener('focus',resumeForegroundRealtime);
+  window.addEventListener('pagehide',stopRealtime);
+  window.addEventListener('pageshow',resumeForegroundRealtime);
   window.addEventListener('online',()=>{
-    if(currentUser&&(!realtimeChannel||!directMessagesChannel))setupRealtime();
+    if(isRealtimeForeground()&&currentUser&&(!realtimeChannel||!directMessagesChannel))setupRealtime();
   });
   async function openGroupChat(groupId,options={}) {
     if(!currentUser)return requireAccount();activeCommunityGroup=groupId;
