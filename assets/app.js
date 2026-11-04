@@ -1320,7 +1320,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const controls='<div class="notifications-toolbar"><span class="subtitle">'+(unread?unread+' непрочитанных':'Все прочитаны')+'</span><div class="notification-actions"><button class="btn btn-ghost" type="button" onclick="markAllNotificationsRead()" '+(unread?'':'disabled')+'>Прочитать все</button><button class="btn btn-ghost" type="button" aria-pressed="'+hideRead+'" onclick="toggleReadNotifications()">'+(hideRead?'Показать прочитанные':'Скрыть прочитанные')+'</button><button class="btn btn-danger" type="button" onclick="deleteAllNotifications()" '+(all.length?'':'disabled')+'>Удалить все</button></div></div>';
     list.innerHTML=controls+(visible.map(n=>{const support=n.source_type==='community_report'&&n.kind==='report_message';return '<article class="card notification-card '+(n.read_at?'is-read':'')+'" onclick="openNotification(\''+n.id+'\')"><div class="notification-icon"><i class="fa-solid '+notificationIcon(n.source_type||n.kind)+'"></i></div><div class="notification-copy"><p>'+escapeHtml(n.body||'У тебя новое обновление.')+'</p><small class="subtitle">'+new Date(n.created_at).toLocaleString('ru-RU')+'</small></div><div class="notification-card-actions">'+(support?'<button class="btn btn-primary" type="button" onclick="event.stopPropagation();openNotification(\''+n.id+'\')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть чат поддержки</button>':'<button class="btn btn-ghost" type="button" onclick="event.stopPropagation();markNotificationRead(\''+n.id+'\')">'+(n.read_at?'Открыть':'Прочитано')+'</button>')+'</div></article>';}).join('')||'<div class="empty-state"><i class="fa-regular fa-bell-slash"></i><p>'+(hideRead&&all.length?'Прочитанные уведомления скрыты.':'Пока нет уведомлений.')+'</p></div>');
   }
-  async function refreshNotifications(){if(!currentUser||!supabaseClient)return;const uid=currentUser.id;const {data,error}=await supabaseClient.from('notifications').select('*').eq('user_id',uid).order('created_at',{ascending:false}).limit(50);if(error){console.error('Could not refresh notifications:',error);return;}if(currentUser?.id!==uid)return;accountNotifications=data||[];renderNotifications(accountNotifications);}
+  async function refreshNotifications(){if(!currentUser||!supabaseClient)return;const uid=currentUser.id;const {data,error}=await supabaseClient.from('notifications').select('*').eq('user_id',uid).order('created_at',{ascending:false}).limit(50);if(error){console.error('Could not refresh notifications:',error);return;}if(currentUser?.id!==uid)return;accountNotifications=(data||[]).filter(n=>n.source_type!=='group'&&n.kind!=='group_message');renderNotifications(accountNotifications);}
   function toggleReadNotifications(){if(!currentUser)return requireAccount();const key='squadra-hide-read-notifications-'+currentUser.id;const next=localStorage.getItem(key)!=='1';localStorage.setItem(key,next?'1':'0');renderNotifications(accountNotifications);}
   async function deleteAllNotifications(){if(!currentUser||!supabaseClient)return requireAccount();if(!accountNotifications.length)return;const ok=await askConfirm('Удалить все уведомления? Их нельзя будет восстановить.');if(!ok)return;const uid=currentUser.id;const {error}=await supabaseClient.from('notifications').delete().eq('user_id',uid);if(error){console.error('Could not delete notifications:',error);return showNotification('Не удалось удалить уведомления.');}accountNotifications=[];renderNotifications([]);showNotification('Уведомления удалены.');}
   function reportMessageMarkup(rows,ownId) {
@@ -1447,11 +1447,23 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(!currentUser)return requireAccount();
     const field=document.getElementById('comment-'+postId),body=field?.value.trim();
     if(!body)return;
-    field.disabled=true;
-    const {error}=await supabaseClient.from('community_post_comments').insert({post_id:postId,user_id:currentUser.id,body});
-    field.disabled=false;
-    if(error){console.error(error);return showNotification(error.message||'Не удалось отправить комментарий.');}
-    field.value='';void refreshCommunityFeed();
+    const tempId='pending-'+crypto.randomUUID(),created_at=new Date().toISOString();
+    const profile=accountProfile||{};
+    const optimistic={id:tempId,post_id:postId,user_id:currentUser.id,body,created_at,profiles:{id:currentUser.id,username:profile.username||currentUser.user_metadata?.username||'игрок',display_name:profile.display_name||currentUser.user_metadata?.display_name||'Ты',avatar_url:profile.avatar_url||null}};
+    communityCommentRows=[...communityCommentRows,optimistic];
+    if(field)field.value='';
+    renderCommunity(communityPostRows,communityLiked,communityCommentRows);
+    const {data,error}=await supabaseClient.from('community_post_comments').insert({post_id:postId,user_id:currentUser.id,body}).select('id,post_id,user_id,body,created_at').single();
+    if(error){
+      console.error(error);
+      communityCommentRows=communityCommentRows.filter(c=>c.id!==tempId);
+      if(field&&!field.value)field.value=body;
+      renderCommunity(communityPostRows,communityLiked,communityCommentRows);
+      return showNotification(error.message||'Не удалось отправить комментарий.');
+    }
+    const saved={...data,profiles:optimistic.profiles};
+    communityCommentRows=communityCommentRows.map(c=>c.id===tempId?saved:c);
+    renderCommunity(communityPostRows,communityLiked,communityCommentRows);
   }
 
   let pendingCommunityReport=null;
@@ -1682,7 +1694,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
         if(row.reporter_id===uid){void refreshMyReports();void refreshNotifications();}
         if(payload.eventType==='DELETE'){void refreshMyReports();void refreshNotifications();}else if(row.reporter_id===uid){void refreshMyReports();void refreshNotifications();}if(isModerator&&document.getElementById('admin')?.classList.contains('active')){void refreshAdminReports();if(adminSelectedReportId===row.id&&payload.eventType!=='DELETE')void adminInspectReport(row.id);}
       })
-      .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{void refreshNotifications();if(payload.eventType==='INSERT'&&payload.new?.body)showNotification(payload.new.body);})
+      .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{void refreshNotifications();if(payload.eventType==='INSERT'&&payload.new?.body&&payload.new?.source_type!=='group'&&payload.new?.kind!=='group_message')showNotification(payload.new.body);})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId&&document.getElementById('adminDetailModal')?.classList.contains('active')){const host=document.getElementById('adminReportConversation');if(host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}}const panel=document.getElementById('report-chat-panel-'+reportId),host=document.getElementById('report-chat-messages-'+reportId);if(panel&&!panel.hidden&&host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}})
       .on('postgres_changes',{event:'*',schema:'public',table:'community_groups'},()=>{if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
       .on('postgres_changes',{event:'*',schema:'public',table:'community_group_members'},()=>{if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
@@ -1694,6 +1706,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
           realtimeRetryDelay=3000;
           void refreshFriendList();void refreshNotifications();void refreshUnreadMessageCount();
           void loadChatList();
+          if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();
           if(document.getElementById('chatRecipient')?.value)loadDirectMessages();
           if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);
           return;
@@ -1711,6 +1724,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     void refreshNotifications();void refreshFriendList();void loadChatList();
     if(document.getElementById('chatRecipient')?.value)void loadDirectMessages();
     if(activeCommunityGroup)void loadGroupMessages(activeCommunityGroup);
+    if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();
   }
   document.addEventListener('visibilitychange',()=>{
     if(isRealtimeForeground())resumeForegroundRealtime();
