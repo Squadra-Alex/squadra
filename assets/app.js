@@ -749,7 +749,10 @@ function initCustomSelects(root=document) {
     const messages=(data||[]).reverse().filter(m=>new Date(m.created_at).getTime()>cutoff);
     box.innerHTML=messages.map(m=>'<article class="message '+(m.sender_id===uid?'own':'')+'" data-message-id="'+escapeHtml(m.id)+'"><div class="author">'+(m.sender_id===uid?'Вы':'Собеседник')+' • '+new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</div><div class="message-body">'+escapeHtml(m.body)+'</div></article>').join('')||'<p class="subtitle">Начни переписку.</p>';
     box.scrollTop=box.scrollHeight;box.removeAttribute('aria-busy');
-    void supabaseClient.from('direct_messages').update({read_at:new Date().toISOString()}).eq('receiver_id',uid).eq('sender_id',id).is('read_at',null).then(()=>refreshUnreadMessageCount());
+    void supabaseClient.from('direct_messages').update({read_at:new Date().toISOString()}).eq('receiver_id',uid).eq('sender_id',id).is('read_at',null).then(({error:readError})=>{
+      if(readError)console.warn('Could not mark direct messages as read:',readError);
+      void refreshUnreadMessageCount();void loadChatList();
+    });
   }
   function readChatPreferences(){if(!currentUser)return{};try{return JSON.parse(localStorage.getItem('squadra-chat-preferences-'+currentUser.id)||'{}')}catch{return{}}}
   function writeChatPreferences(prefs){if(currentUser)localStorage.setItem('squadra-chat-preferences-'+currentUser.id,JSON.stringify(prefs))}
@@ -798,17 +801,30 @@ function initCustomSelects(root=document) {
     if(!currentUser||!supabaseClient)return;
     const host=document.getElementById('chatList');if(!host)return;
     const request=++chatListLoadGeneration,uid=currentUser.id;
-    const {data:rows,error}=await supabaseClient.from('direct_messages').select('sender_id,receiver_id,body,created_at').or('sender_id.eq.'+uid+',receiver_id.eq.'+uid).order('created_at',{ascending:false}).limit(200);
+    const {data:rows,error}=await supabaseClient.from('direct_messages').select('sender_id,receiver_id,body,created_at,read_at').or('sender_id.eq.'+uid+',receiver_id.eq.'+uid).order('created_at',{ascending:false}).limit(200);
     if(request!==chatListLoadGeneration)return;
     if(error){console.error('Could not load chat list:',error);host.innerHTML='<p class="subtitle">Не удалось загрузить диалоги.</p>';return;}
-    const latest=new Map(),prefs=readChatPreferences(),hidden=new Set(prefs.hidden||[]);(rows||[]).forEach(m=>{const peer=m.sender_id===uid?m.receiver_id:m.sender_id;if(!latest.has(peer))latest.set(peer,m);});
-    hidden.forEach(peer=>latest.delete(peer));
+    const latest=new Map(),unreadByPeer=new Map(),latestUnreadByPeer=new Map(),prefs=readChatPreferences(),hidden=new Set(prefs.hidden||[]);
+    (rows||[]).forEach(m=>{
+      const peer=m.sender_id===uid?m.receiver_id:m.sender_id;
+      if(!latest.has(peer))latest.set(peer,m);
+      if(m.receiver_id===uid&&!m.read_at){
+        unreadByPeer.set(peer,(unreadByPeer.get(peer)||0)+1);
+        if(!latestUnreadByPeer.has(peer))latestUnreadByPeer.set(peer,m);
+      }
+    });
+    hidden.forEach(peer=>{latest.delete(peer);unreadByPeer.delete(peer);latestUnreadByPeer.delete(peer);});
     if(!latest.size){host.innerHTML='<div class="empty-state chat-empty"><i class="fa-regular fa-comments"></i><strong>Пока нет диалогов</strong><p>Найди игрока и начни общение.</p><button class="btn btn-primary" onclick="openModal(\'newChatModal\')">Новый чат</button></div>';return;}
     const ids=[...latest.keys()],{data:profiles,error:profileError}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',ids);
     if(request!==chatListLoadGeneration)return;
     if(profileError)console.warn('Could not load chat participant profiles:',profileError);
     const byId=new Map((profiles||[]).map(p=>[p.id,p]));
-    host.innerHTML=ids.map(id=>{const p=byId.get(id)||{},m=latest.get(id),active=document.getElementById('chatRecipient')?.value===id,nickname=prefs.nicknames?.[id]||'';return '<button class="chat-list-item '+(active?'active':'')+'" onclick="openChatWith(\''+id+'\')"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><span><strong>'+escapeHtml(nickname||p.display_name||p.username||'Игрок')+'</strong><small>'+escapeHtml(m.body||'')+'</small></span><time>'+new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</time></button>';}).join('')||'<div class="empty-state chat-empty"><strong>Чаты скрыты</strong><p>Начни переписку, чтобы открыть диалог снова.</p></div>';
+    host.innerHTML=ids.map(id=>{
+      const p=byId.get(id)||{},m=latest.get(id),unread=unreadByPeer.get(id)||0,unreadMessage=latestUnreadByPeer.get(id),active=document.getElementById('chatRecipient')?.value===id,nickname=prefs.nicknames?.[id]||'';
+      const preview=unreadMessage?'Новое сообщение: '+(unreadMessage.body||''):m.body||'';
+      const unreadLabel=unread>99?'99+':String(unread);
+      return '<button class="chat-list-item '+(active?'active ':'')+(unread?'has-unread':'')+'" onclick="openChatWith(\''+id+'\')"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><span><strong>'+escapeHtml(nickname||p.display_name||p.username||'Игрок')+'</strong><small>'+escapeHtml(preview)+'</small></span><time>'+new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</time>'+(unread?'<span class="chat-unread-badge" aria-label="'+unread+' непрочитанных сообщений">'+unreadLabel+'</span>':'')+'</button>';
+    }).join('')||'<div class="empty-state chat-empty"><strong>Чаты скрыты</strong><p>Начни переписку, чтобы открыть диалог снова.</p></div>';
   }
   function filterChatList(){const q=(document.getElementById('chatSearch')?.value||'').toLocaleLowerCase('ru');document.querySelectorAll('.chat-list-item').forEach(el=>el.hidden=!el.textContent.toLocaleLowerCase('ru').includes(q));}
   async function searchChatPlayers(){clearTimeout(chatSearchTimer);const sequence=++chatSearchGeneration;chatSearchTimer=setTimeout(async()=>{const field=document.getElementById('newChatSearch'),q=(field?.value||'').trim(),host=document.getElementById('newChatResults');if(!host)return;if(!currentUser||!supabaseClient){host.innerHTML='<p class="subtitle">Войди, чтобы начать новый чат.</p>';return;}if(q.length<2){host.innerHTML='<p class="subtitle">Введи не менее 2 символов.</p>';return;}host.setAttribute('aria-busy','true');const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').ilike('username','%'+q.replace(/[%_]/g,'')+'%').neq('id',currentUser.id).order('display_name').limit(8);if(sequence!==chatSearchGeneration||(field?.value||'').trim()!==q)return;if(error){console.error('New chat search failed:',error);host.innerHTML='<p class="subtitle">Не удалось выполнить поиск. Попробуй ещё раз.</p>';host.removeAttribute('aria-busy');return;}host.innerHTML=(data||[]).map(p=>{const accepted=(accountFriends||[]).some(f=>f.status==='accepted'&&(f.requester_id===p.id||f.addressee_id===p.id));return '<article class="chat-search-result"><img class="mini-avatar" src="'+escapeHtml(p.avatar_url||'')+'" alt="" onerror="this.removeAttribute(\'src\')"><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><button class="btn btn-ghost" type="button" onclick="openPlayerProfile(\''+p.id+'\')">Профиль</button>'+(accepted?'<button class="btn btn-primary" type="button" onclick="closeModal(\'newChatModal\');openChatWith(\''+p.id+'\')">Написать</button>':'<button class="btn btn-ghost" type="button" onclick="addFriend(\''+p.id+'\')">Добавить в друзья</button>')+'</article>';}).join('')||'<div class="empty-state"><p>Игрок не найден. Проверь ник и попробуй ещё раз.</p></div>';host.removeAttribute('aria-busy');},220);}
