@@ -598,7 +598,7 @@
     <div class="form-group"><label>Название</label><input id="tournamentName" maxlength="100" placeholder="Например: Squadra Open"></div>
     <div class="form-group"><label>Игра</label><select id="tournamentGame"><option>Загрузка игр…</option></select></div>
     <div class="grid grid-2"><div class="form-group"><label>Команд</label><input id="tournamentLimit" type="number" min="2" max="256" value="16"></div><div class="form-group"><label>Начало</label><input id="tournamentStarts" type="datetime-local"></div></div>
-    <div class="form-group"><label>Призовой фонд</label><input id="tournamentPrize" maxlength="12" inputmode="numeric" pattern="[0-9]*" placeholder="50000"></div>
+    <div class="form-group"><label>Призовой фонд</label><input id="tournamentPrize" maxlength="12" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="50000"></div>
     <div class="form-group"><label>Описание</label><textarea id="tournamentDescription" rows="3" maxlength="2000" placeholder="Правила и информация о турнире"></textarea></div>
     <button class="btn btn-primary" style="width:100%;" onclick="createTournament()"><i class="fa-solid fa-flag-checkered"></i> Создать</button>
   </div>
