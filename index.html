@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-15">
+<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-16">
 
 <style id="squadra-page-frame-fix">
   body > .container { display:block!important; width:min(1440px,calc(100vw - 48px))!important; max-width:1440px!important; min-width:0!important; margin:34px auto 64px!important; padding:0!important; box-sizing:border-box!important; }
@@ -152,8 +152,8 @@
           <div class="level"><i class="fa-solid fa-star"></i> <span id="profileLevel">Уровень 1</span> • <span id="profileGameRank">CS2 • Unranked</span></div>
           <div class="status"><span class="dot on"></span><span id="profileStatus">Профиль синхронизируется с аккаунтом</span></div>
         </div>
-        <div style="margin-left:auto;">
-          <button class="btn btn-primary" onclick="showSection('settings')"><i class="fa-solid fa-pen"></i> Редактировать профиль</button><button class="btn btn-ghost" id="adminProfileButton" hidden style="margin-left:10px" onclick="showSection('admin')"><i class="fa-solid fa-shield-halved"></i> Администрирование</button>
+        <div class="profile-header-actions">
+          <button class="btn btn-primary" onclick="showSection('settings')"><i class="fa-solid fa-pen"></i> Редактировать профиль</button><button class="btn btn-ghost" id="adminProfileButton" hidden onclick="showSection('admin')"><i class="fa-solid fa-shield-halved"></i> Администрирование</button>
         </div>
       </div>
 
@@ -256,7 +256,7 @@
         <div>
           <div class="card" style="margin-bottom:16px;">
             <h3><i class="fa-solid fa-pen-to-square" style="color:var(--red); margin-right:8px;"></i>Создать публикацию</h3>
-            <textarea id="communityPostBody" rows="3" maxlength="3000" placeholder="Что нового на арене?" style="margin-top:10px;"></textarea>
+            <textarea id="communityPostBody" rows="3" maxlength="3000" placeholder="Что нового на арене?" style="margin-top:10px;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();publishCommunityPost();}"></textarea>
             <input id="communityMediaFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" hidden onchange="selectCommunityMediaFile(this)">
             <div id="communityMediaPreview" class="subtitle" style="display:none;margin:10px 0;"></div>
             <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
@@ -454,6 +454,7 @@
               <p class="subtitle">Проверяй публикации и открывай полную карточку автора.</p>
               <div class="admin-toolbar"><input id="adminPostsSearch" maxlength="100" placeholder="Поиск по тексту, автору или типу медиа…" oninput="filterAdminList(&quot;adminPostsList&quot;,this.value)" aria-label="Поиск публикаций"></div>
               <div id="adminPostsList"><p class="subtitle">Загружаю публикации…</p></div>
+              <details class="admin-group-manager"><summary>Группы сообщества</summary><div id="adminCommunityGroupsList"><p class="subtitle">Загружаю группы…</p></div></details>
             </div>
           </section>
           <section class="admin-workspace-section" id="adminTab-platform">
@@ -481,6 +482,20 @@
 </footer>
 
 <!-- MODALS -->
+<div id="adminGroupEditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminGroupEditTitle"><div class="modal-content">
+  <button class="modal-close" type="button" onclick="closeModal('adminGroupEditModal')" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
+  <h2 id="adminGroupEditTitle">Управление группой</h2><input id="adminGroupId" type="hidden">
+  <label>Название</label><input id="adminGroupName" maxlength="80"><label>Игра</label><input id="adminGroupGame" maxlength="60">
+  <label>Описание</label><textarea id="adminGroupDescription" maxlength="300"></textarea><label>URL аватара</label><input id="adminGroupAvatar" maxlength="2048" placeholder="https://…">
+  <button class="btn btn-primary" type="button" onclick="saveAdminCommunityGroup()">Сохранить</button>
+</div></div>
+<div id="communityReportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="communityReportTitle"><div class="modal-content">
+  <button class="modal-close" type="button" onclick="closeModal('communityReportModal')" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
+  <p class="eyebrow">ЖАЛОБА НА ПУБЛИКАЦИЮ</p><h2 id="communityReportTitle">Что случилось?</h2>
+  <label for="communityReportReason">Причина</label><select id="communityReportReason"><option value="spam">Спам или реклама</option><option value="abuse">Оскорбления или травля</option><option value="cheating">Читы или нечестная игра</option><option value="other">Другое нарушение</option></select>
+  <label for="communityReportDetails">Дополнительные сведения</label><textarea id="communityReportDetails" maxlength="1000" placeholder="Опиши ситуацию подробнее (необязательно)"></textarea>
+  <button class="btn btn-primary" type="button" onclick="submitCommunityReport()">Отправить жалобу</button>
+</div></div>
 <div id="adminUserEditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminUserEditTitle">
   <div class="modal-content admin-user-edit-modal">
     <button class="modal-close" type="button" aria-label="Закрыть" onclick="closeModal('adminUserEditModal')"><i class="fa-solid fa-xmark"></i></button>
@@ -584,7 +599,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=community-social-fixes-20261104-15"></script>
+<script src="/assets/app.js?v=community-social-fixes-20261104-16"></script>
 
 </body>
 </html>
