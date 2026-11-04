@@ -178,7 +178,7 @@
     if(error){
       bubble?.remove();console.error(error);if(input&&!input.value)input.value=body;
       const detail=String(error.message||'');
-      return showNotification(error.code==='42501'?'Аккаунт заблокирован или запрос уже отправлен.':detail.includes('FRIEND_REQUEST_REQUIRED')?'Сначала отправь или прими заявку в друзья.':detail.includes('duplicate key')?'Запрос уже отправлен. Дождись ответа игрока.':'Не удалось отправить сообщение.');
+      return showNotification(error.code==='42501'&&/blocked/i.test(detail)?'Аккаунт заблокирован. Отправка сообщений и другие действия временно недоступны.':error.code==='42501'?'Нет доступа к отправке сообщения.':detail.includes('FRIEND_REQUEST_REQUIRED')?'Сначала отправь или прими заявку в друзья.':detail.includes('duplicate key')?'Запрос уже отправлен. Дождись ответа игрока.':'Не удалось отправить сообщение.');
     }
     if(bubble&&message){bubble.dataset.messageId=message.id;bubble.classList.remove('is-pending');const time=bubble.querySelector('.author');if(time)time.textContent='Вы • '+new Date(message.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
     if(!accepted){const field=document.getElementById('chatInput');if(field){field.disabled=true;field.placeholder='Запрос отправлен. Ожидай ответа…';}showNotification('Первое сообщение отправлено как запрос. Продолжить чат можно после принятия заявки в друзья.');void refreshFriendList();}
@@ -711,13 +711,17 @@ function initCustomSelects(root=document) {
     if(error){console.error(error);return showNotification('Не удалось обновить приглашение.');}
     await loadAccountData();
   }
-  function renderHistory(rows) {
+  async function renderHistory(rows) {
     const el=document.getElementById('historyBody');if(!el)return;
     const important=/Создал команду|Создал турнир|Зарегистрировал команду на турнир|Принял приглашение в команду|Подал заявку в команду|Добавил игрока в друзья|Принял заявку в друзья|Отправил заявку в друзья|Обновил профиль|Обновил настройки аккаунта/;
     const visible=(rows||[]).filter(r=>important.test(r.action||'')).slice(0,30);
     const resultLabel=value=>({pending:'Ожидает ответа',accepted:'Принято',rejected:'Отклонено',confirmed:'Подтверждено'}[String(value||'').toLowerCase()]||value||'Действие в аккаунте');
-    const iconFor=action=>/команду/.test(action)?'fa-people-group':/турнир/.test(action)?'fa-trophy':/друзья/.test(action)?'fa-user-group':/публикацию/.test(action)?'fa-comments': 'fa-user-pen';
-    el.innerHTML=visible.map(r=>'<article class="activity-card"><span class="activity-icon"><i class="fa-solid '+iconFor(r.action||'')+'"></i></span><div class="activity-copy"><strong>'+escapeHtml(r.action)+'</strong><span>'+escapeHtml([r.game_name,r.metadata?.target_name||r.metadata?.recipient_name||r.metadata?.friend_name||r.metadata?.username,resultLabel(r.result)].filter(Boolean).join(' • '))+'</span></div><time>'+new Date(r.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></article>').join('')||'<div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Пока нет важных событий</strong><span>Здесь появятся действия с командами, друзьями и публикациями.</span></div>';
+    const iconFor=action=>/команду/.test(action)?'fa-people-group':/турнир/.test(action)?'fa-trophy':/друзья/.test(action)?'fa-user-group':'fa-user-pen';
+    const friendIds=[...new Set(visible.map(r=>r.metadata?.friend_id).filter(Boolean))];
+    let friendNames=new Map();
+    if(friendIds.length&&supabaseClient){const {data}=await supabaseClient.from('profiles').select('id,display_name,username').in('id',friendIds);friendNames=new Map((data||[]).map(p=>[p.id,p.display_name||'@'+p.username]));}
+    if(!document.getElementById('historyBody'))return;
+    el.innerHTML=visible.map(r=>{const meta=r.metadata||{},person=meta.target_name||meta.recipient_name||meta.friend_name||meta.username||friendNames.get(meta.friend_id);return '<article class="activity-card"><span class="activity-icon"><i class="fa-solid '+iconFor(r.action||'')+'"></i></span><div class="activity-copy"><strong>'+escapeHtml(r.action)+'</strong><span>'+escapeHtml([r.game_name,person,resultLabel(r.result)].filter(Boolean).join(' • '))+'</span></div><time>'+new Date(r.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></article>';}).join('')||'<div class="activity-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Пока нет важных событий</strong><span>Здесь появятся действия с командами и друзьями.</span></div>';
   }
   function renderAchievements(rows) {
     const card=a=>'<article class="card achievement-card '+(a.unlocked_at?'unlocked':'')+'"><div class="achievement-icon"><i class="fa-solid '+escapeHtml(a.icon)+'"></i></div><div><h3>'+escapeHtml(a.title)+'</h3><p class="subtitle">'+escapeHtml(a.description)+'</p><div class="progress"><div class="progress-bar" style="width:'+Math.min(100,Math.round((a.progress||0)*100/a.target))+'%"></div></div><small>'+fmt(a.progress||0)+' / '+fmt(a.target)+' • '+(a.unlocked_at?'Открыто':'Осталось '+fmt(Math.max(0,a.target-(a.progress||0))))+'</small></div></article>';
