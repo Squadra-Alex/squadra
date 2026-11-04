@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-17">
+<link rel="stylesheet" href="/assets/app.css?v=community-groups-repair-20261104-18">
 
 <style id="squadra-page-frame-fix">
   body > .container { display:block!important; width:min(1440px,calc(100vw - 48px))!important; max-width:1440px!important; min-width:0!important; margin:34px auto 64px!important; padding:0!important; box-sizing:border-box!important; }
@@ -452,9 +452,9 @@
           <section class="admin-workspace-section" id="adminTab-posts">
             <div class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">КОНТЕНТ СООБЩЕСТВА</p><h2>Публикации</h2></div><span class="admin-card-icon"><i class="fa-solid fa-flag"></i></span></div>
               <p class="subtitle">Проверяй публикации и открывай полную карточку автора.</p>
-              <div class="admin-toolbar"><input id="adminPostsSearch" maxlength="100" placeholder="Поиск по тексту, автору или типу медиа…" oninput="filterAdminList(&quot;adminPostsList&quot;,this.value)" aria-label="Поиск публикаций"></div>
+              <details class="admin-group-manager" open><summary><i class="fa-solid fa-people-group"></i> Управление группами сообщества</summary><div id="adminCommunityGroupsList"><p class="subtitle">Загружаю группы…</p></div></details>
+              <div class="admin-toolbar"><input id="adminPostsSearch" maxlength="100" placeholder="Поиск по ID, тексту, автору или типу медиа…" oninput="filterAdminList(&quot;adminPostsList&quot;,this.value)" aria-label="Поиск публикаций"></div>
               <div id="adminPostsList"><p class="subtitle">Загружаю публикации…</p></div>
-              <details class="admin-group-manager"><summary>Группы сообщества</summary><div id="adminCommunityGroupsList"><p class="subtitle">Загружаю группы…</p></div></details>
             </div>
           </section>
           <section class="admin-workspace-section" id="adminTab-platform">
@@ -482,6 +482,16 @@
 </footer>
 
 <!-- MODALS -->
+<div id="communityGroupEditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="communityGroupEditTitle"><div class="modal-content community-group-edit-modal">
+  <button class="modal-close" type="button" onclick="closeModal('communityGroupEditModal')" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
+  <p class="eyebrow">УПРАВЛЕНИЕ ГРУППОЙ</p><h2 id="communityGroupEditTitle">Изменить группу</h2>
+  <input id="communityEditGroupId" type="hidden">
+  <label for="communityEditGroupName">Название</label><input id="communityEditGroupName" maxlength="80" placeholder="Название группы">
+  <label for="communityEditGroupGame">Игра</label><input id="communityEditGroupGame" maxlength="60" placeholder="Например, CS2">
+  <label for="communityEditGroupDescription">Описание</label><textarea id="communityEditGroupDescription" maxlength="300" rows="3" placeholder="Расскажи о группе"></textarea>
+  <label for="communityEditGroupAvatar">Ссылка на аватар</label><input id="communityEditGroupAvatar" maxlength="2048" placeholder="https://…">
+  <div class="modal-actions"><button class="btn btn-ghost" type="button" onclick="closeModal('communityGroupEditModal')">Отмена</button><button class="btn btn-primary" type="button" onclick="saveCommunityGroupEdit()">Сохранить</button></div>
+</div></div>
 <div id="adminGroupEditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminGroupEditTitle"><div class="modal-content">
   <button class="modal-close" type="button" onclick="closeModal('adminGroupEditModal')" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
   <h2 id="adminGroupEditTitle">Управление группой</h2><input id="adminGroupId" type="hidden">
@@ -599,7 +609,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=community-social-fixes-20261104-17"></script>
+<script src="/assets/app.js?v=community-groups-repair-20261104-18"></script>
 
 </body>
 </html>
