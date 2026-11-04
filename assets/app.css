@@ -2200,3 +2200,26 @@ body > .container > main > .section.active {
 .group-chat-message p{margin:6px 0 0;white-space:pre-wrap}
 .group-chat-messages,.group-messages{min-height:220px;max-height:min(55vh,620px);overflow-y:auto;overscroll-behavior:contain;padding:14px}
 @media(max-width:700px){.profile-header-actions{gap:10px!important}.profile-header-actions>#adminProfileButton{margin-left:0!important}.admin-group-row{align-items:flex-start;flex-direction:column}.group-chat-message{max-width:92%}.community-group-edit-modal{width:min(94vw,540px)}}
+
+/* Community group conversation and compact upload controls */
+.group-chat-page{display:flex;flex-direction:column;min-height:min(72vh,760px);padding:22px;border:1px solid var(--border-hi);border-radius:20px;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(12,12,16,.9))}
+.group-chat-header{display:flex;align-items:center;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--border);min-width:0}
+.group-chat-avatar{width:54px;height:54px;flex:0 0 54px;object-fit:cover;border-radius:16px;border:1px solid var(--border-hi);background:var(--bg-3)}
+.group-chat-avatar-fallback{display:grid;place-items:center;color:var(--red);font-size:20px}
+.group-chat-heading{min-width:0;flex:1}.group-chat-heading h1{margin:2px 0;font-size:clamp(22px,3vw,34px);overflow-wrap:anywhere}.group-chat-heading .subtitle{margin:0}
+.group-chat-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.group-chat-description{padding:12px 14px;margin:14px 0 0;border-radius:12px;background:var(--bg-2);color:var(--text-soft);white-space:pre-wrap;overflow-wrap:anywhere}
+.group-messages{height:min(55vh,520px);min-height:280px;overflow:auto;overscroll-behavior:contain;padding:18px 4px;display:flex;flex-direction:column;gap:10px}
+.group-chat-message{max-width:min(78%,640px);padding:11px 14px;margin:0;border:1px solid var(--border);border-radius:16px 16px 16px 5px;background:var(--bg-2);overflow-wrap:anywhere}
+.group-chat-message.is-own{align-self:flex-end;border-color:color-mix(in srgb,var(--red) 48%,var(--border));border-radius:16px 16px 5px 16px;background:color-mix(in srgb,var(--red) 16%,var(--bg-2))}
+.group-message-meta{display:flex;align-items:center;gap:10px;margin-bottom:5px}.group-message-meta small{color:var(--muted);font-size:12px}.group-chat-message p{margin:0;white-space:pre-wrap}
+.group-chat-composer{display:flex;gap:10px;align-items:flex-end;padding-top:12px;border-top:1px solid var(--border)}
+.group-chat-composer textarea{flex:1;min-width:0;min-height:46px;max-height:140px;resize:vertical}
+.group-chat-composer button{width:48px;height:46px;flex:0 0 48px;border-radius:14px}
+.group-chat-join-note{padding:14px;text-align:center;color:var(--muted);border-top:1px solid var(--border)}
+.group-avatar-preview{display:flex;align-items:center;gap:10px;margin:10px 0}.group-avatar-preview img{width:56px;height:56px;object-fit:cover;border-radius:14px;border:1px solid var(--border-hi)}
+#communityGroupEditModal textarea,#adminGroupEditModal textarea{width:100%;min-height:110px;max-height:240px;overflow:auto;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
+#adminGroupEditModal>.modal-content{max-height:min(88vh,760px);overflow-y:auto;overscroll-behavior:contain}
+#adminGroupEditModal input[type=file],#communityGroupEditModal input[type=file]{max-width:100%}
+.comment-send{display:inline-grid!important;place-items:center;min-width:44px!important;width:44px;height:44px;padding:0!important;border-radius:14px!important;background:linear-gradient(135deg,var(--red),color-mix(in srgb,var(--red) 65%,#fff))!important;color:#fff!important}
+.profile-header-actions{gap:20px!important}.profile-header-actions>#adminProfileButton{margin-left:6px!important}
