@@ -626,7 +626,10 @@ function initCustomSelects(root=document) {
     const {data,error}=await supabaseClient.from('friendships').select('*').or('requester_id.eq.'+uid+',addressee_id.eq.'+uid).order('created_at',{ascending:false});
     if(error){console.error('Could not refresh friends:',error);return;}
     if(currentUser?.id!==uid)return;
-    accountFriends=await loadFriendProfiles(data||[]);renderFriends(accountFriends);fillChatRecipients(accountFriends);void loadMessageRequests();
+    accountFriends=await loadFriendProfiles(data||[]);renderFriends(accountFriends);fillChatRecipients(accountFriends);
+    const activePeer=document.getElementById('chatRecipient')?.value,activeInput=document.getElementById('chatInput');
+    if(activePeer&&activeInput){const request=accountFriends.find(f=>(f.requester_id===activePeer||f.addressee_id===activePeer)&&f.status==='pending'&&f.message_request),waiting=!!request&&request.requester_id===uid;activeInput.disabled=waiting;activeInput.placeholder=waiting?'Запрос отправлен. Ожидай ответа…':'Введите сообщение…';}
+    void loadMessageRequests();
   }
   async function renderFollowedAuthors(){
     const host=document.getElementById('communityFollowedAuthors');if(!host||!currentUser||!supabaseClient)return;
