@@ -2178,3 +2178,25 @@ body > .container > main > .section.active {
 #players{touch-action:pan-y;overflow-y:visible!important}
 #players>table,#players>table tbody,#players>table tr{touch-action:pan-y}
 #players>table{overscroll-behavior-y:auto}
+
+/* Community group interaction and stable layout */
+.community-group-card:hover{transform:none!important}
+.community-group-card{transition:border-color .18s ease,background .18s ease!important}
+.community-group-card[data-group-id]{min-width:0}
+.community-group-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px}
+.admin-group-manager{margin:0 0 18px;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--bg-2)}
+.admin-group-manager>summary{cursor:pointer;font-weight:700;display:flex;align-items:center;gap:9px;color:var(--text)}
+.admin-group-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.admin-group-actions{display:flex;flex-wrap:wrap;gap:8px}
+.community-group-edit-modal label{display:block;margin:14px 0 6px}
+.community-group-edit-modal input,.community-group-edit-modal textarea{width:100%}
+.community-group-edit-modal .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.profile-header-actions{gap:16px!important}
+.profile-header-actions>#adminProfileButton{margin-left:8px!important}
+#communityMediaPreview{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#communityMediaPreview button{margin-left:auto;flex:0 0 auto}
+.group-chat-message{max-width:min(78%,680px);padding:12px 15px;border:1px solid var(--border);border-radius:14px;background:var(--bg-2);margin:8px 0;overflow-wrap:anywhere}
+.group-chat-message.is-own{margin-left:auto;background:color-mix(in srgb,var(--red) 13%,var(--bg-2));border-color:color-mix(in srgb,var(--red) 30%,var(--border))}
+.group-chat-message p{margin:6px 0 0;white-space:pre-wrap}
+.group-chat-messages,.group-messages{min-height:220px;max-height:min(55vh,620px);overflow-y:auto;overscroll-behavior:contain;padding:14px}
+@media(max-width:700px){.profile-header-actions{gap:10px!important}.profile-header-actions>#adminProfileButton{margin-left:0!important}.admin-group-row{align-items:flex-start;flex-direction:column}.group-chat-message{max-width:92%}.community-group-edit-modal{width:min(94vw,540px)}}
