@@ -2249,3 +2249,23 @@ body > .container > main > .section.active {
 .group-page-card .group-chat-composer button{width:48px;height:48px;flex:0 0 48px;border-radius:14px}
 .team-member-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;border:1px solid var(--border);border-radius:12px;margin:8px 0}
 @media(max-width:760px){.group-page-card .group-messages{max-height:calc(100dvh - 350px);min-height:220px}.group-page-card .group-chat-message{max-width:90%}}
+
+/* Group chat: fixed conversation frame like direct messages */
+#groupPage>.group-page-card{width:min(1120px,100%);max-width:1120px;margin:18px auto 30px;padding:0;overflow:hidden}
+#groupPage .group-chat-page{height:min(72vh,760px);min-height:540px;padding:0;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:18px;background:var(--bg-2);overflow:hidden}
+#groupPage .group-chat-header{flex:0 0 auto;display:flex;min-height:82px;padding:14px 18px;background:var(--bg-3);border-bottom:1px solid var(--border);gap:12px}
+#groupPage .group-chat-avatar{width:48px;height:48px;flex-basis:48px;border-radius:50%}
+#groupPage .group-chat-heading h1{font-size:20px}
+#groupPage .group-chat-actions{display:flex;flex-wrap:nowrap;gap:8px}
+#groupPage .group-chat-description{flex:0 0 auto;margin:12px 16px 0;padding:10px 12px}
+#groupPage .group-messages{flex:1 1 auto;min-height:0;height:auto;max-height:none;display:flex;flex-direction:column;gap:9px;overflow-y:auto;overscroll-behavior:contain;padding:16px 18px}
+#groupPage .group-chat-message{width:fit-content;max-width:min(78%,680px);padding:10px 14px;margin:0;border:1px solid var(--border);border-radius:14px 14px 14px 4px;background:var(--bg-3);overflow-wrap:anywhere}
+#groupPage .group-chat-message.is-own{align-self:flex-end;margin-left:auto;border-color:color-mix(in srgb,var(--red) 40%,var(--border));border-radius:14px 14px 4px 14px;background:color-mix(in srgb,var(--red) 15%,var(--bg-3))}
+#groupPage .group-message-meta{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+#groupPage .group-message-meta strong{font-size:13px}
+#groupPage .group-message-meta small,#groupPage .group-message-meta time{font-size:11px;color:var(--muted)}
+#groupPage .group-chat-message p{margin:0;line-height:1.45;white-space:pre-wrap}
+#groupPage .group-chat-composer{flex:0 0 auto;position:sticky;bottom:0;display:flex!important;flex-direction:row!important;align-items:flex-end;gap:10px;width:100%;padding:12px 14px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--bg-2)}
+#groupPage .group-chat-composer textarea{display:block!important;box-sizing:border-box;flex:1 1 auto!important;width:100%!important;min-width:0;min-height:46px;max-height:132px;padding:12px 14px;resize:vertical;writing-mode:horizontal-tb;white-space:pre-wrap}
+#groupPage .group-chat-composer button{width:48px;height:46px;flex:0 0 48px;border-radius:14px}
+@media(max-width:700px){#groupPage>.group-page-card{width:100%;margin:12px auto;padding:0;border-radius:14px}#groupPage .group-chat-page{height:calc(100dvh - 220px);min-height:420px;border-radius:14px}#groupPage .group-chat-header{padding:10px;gap:9px}#groupPage .group-chat-avatar{width:40px;height:40px;flex-basis:40px}#groupPage .group-chat-actions{gap:5px}#groupPage .group-chat-actions .btn{min-height:38px;padding:8px 10px;font-size:12px}#groupPage .group-messages{padding:12px 10px}#groupPage .group-chat-message{max-width:88%;padding:10px 12px}#groupPage .group-chat-composer{gap:8px;padding:9px 9px max(10px,env(safe-area-inset-bottom))}#groupPage .group-chat-composer textarea{min-height:44px;padding:10px 12px}}
