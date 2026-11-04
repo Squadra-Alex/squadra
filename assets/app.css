@@ -2223,3 +2223,29 @@ body > .container > main > .section.active {
 #adminGroupEditModal input[type=file],#communityGroupEditModal input[type=file]{max-width:100%}
 .comment-send{display:inline-grid!important;place-items:center;min-width:44px!important;width:44px;height:44px;padding:0!important;border-radius:14px!important;background:linear-gradient(135deg,var(--red),color-mix(in srgb,var(--red) 65%,#fff))!important;color:#fff!important}
 .profile-header-actions{gap:20px!important}.profile-header-actions>#adminProfileButton{margin-left:6px!important}
+
+/* Platform management and matchmaking improvements */
+.mm-request-list{display:grid;gap:12px}
+.mm-request-card{padding:18px}
+.mm-request-head,.mm-request-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mm-request-actions{justify-content:flex-start;margin-top:14px}
+.mm-request-head small{color:var(--muted);font-weight:500}
+.admin-managed-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.admin-managed-row{gap:14px}
+#adminEventsCard{margin-top:18px}
+#adminEntityEditFields{display:grid;gap:12px;max-height:min(65vh,680px);overflow:auto;padding-right:4px}
+#adminEntityEditFields .form-group{margin:0}
+#adminEntityEditFields textarea{min-height:100px;resize:vertical}
+.event-card .event-actions{flex-wrap:wrap}
+@media(max-width:760px){.mm-request-actions>*{flex:1 1 auto}.admin-managed-row{align-items:flex-start!important}.admin-managed-actions{justify-content:flex-start;width:100%}}
+
+.group-page-card{padding:clamp(14px,2vw,28px);overflow:hidden}
+.group-page-card .group-messages{display:flex;flex-direction:column;gap:10px;max-height:min(56vh,620px);min-height:260px;overflow-y:auto;overscroll-behavior:contain;padding:18px 4px}
+.group-page-card .group-chat-message{width:fit-content;max-width:min(78%,680px);padding:12px 15px;border:1px solid var(--border);border-radius:16px 16px 16px 5px;background:rgba(255,255,255,.045);overflow-wrap:anywhere}
+.group-page-card .group-chat-message.is-own{align-self:flex-end;border-color:rgba(169,103,255,.4);border-radius:16px 16px 5px 16px;background:rgba(151,82,232,.16)}
+.group-page-card .group-chat-message p{margin:6px 0 0;line-height:1.5;white-space:pre-wrap}
+.group-page-card .group-chat-composer{position:sticky;bottom:0;display:flex;align-items:flex-end;gap:10px;padding:12px 0 max(8px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--surface,#111114)}
+.group-page-card .group-chat-composer textarea{flex:1;min-height:48px;max-height:140px;resize:vertical;border-radius:14px;padding:13px 15px}
+.group-page-card .group-chat-composer button{width:48px;height:48px;flex:0 0 48px;border-radius:14px}
+.team-member-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;border:1px solid var(--border);border-radius:12px;margin:8px 0}
+@media(max-width:760px){.group-page-card .group-messages{max-height:calc(100dvh - 350px);min-height:220px}.group-page-card .group-chat-message{max-width:90%}}
