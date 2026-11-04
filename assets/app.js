@@ -466,7 +466,18 @@ function initCustomSelects(root=document) {
       await supabaseAuthLoader;
     }
     if (!supabaseClient) {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+        global: { fetch: async function(input, init) {
+          const response = await window.fetch(input, init);
+          if (response.status === 403) response.clone().json().then(function(payload) {
+            if (payload && payload.code === '42501' && /temporarily blocked/i.test(payload.message || '')) {
+              const now = Date.now();
+              if (now - (window.__squadraBlockedToastAt || 0) > 2500) { window.__squadraBlockedToastAt = now; showNotification('Аккаунт заблокирован. Это действие недоступно до окончания блокировки.'); }
+            }
+          }).catch(function() {});
+          return response;
+        } }
+      });
     }
     return supabaseClient;
   }
