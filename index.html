@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-12">
+<link rel="stylesheet" href="/assets/app.css?v=community-social-fixes-20261104-13">
 
 <style id="squadra-page-frame-fix">
   body > .container { display:block!important; width:min(1440px,calc(100vw - 48px))!important; max-width:1440px!important; min-width:0!important; margin:34px auto 64px!important; padding:0!important; box-sizing:border-box!important; }
@@ -302,9 +302,10 @@
     <!-- MESSAGES / CHAT -->
     <section id="messages" class="section">
       <div class="section-heading"><div><h1><i class="fa-solid fa-comment-dots"></i>Сообщения</h1><p class="subtitle">Личные диалоги обновляются в реальном времени. <span id="chatRealtimeStatus" class="chat-connection-status"><i class="fa-solid fa-circle"></i> Подключаемся</span></p></div><button class="btn btn-primary" onclick="openModal('newChatModal')"><i class="fa-solid fa-plus"></i> Новый чат</button></div>
-      <div class="messenger"><aside class="chat-sidebar"><div class="chat-sidebar-title"><strong>Чаты</strong><span id="chatUnreadCount" class="badge badge-danger message-count-badge" hidden></span><input id="chatSearch" maxlength="80" placeholder="Поиск по диалогам" oninput="filterChatList()"></div><div id="chatList" class="chat-list"><p class="subtitle">Войди, чтобы увидеть переписки.</p></div></aside>
+      <div class="messenger"><aside class="chat-sidebar"><div class="chat-sidebar-title"><strong>Чаты</strong><span id="chatUnreadCount" class="badge badge-danger message-count-badge" hidden></span><button class="btn btn-ghost message-requests-trigger" type="button" onclick="openMessageRequests()">Запросы <span id="messageRequestCount" class="message-count-badge" hidden></span></button><input id="chatSearch" maxlength="80" placeholder="Поиск по диалогам" oninput="filterChatList()"></div><div id="chatList" class="chat-list"><p class="subtitle">Войди, чтобы увидеть переписки.</p></div></aside>
         <div class="chat-main"><input id="chatRecipient" type="hidden"><div class="chat-header" id="activeChatHeader"><span class="subtitle">Выбери диалог или начни новый</span></div><div class="chat-messages" id="chatMessages"><p class="subtitle">Здесь появятся сообщения.</p></div><div class="chat-input"><textarea id="chatInput" rows="1" maxlength="4000" placeholder="Введите сообщение..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea><button class="btn btn-primary" aria-label="Отправить сообщение" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button></div></div></div>
-      <div class="modal" id="newChatModal"><div class="modal-content"><button class="modal-close" onclick="closeModal('newChatModal')">×</button><h2>Новый чат</h2><p class="subtitle">Найди игрока по Squadra-нику и открой профиль перед перепиской.</p><input id="newChatSearch" maxlength="24" placeholder="Например, whunx" oninput="searchChatPlayers()"><div id="newChatResults" class="chat-search-results"></div></div></div>
+      <div class="modal" id="newChatModal"><div class="modal-content"><button class="modal-close" onclick="closeModal('newChatModal')">×</button><h2>Новый чат</h2><p class="subtitle">Найди игрока по Squadra-нику и отправь одно первое сообщение. Продолжить переписку можно после принятия заявки в друзья.</p><input id="newChatSearch" maxlength="24" placeholder="Например, whunx" oninput="searchChatPlayers()"><div id="newChatResults" class="chat-search-results"></div></div></div>
+      <div class="modal" id="messageRequestsModal"><div class="modal-content message-requests-modal"><button class="modal-close" onclick="closeModal('messageRequestsModal')">×</button><h2>Запросы на переписку</h2><p class="subtitle">Прими запрос, чтобы добавить игрока в друзья и продолжить чат.</p><div id="messageRequestsList" class="message-requests-list"></div></div></div>
     </section>
 
     <!-- FRIENDS -->
@@ -390,10 +391,10 @@
         </div>
         <h3 style="margin-top:20px;">Уведомления</h3>
         <div style="margin-top:10px;">
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyMessages" type="checkbox" style="width:auto; accent-color:var(--red);"> Сообщения от друзей</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyTeamInvites" type="checkbox" style="width:auto; accent-color:var(--red);"> Приглашения в команды</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyTournaments" type="checkbox" style="width:auto; accent-color:var(--red);"> Начало турниров</label>
-          <label style="display:flex; align-items:center; gap:10px; padding:8px 0; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); cursor:pointer;"><input id="notifyMarketing" type="checkbox" style="width:auto; accent-color:var(--red);"> Маркетинговые рассылки</label>
+          <label class="notification-setting"><input id="notifyMessages" type="checkbox" class="notification-setting-input"> Сообщения от друзей</label>
+          <label class="notification-setting"><input id="notifyTeamInvites" type="checkbox" class="notification-setting-input"> Приглашения в команды</label>
+          <label class="notification-setting"><input id="notifyTournaments" type="checkbox" class="notification-setting-input"> Начало турниров</label>
+          <label class="notification-setting"><input id="notifyMarketing" type="checkbox" class="notification-setting-input"> Маркетинговые рассылки</label>
         </div>
         
         <button class="btn btn-primary" style="margin-top:18px;" onclick="saveAccountSettings()"><i class="fa-solid fa-floppy-disk"></i> Сохранить профиль</button>
@@ -583,7 +584,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=community-social-fixes-20261104-12"></script>
+<script src="/assets/app.js?v=community-social-fixes-20261104-13"></script>
 
 </body>
 </html>
