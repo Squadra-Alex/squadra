@@ -2062,3 +2062,17 @@ body > .container > main > .section.active {
     max-width:100%!important;
   }
 }
+
+/* Clearly mark chats that contain unread messages. */
+.chat-list-item.has-unread {
+  background:color-mix(in srgb,var(--red) 9%,var(--bg-2));
+  box-shadow:inset 3px 0 0 var(--red);
+}
+.chat-list-item.has-unread strong {font-weight:750;color:var(--text)}
+.chat-list-item.has-unread small {color:var(--text);font-weight:600}
+.chat-unread-badge {
+  flex:0 0 auto;min-width:22px;height:22px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid color-mix(in srgb,var(--red) 45%,transparent);border-radius:999px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--red) 88%,#fff 12%),var(--red-dark));
+  color:#fff;font-size:11px;font-weight:800;line-height:1;box-shadow:0 3px 12px color-mix(in srgb,var(--red) 25%,transparent);
+}
