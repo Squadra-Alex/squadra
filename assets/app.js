@@ -755,7 +755,7 @@ function initCustomSelects(root=document) {
         :'<img loading="lazy" style="display:block;max-width:100%;max-height:480px;border-radius:10px;margin:10px 0;object-fit:contain" src="'+escapeHtml(p.media_url)+'" alt="Изображение в публикации">'):'';
       const commentRows=grouped[p.id]||[];
       const commentsHtml=commentRows.map(c=>'<article class="post-comment"><div class="comment-head"><button class="comment-author" onclick="openPlayerProfile(&quot;'+c.user_id+'&quot;)"><span class="comment-avatar"><i class="fa-solid fa-user"></i></span><span class="comment-author-meta"><strong>'+escapeHtml(c.profiles?.display_name||c.profiles?.username||'Игрок')+'</strong><small>@'+escapeHtml(c.profiles?.username||'игрок')+'</small></span></button><time>'+new Date(c.created_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</time></div><p class="comment-body">'+escapeHtml(c.body)+'</p></article>').join('');
-      return '<article class="card" id="community-post-'+p.id+'" style="margin-bottom:14px"><button class="community-post-author" onclick="openPlayerProfile(&quot;'+p.user_id+'&quot;)">'+escapeHtml(p.profiles?.display_name||p.profiles?.username||'Игрок')+' <small>@'+escapeHtml(p.profiles?.username||'игрок')+'</small></button><small class="subtitle"> • '+new Date(p.created_at).toLocaleString('ru-RU')+'</small>'+(p.body?'<p style="margin:14px 0;white-space:pre-wrap">'+escapeHtml(p.body)+'</p>':'')+media+'<button data-like-post="'+p.id+'" class="btn btn-ghost '+(liked.has(p.id)?'post-liked':'')+'" aria-pressed="'+liked.has(p.id)+'" onclick="togglePostLike(\''+p.id+'\', '+liked.has(p.id)+')"><i class="fa-solid fa-heart"></i> '+(p.community_post_likes?.length||0)+'</button> <button class="btn btn-ghost" onclick="reportCommunityPost(\''+p.id+'\',\''+p.user_id+'\')"><i class="fa-solid fa-flag"></i> Пожаловаться</button><div style="margin-top:12px;">'+commentsHtml+'<input id="comment-'+p.id+'" maxlength="2000" placeholder="Написать комментарий" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addPostComment(\''+p.id+'\')}"><button class="btn btn-ghost comment-send" aria-label="Отправить комментарий" title="Отправить комментарий" onclick="addPostComment(\''+p.id+'\')"><i class="fa-solid fa-arrow-up"></i></button></div></article>';
+      return '<article class="card" id="community-post-'+p.id+'" style="margin-bottom:14px"><button class="community-post-author" onclick="openPlayerProfile(&quot;'+p.user_id+'&quot;)">'+escapeHtml(p.profiles?.display_name||p.profiles?.username||'Игрок')+' <small>@'+escapeHtml(p.profiles?.username||'игрок')+'</small></button><small class="subtitle"> • '+new Date(p.created_at).toLocaleString('ru-RU')+'</small>'+(p.body?'<p style="margin:14px 0;white-space:pre-wrap">'+escapeHtml(p.body)+'</p>':'')+media+'<button data-like-post="'+p.id+'" class="btn btn-ghost '+(liked.has(p.id)?'post-liked':'')+'" aria-pressed="'+liked.has(p.id)+'" onclick="togglePostLike(\''+p.id+'\', '+liked.has(p.id)+')"><i class="fa-solid fa-heart"></i> '+(p.community_post_likes?.length||0)+'</button> <button class="btn btn-ghost" onclick="reportCommunityPost(\''+p.id+'\',\''+p.user_id+'\')"><i class="fa-solid fa-flag"></i> Пожаловаться</button><div style="margin-top:12px;">'+commentsHtml+'<input id="comment-'+p.id+'" maxlength="2000" placeholder="Написать комментарий" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addPostComment(\''+p.id+'\')}"><button class="btn btn-ghost comment-send" aria-label="Отправить комментарий" title="Отправить комментарий" onclick="addPostComment(\''+p.id+'\')"><i class="fa-solid fa-paper-plane"></i></button></div></article>';
     }).join('')||'<div class="empty-state"><p>'+(communityFeedMode==='following'?'В этой ленте появятся записи авторов, на которых ты подписался.':'Пока нет публикаций.')+'</p></div>';
   }
   function fillChatRecipients(rows) {
@@ -1061,20 +1061,10 @@ function initCustomSelects(root=document) {
     }
     input.value='';clearCommunityMedia();showNotification('Публикация опубликована.');void refreshCommunityFeed();
   }
-  async function togglePostLike(id,wasLiked) {
-    if(!currentUser)return requireAccount();
-    const button=document.querySelector('[data-like-post="'+id+'"]');
-    window.__postLikeBusy=window.__postLikeBusy||new Set();
-    if(window.__postLikeBusy.has(id))return;
-    const currentlyLiked=button?button.getAttribute('aria-pressed')==='true':!!wasLiked;
-    const count=Number(button?.textContent.match(/\d+/)?.[0]||0),nextLiked=!currentlyLiked;
-    window.__postLikeBusy.add(id);
-    if(button){button.classList.toggle('post-liked',nextLiked);button.setAttribute('aria-pressed',String(nextLiked));button.innerHTML='<i class="fa-solid fa-heart"></i> '+Math.max(0,count+(nextLiked?1:-1));}
-    const request=currentlyLiked?supabaseClient.from('community_post_likes').delete().eq('post_id',id).eq('user_id',currentUser.id):supabaseClient.from('community_post_likes').insert({post_id:id,user_id:currentUser.id});
-    const {error}=await request;window.__postLikeBusy.delete(id);
-    if(error){console.error(error);if(button){button.classList.toggle('post-liked',currentlyLiked);button.setAttribute('aria-pressed',String(currentlyLiked));button.innerHTML='<i class="fa-solid fa-heart"></i> '+count;}return showNotification('Не удалось обновить лайк.');}
-    if(nextLiked)communityLiked?.add?.(id);else communityLiked?.delete?.(id);
-  }
+  const pendingPostLikeState=new Map(),postLikeWorkers=new Set();
+  function flushPostLike(id){if(postLikeWorkers.has(id))return;postLikeWorkers.add(id);(async()=>{while(pendingPostLikeState.has(id)){const state=pendingPostLikeState.get(id);pendingPostLikeState.delete(id);const result=state.desired?await supabaseClient.from('community_post_likes').upsert({post_id:id,user_id:currentUser.id},{onConflict:'post_id,user_id',ignoreDuplicates:true}):await supabaseClient.from('community_post_likes').delete().eq('post_id',id).eq('user_id',currentUser.id);if(result.error){console.error(result.error);if(!pendingPostLikeState.has(id)){const b=state.button,shown=b.getAttribute('aria-pressed')==='true',n=Number(b.textContent.match(/\d+/)?.[0]||0);b.classList.toggle('post-liked',state.before);b.setAttribute('aria-pressed',String(state.before));b.innerHTML='<i class="fa-solid fa-heart"></i> '+Math.max(0,n+(state.before===shown?0:state.before?1:-1));if(state.before)communityLiked?.add?.(id);else communityLiked?.delete?.(id);showNotification('Не удалось обновить лайк.');}break;}if(state.desired)communityLiked?.add?.(id);else communityLiked?.delete?.(id);}postLikeWorkers.delete(id);if(pendingPostLikeState.has(id))flushPostLike(id);})(); }
+  function togglePostLike(id,wasLiked){if(!currentUser)return requireAccount();const b=document.querySelector('[data-like-post="'+id+'"]');if(!b)return;const before=b.getAttribute('aria-pressed')==='true',desired=!before,n=Number(b.textContent.match(/\d+/)?.[0]||0);b.classList.toggle('post-liked',desired);b.setAttribute('aria-pressed',String(desired));b.innerHTML='<i class="fa-solid fa-heart"></i> '+Math.max(0,n+(desired?1:-1));pendingPostLikeState.set(id,{desired,before,button:b});flushPostLike(id);}
+
   async function loadCreatedTournaments() {
     const el=document.getElementById('createdTournamentGrid');
     if(!el||!supabaseClient)return;
@@ -1205,6 +1195,11 @@ function initCustomSelects(root=document) {
     closeModal('createTournamentModal');document.getElementById('tournamentName').value='';document.getElementById('tournamentDescription').value='';
     await loadCreatedTournaments();showNotification('Турнир создан и опубликован.');
   }
+  const communityGroupCache=new Map();let groupGameOptions=[];
+  async function readGroupAvatar(file){if(!file)return '';if(!file.type.startsWith('image/')||file.size>5*1024*1024)throw new Error('Выбери изображение до 5 МБ.');const url=URL.createObjectURL(file);try{const img=await new Promise((ok,no)=>{const x=new Image();x.onload=()=>ok(x);x.onerror=()=>no(new Error('Не удалось открыть изображение.'));x.src=url;});const c=document.createElement('canvas'),k=Math.min(1,512/Math.max(img.width,img.height));c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/webp',.78);}finally{URL.revokeObjectURL(url);}}
+  function setGroupGameOptions(id,value=''){const s=document.getElementById(id);if(!s)return;s.innerHTML='<option value="">Выбери игру</option>'+groupGameOptions.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');s.value=value||'';}
+  function previewGroupAvatar(fileId,previewId){const f=document.getElementById(fileId)?.files?.[0],p=document.getElementById(previewId);if(!f||!p)return;const url=URL.createObjectURL(f);p.innerHTML='<img src="'+url+'" alt="Предпросмотр"><span>'+escapeHtml(f.name)+'</span>';p.hidden=false;}
+  function clearGroupAvatar(fileId,previewId,hiddenId){const f=document.getElementById(fileId),p=document.getElementById(previewId),v=document.getElementById(hiddenId);if(f)f.value='';if(p){p.innerHTML='';p.hidden=true;}if(v)v.dataset.clear='1';}
   async function loadCommunityGroups() {
     const el=document.getElementById('communityGroups');if(!el||!supabaseClient||!currentUser)return;
     const [groupsResult,membersResult,gamesResult]=await Promise.all([
@@ -1213,8 +1208,7 @@ function initCustomSelects(root=document) {
       supabaseClient.from('games').select('name').eq('is_active',true).order('name')
     ]);
     if(groupsResult.error||membersResult.error){console.error('Could not load groups:',groupsResult.error||membersResult.error);el.innerHTML='<p class="subtitle">Не удалось загрузить группы.</p>';return;}
-    const gameSelect=document.getElementById('communityGroupGame');
-    if(gameSelect){const selected=gameSelect.value;gameSelect.innerHTML='<option value="">Выбери игру</option>'+(gamesResult.data||[]).map(g=>'<option>'+escapeHtml(g.name)+'</option>').join('');if(selected)gameSelect.value=selected;}
+    groupGameOptions=(gamesResult.data||[]).map(g=>g.name);setGroupGameOptions('communityGroupGame',document.getElementById('communityGroupGame')?.value||'');communityGroupCache.clear();(groupsResult.data||[]).forEach(g=>communityGroupCache.set(g.id,g));
     const members=membersResult.data||[];
     el.innerHTML=(groupsResult.data||[]).map(g=>{
       const joined=members.some(m=>m.group_id===g.id&&m.user_id===currentUser.id),count=members.filter(m=>m.group_id===g.id).length,owner=g.owner_id===currentUser.id;
@@ -1233,21 +1227,12 @@ function initCustomSelects(root=document) {
     document.getElementById('communityGroupName').value='';document.getElementById('communityGroupDescription').value='';
     showNotification('Группа создана.');await loadCommunityGroups();
   }
-  async function editCommunityGroup(id) {
-    if(!currentUser)return requireAccount();
-    const {data:g,error}=await supabaseClient.from('community_groups').select('id,name,game_name,description,avatar_url').eq('id',id).maybeSingle();
-    if(error||!g)return showNotification('Группа не найдена.');
-    document.getElementById('communityEditGroupId').value=g.id;
-    document.getElementById('communityEditGroupName').value=g.name||'';
-    document.getElementById('communityEditGroupGame').value=g.game_name||'';
-    document.getElementById('communityEditGroupDescription').value=g.description||'';
-    document.getElementById('communityEditGroupAvatar').value=g.avatar_url||'';
-    openModal('communityGroupEditModal');
-  }
+  function editCommunityGroup(id){if(!currentUser)return requireAccount();const g=communityGroupCache.get(id);if(!g)return showNotification('Обнови список групп и попробуй ещё раз.');document.getElementById('communityEditGroupId').value=g.id;document.getElementById('communityEditGroupName').value=g.name||'';setGroupGameOptions('communityEditGroupGame',g.game_name);document.getElementById('communityEditGroupDescription').value=g.description||'';document.getElementById('communityEditGroupAvatar').value=g.avatar_url||'';document.getElementById('communityEditGroupAvatar').dataset.clear='0';document.getElementById('communityEditGroupAvatarFile').value='';const p=document.getElementById('communityEditGroupAvatarPreview');p.innerHTML=g.avatar_url?'<img src="'+escapeHtml(g.avatar_url)+'" alt="Аватар группы">':'';p.hidden=!g.avatar_url;openModal('communityGroupEditModal');}
   async function saveCommunityGroupEdit() {
     if(!currentUser)return requireAccount();
     const id=document.getElementById('communityEditGroupId').value;
-    const fields={name:document.getElementById('communityEditGroupName').value.trim(),game_name:document.getElementById('communityEditGroupGame').value.trim(),description:document.getElementById('communityEditGroupDescription').value.trim(),avatar_url:document.getElementById('communityEditGroupAvatar').value.trim()||null};
+    const av=document.getElementById('communityEditGroupAvatar'),file=document.getElementById('communityEditGroupAvatarFile')?.files?.[0];let avatar=av.value||null;try{if(file)avatar=await readGroupAvatar(file);else if(av.dataset.clear==='1')avatar=null;}catch(e){return showNotification(e.message);}
+    const fields={name:document.getElementById('communityEditGroupName').value.trim(),game_name:document.getElementById('communityEditGroupGame').value,description:document.getElementById('communityEditGroupDescription').value.trim(),avatar_url:avatar};
     if(fields.name.length<3||!fields.game_name)return showNotification('Укажи название (минимум 3 символа) и игру.');
     const {error}=await supabaseClient.from('community_groups').update(fields).eq('id',id).eq('owner_id',currentUser.id);
     if(error){console.error('Group edit failed:',error);return showNotification('Не удалось сохранить группу. Проверь права владельца.');}
@@ -1736,9 +1721,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   async function openGroupChat(groupId,options={}) {
     if(!currentUser)return requireAccount();activeCommunityGroup=groupId;
     if(!options.fromRoute)showSection('groupPage',{profileId:groupId,path:'/groups/'+groupId});
-    const [{data:g},{data:members}] = await Promise.all([supabaseClient.from('community_groups').select('id,name,game_name,description,owner_id,avatar_url').eq('id',groupId).maybeSingle(),supabaseClient.from('community_group_members').select('user_id').eq('group_id',groupId)]);
+    const [{data:g},{data:members}]=await Promise.all([supabaseClient.from('community_groups').select('id,name,game_name,description,owner_id,avatar_url').eq('id',groupId).maybeSingle(),supabaseClient.from('community_group_members').select('user_id').eq('group_id',groupId)]);
     const host=document.getElementById('groupPageContent');if(!host||!g){if(host)host.innerHTML='<p class="subtitle">Группа не найдена.</p>';return;}
-    host.innerHTML='<div class="section-heading"><div>'+(g.avatar_url?'<img class="group-page-avatar" src="'+escapeHtml(g.avatar_url)+'" alt="">':'')+'<span class="eyebrow">ИГРОВОЕ СООБЩЕСТВО</span><h1>'+escapeHtml(g.name)+'</h1><p class="subtitle">'+escapeHtml(g.game_name||'Любая игра')+' • '+(members||[]).length+' участников</p><p>'+escapeHtml(g.description||'')+'</p></div><div class="group-page-actions">'+(g.owner_id===currentUser.id||isAdmin?'<button class="btn btn-ghost" onclick="clearCommunityGroupHistory(\''+groupId+'\')">Очистить историю</button>':'')+'<button class="btn btn-ghost" onclick="showSection(\'community\')">К списку групп</button></div></div><div class="group-chat-shell"><div id="group-messages-'+groupId+'" class="group-messages"></div><div class="chat-input"><input id="group-input-'+groupId+'" maxlength="3000" placeholder="Сообщение группе..." onkeypress="if(event.key===\'Enter\')sendGroupMessage(\''+groupId+'\')"><button class="btn btn-primary" onclick="sendGroupMessage(\''+groupId+'\')"><i class="fa-solid fa-paper-plane"></i></button></div></div>';
+    const joined=(members||[]).some(m=>m.user_id===currentUser.id),canManage=g.owner_id===currentUser.id||isAdmin;
+    host.innerHTML='<section class="group-chat-page"><header class="group-chat-header">'+(g.avatar_url?'<img class="group-chat-avatar" src="'+escapeHtml(g.avatar_url)+'" alt="">':'<span class="group-chat-avatar group-chat-avatar-fallback"><i class="fa-solid fa-people-group"></i></span>')+'<div class="group-chat-heading"><span class="eyebrow">ИГРОВОЕ СООБЩЕСТВО</span><h1>'+escapeHtml(g.name)+'</h1><p class="subtitle">'+escapeHtml(g.game_name||'Любая игра')+' · '+(members||[]).length+' участников</p></div><div class="group-chat-actions">'+(canManage?'<button class="btn btn-ghost" onclick="clearCommunityGroupHistory(\''+groupId+'\')">Очистить историю</button>':'')+'<button class="btn btn-ghost" onclick="showSection(\'community\')">К группам</button></div></header>'+(g.description?'<p class="group-chat-description">'+escapeHtml(g.description)+'</p>':'')+'<div id="group-messages-'+groupId+'" class="group-messages" aria-live="polite"></div>'+(joined?'<form class="group-chat-composer" onsubmit="event.preventDefault();sendGroupMessage(\''+groupId+'\')"><textarea id="group-input-'+groupId+'" maxlength="2000" rows="1" placeholder="Написать в группу…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendGroupMessage(\''+groupId+'\')}"></textarea><button class="btn btn-primary" aria-label="Отправить"><i class="fa-solid fa-paper-plane"></i></button></form>':'<div class="group-chat-join-note">Вступи в группу, чтобы читать и отправлять сообщения.</div>')+'</section>';
     await loadGroupMessages(groupId);
   }
   async function clearCommunityGroupHistory(groupId) {
@@ -1753,13 +1739,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const ids=[...new Set((data||[]).map(m=>m.user_id))],profilesResult=ids.length?await supabaseClient.from('profiles').select('id,username,display_name').in('id',ids):{data:[]},byId=new Map((profilesResult.data||[]).map(p=>[p.id,p]));
     host.innerHTML=(data||[]).map(m=>{const p=byId.get(m.user_id)||{};return '<article class="group-chat-message"><strong>'+escapeHtml(m.user_id===currentUser.id?'Ты':p.display_name||p.username||'Игрок')+'</strong> <small>'+new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</small><p>'+escapeHtml(m.body)+'</p></article>';}).join('')||'<p class="subtitle">Начни разговор.</p>';host.scrollTop=host.scrollHeight;
   }
-  async function sendGroupMessage(groupId) {
-    if(!currentUser)return requireAccount();
-    const input=document.getElementById('group-input-'+groupId),body=input?.value.trim();if(!body)return;
-    const {error}=await supabaseClient.from('community_group_messages').insert({group_id:groupId,user_id:currentUser.id,body});
-    if(error){console.error(error);return showNotification('Нужно вступить в группу, чтобы писать.');}
-    input.value='';await loadGroupMessages(groupId);
-  }
+  async function sendGroupMessage(groupId){if(!currentUser)return requireAccount();const input=document.getElementById('group-input-'+groupId),body=input?.value.trim();if(!body)return;if(body.length>2000)return showNotification('Сообщение слишком длинное.');const button=input.closest('form')?.querySelector('button'),host=document.getElementById('group-messages-'+groupId);if(button)button.disabled=true;input.value='';if(host){if(host.querySelector('.subtitle'))host.innerHTML='';host.insertAdjacentHTML('beforeend','<article class="group-chat-message is-own"><div class="group-message-meta"><strong>Вы</strong><small>отправка…</small></div><p>'+escapeHtml(body)+'</p></article>');host.scrollTop=host.scrollHeight;}const {error}=await supabaseClient.from('community_group_messages').insert({group_id:groupId,user_id:currentUser.id,body});if(button)button.disabled=false;if(error){console.error(error);showNotification('Не удалось отправить сообщение. Проверь, что ты вступил в группу.');void loadGroupMessages(groupId);return;}void loadGroupMessages(groupId);}
 
   async function loadAdminAccess() {
     const uid=currentUser?.id;
@@ -1801,7 +1781,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
   function adminNavigate(tab,button) {
     if(tab==='posts')void loadAdminCommunityGroups();
-    const labels={overview:['Обзор платформы','Ключевые показатели и последние изменения'],users:['Пользователи','Профили, роли и доступ к аккаунтам'],reports:['Жалобы','Разбор обращений и действия модерации'],posts:['Публикации','Контент сообщества и безопасность'],platform:['Команды и турниры','Состояние команд и соревнований'],games:['Каталог игр','Управление играми платформы']};
+    const labels={overview:['Обзор платформы','Ключевые показатели и последние изменения'],users:['Пользователи','Профили, роли и доступ к аккаунтам'],reports:['Жалобы','Разбор обращений и действия модерации'],posts:['Публикации и группы','Контент сообщества и безопасность'],platform:['Команды и турниры','Состояние команд и соревнований'],games:['Каталог игр','Управление играми платформы']};
     if(!labels[tab])return;
     document.querySelectorAll('.admin-nav-item').forEach(item=>item.classList.toggle('active',item===button||item.dataset.adminTab===tab));
     document.querySelectorAll('.admin-workspace-section').forEach(section=>section.classList.toggle('active',section.id==='adminTab-'+tab));
@@ -1810,26 +1790,15 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     document.getElementById('admin')?.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
+  const adminCommunityGroupCache=new Map();
   async function loadAdminCommunityGroups() {
-    const host=document.getElementById('adminCommunityGroupsList');if(!host||!isAdmin||!supabaseClient)return;
-    host.setAttribute('aria-busy','true');
-    const {data,error}=await supabaseClient.from('community_groups').select('id,name,game_name,description,avatar_url,owner_id').order('created_at',{ascending:false}).limit(200);
-    if(error){console.error('Admin group list failed:',error);host.innerHTML='<p class="subtitle">Не удалось загрузить группы.</p>';return;}
+    const host=document.getElementById('adminCommunityGroupsList');if(!host||!isAdmin||!supabaseClient)return;host.setAttribute('aria-busy','true');
+    const [{data,error},{data:gameRows}]=await Promise.all([supabaseClient.from('community_groups').select('id,name,game_name,description,avatar_url,owner_id').order('created_at',{ascending:false}).limit(200),supabaseClient.from('games').select('name').eq('is_active',true).order('name')]);
+    if(error){console.error('Admin group list failed:',error);host.innerHTML='<p class="subtitle">Не удалось загрузить группы.</p>';host.removeAttribute('aria-busy');return;}groupGameOptions=(gameRows||[]).map(g=>g.name);adminCommunityGroupCache.clear();(data||[]).forEach(g=>adminCommunityGroupCache.set(g.id,g));
     host.innerHTML=(data||[]).map(g=>'<article class="admin-group-row"><div><strong>'+escapeHtml(g.name)+'</strong><p class="subtitle">'+escapeHtml(g.game_name||'')+' • ID: '+escapeHtml(g.id)+'</p></div><div class="admin-group-actions"><button class="btn btn-ghost" onclick="editCommunityGroupAdmin(&quot;'+escapeHtml(g.id)+'&quot;)">Управлять</button><button class="btn btn-danger" onclick="adminDeleteCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)">Удалить</button></div></article>').join('')||'<p class="subtitle">Групп пока нет.</p>';host.removeAttribute('aria-busy');
   }
-  async function editCommunityGroupAdmin(id) {
-    if(!isAdmin)return;
-    const {data:g}=await supabaseClient.from('community_groups').select('id,name,game_name,description,avatar_url').eq('id',id).maybeSingle();if(!g)return showNotification('Группа не найдена.');
-    document.getElementById('adminGroupId').value=g.id;document.getElementById('adminGroupName').value=g.name||'';document.getElementById('adminGroupGame').value=g.game_name||'';document.getElementById('adminGroupDescription').value=g.description||'';document.getElementById('adminGroupAvatar').value=g.avatar_url||'';
-    openModal('adminGroupEditModal');
-  }
-  async function saveAdminCommunityGroup() {
-    if(!isAdmin)return;
-    const id=document.getElementById('adminGroupId').value,fields={name:document.getElementById('adminGroupName').value.trim(),game_name:document.getElementById('adminGroupGame').value.trim(),description:document.getElementById('adminGroupDescription').value.trim(),avatar_url:document.getElementById('adminGroupAvatar').value.trim()||null};
-    if(fields.name.length<3||!fields.game_name)return showNotification('Укажи название и игру.');
-    const {error}=await supabaseClient.from('community_groups').update(fields).eq('id',id);if(error){console.error(error);return showNotification('Не удалось сохранить группу.');}
-    closeModal('adminGroupEditModal');await Promise.all([loadAdminCommunityGroups(),loadCommunityGroups()]);showNotification('Изменения группы сохранены.');
-  }
+  function editCommunityGroupAdmin(id){if(!isAdmin)return;const g=adminCommunityGroupCache.get(id);if(!g)return showNotification('Обнови список групп и попробуй ещё раз.');document.getElementById('adminGroupId').value=g.id;document.getElementById('adminGroupName').value=g.name||'';setGroupGameOptions('adminGroupGame',g.game_name);document.getElementById('adminGroupDescription').value=g.description||'';document.getElementById('adminGroupAvatar').value=g.avatar_url||'';document.getElementById('adminGroupAvatar').dataset.clear='0';document.getElementById('adminGroupAvatarFile').value='';const p=document.getElementById('adminGroupAvatarPreview');p.innerHTML=g.avatar_url?'<img src="'+escapeHtml(g.avatar_url)+'" alt="Аватар группы">':'';p.hidden=!g.avatar_url;openModal('adminGroupEditModal');}
+  async function saveAdminCommunityGroup(){if(!isAdmin)return;const id=document.getElementById('adminGroupId').value,av=document.getElementById('adminGroupAvatar'),file=document.getElementById('adminGroupAvatarFile')?.files?.[0];let avatar=av.value||null;try{if(file)avatar=await readGroupAvatar(file);else if(av.dataset.clear==='1')avatar=null;}catch(e){return showNotification(e.message);}const fields={name:document.getElementById('adminGroupName').value.trim(),game_name:document.getElementById('adminGroupGame').value,description:document.getElementById('adminGroupDescription').value.trim(),avatar_url:avatar};if(fields.name.length<3||!fields.game_name)return showNotification('Укажи название и игру.');const b=document.querySelector('#adminGroupEditModal [onclick="saveAdminCommunityGroup()"]');if(b){b.disabled=true;b.textContent='Сохраняю…';}const {error}=await supabaseClient.from('community_groups').update(fields).eq('id',id);if(b){b.disabled=false;b.textContent='Сохранить';}if(error){console.error(error);return showNotification('Не удалось сохранить группу.');}const updated={...(adminCommunityGroupCache.get(id)||{}),...fields,id};adminCommunityGroupCache.set(id,updated);communityGroupCache.set(id,updated);closeModal('adminGroupEditModal');showNotification('Изменения группы сохранены.');void Promise.all([loadAdminCommunityGroups(),loadCommunityGroups()]);}
   async function adminDeleteCommunityGroup(id) {
     if(!isAdmin||!await askConfirm('Удалить группу и всю её переписку?'))return;
     const {error}=await supabaseClient.from('community_groups').delete().eq('id',id);if(error){console.error(error);return showNotification('Не удалось удалить группу.');}
@@ -1907,7 +1876,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   function filterAdminList(containerId,value) {
     const host=document.getElementById(containerId);if(!host)return;
     const query=String(value||'').trim().toLocaleLowerCase('ru');
-    host.querySelectorAll('.admin-entry, tbody tr').forEach(entry=>{entry.hidden=!!query&&!entry.textContent.toLocaleLowerCase('ru').includes(query);});
+    host.querySelectorAll('.admin-entry, tbody tr, details.admin-post-fold').forEach(entry=>{entry.hidden=!!query&&!entry.textContent.toLocaleLowerCase('ru').includes(query);});
   }
   function filterAdminReports() {
     const query=document.getElementById('adminReportsSearch')?.value||'';
