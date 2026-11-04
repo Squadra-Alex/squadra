@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="squadra-build" content="20261105-02">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>(function(){var el=document.querySelector('meta[name="squadra-build"]'),localBuild=el&&el.content;fetch('/release.txt?probe='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(remote){remote=remote.trim();if(remote&&localBuild&&remote!==localBuild){var u=new URL(location.href);u.searchParams.set('__build',remote);location.replace(u.href)}}).catch(function(){})})();</script>
 <title>SQUADRA — Киберспортивная платформа</title>
 
 <!-- Google Fonts -->
@@ -13,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=admin-groups-20261104-20">
+<link rel="stylesheet" href="/assets/app.css?v=20261105-02">
 
 <style id="squadra-page-frame-fix">
   body > .container { display:block!important; width:min(1440px,calc(100vw - 48px))!important; max-width:1440px!important; min-width:0!important; margin:34px auto 64px!important; padding:0!important; box-sizing:border-box!important; }
@@ -231,13 +236,10 @@
     <!-- TOURNAMENTS -->
     <section id="tournaments" class="section">
       <h1><i class="fa-solid fa-flag-checkered"></i>Турниры</h1>
-      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTournamentModal')"><i class="fa-solid fa-plus"></i> Создать турнир</button>
+      <button id="createTournamentButton" class="btn btn-primary" style="margin-bottom:20px;" onclick="openModal('createTournamentModal')" hidden><i class="fa-solid fa-plus"></i> Создать турнир</button>
 
       <div class="grid grid-3" id="createdTournamentGrid" style="margin:0 0 30px;"><p class="subtitle">Загружаем турниры…</p></div>
 
-      <h2><i class="fa-solid fa-sitemap"></i>Турнирная сетка</h2>
-      <div class="form-group" style="max-width:460px;margin:14px 0;"><label for="tournamentBracketSelect">Выбери турнир</label><select id="tournamentBracketSelect" onchange="loadTournamentBracket(this.value)"><option value="">Выбери турнир</option></select></div>
-      <div id="tournamentBracket" class="bracket"><p class="subtitle">Сетка появится после регистрации команд.</p></div>
     </section>
 
     <!-- COMMUNITY -->
@@ -322,7 +324,7 @@
       <p class="subtitle">Автоматический поиск тиммейтов по вашим параметрам</p>
 
       <div class="card" style="margin-bottom:24px;">
-        <h3>Параметры поиска</h3>
+        <h3>Параметры заявки на поиск</h3>
         <div class="grid grid-3" style="margin-top:16px;">
           <div class="form-group"><label>Игра</label><select id="mmGame"><option>CS2</option><option>Dota 2</option><option>Valorant</option><option>LoL</option></select></div>
           <div class="form-group"><label>Роль</label><select id="mmRole"><option>Любая</option><option>Снайпер</option><option>Саппорт</option><option>Капитан</option></select></div>
@@ -335,7 +337,7 @@
         <button class="btn btn-primary" onclick="startMatchmaking()"><i class="fa-solid fa-magnifying-glass-location"></i> Начать подбор</button>
       </div>
 
-      <div class="card mm-panel">
+      <div class="card mm-panel"><h3>Заявки игроков</h3><div id="matchmakingResults"><p class="subtitle">Загружаем заявки…</p></div></div><div class="card mm-panel" hidden>
         <div class="mm-icon" id="mmIcon"><i class="fa-solid fa-satellite-dish"></i></div>
         <h3 style="margin-top:12px; color:var(--red); font-family:Oswald;" id="mmTitle">СКАНЕР МАТЧМЕЙКИНГА В РЕЖИМЕ ОЖИДАНИЯ</h3>
         <p style="color:var(--muted); font-size:13px; max-width:440px; margin:8px auto 0;">Алгоритм подбирает игроков по рейтингу (±допуск), роли, региону и времени онлайн. Расчёт совпадения — взвешенная сумма параметров.</p>
@@ -361,7 +363,7 @@
     <section id="events" class="section">
       <h1><i class="fa-solid fa-calendar-days"></i>Игровые события</h1>
       <p class="subtitle">Расписание чемпионатов, лиг и игровых событий.</p>
-      <button class="btn btn-primary" style="margin-bottom:16px;" onclick="openModal('createEventModal')"><i class="fa-solid fa-plus"></i> Создать событие</button>
+      <button id="createPlatformEventButton" class="btn btn-primary" style="margin-bottom:16px;" onclick="openModal('createEventModal')" hidden><i class="fa-solid fa-plus"></i> Создать событие</button>
       <div id="eventsGrid" class="grid grid-2"><p class="subtitle">Войди, чтобы загрузить события.</p></div>
     </section>
 
@@ -460,6 +462,7 @@
           <section class="admin-workspace-section" id="adminTab-platform">
             <div id="adminTeamsCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">СОСТАВЫ И СООБЩЕСТВА</p><h2>Команды платформы</h2></div><span class="admin-card-icon"><i class="fa-solid fa-people-group"></i></span></div><div id="adminTeamsList"><p class="subtitle">Загрузка команд…</p></div></div>
             <div id="adminTournamentsCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">СОРЕВНОВАНИЯ</p><h2>Турниры платформы</h2></div><span class="admin-card-icon"><i class="fa-solid fa-trophy"></i></span></div><div id="adminTournamentsList"><p class="subtitle">Загрузка турниров…</p></div></div>
+            <div id="adminEventsCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">КАЛЕНДАРЬ</p><h2>Игровые события</h2></div><span class="admin-card-icon"><i class="fa-solid fa-calendar-days"></i></span></div><div id="adminEventsList"><p class="subtitle">Загрузка событий…</p></div></div>
           </section>
           <section class="admin-workspace-section" id="adminTab-games">
             <div id="adminGamesCard" class="card admin-card"><div class="admin-card-heading"><div><p class="admin-eyebrow">КАТАЛОГ</p><h2>Игры</h2></div><span class="admin-card-icon"><i class="fa-solid fa-gamepad"></i></span></div>
@@ -600,16 +603,16 @@
     <div class="form-group"><label>Название</label><input id="tournamentName" maxlength="100" placeholder="Например: Squadra Open"></div>
     <div class="form-group"><label>Игра</label><select id="tournamentGame"><option>Загрузка игр…</option></select></div>
     <div class="grid grid-2"><div class="form-group"><label>Команд</label><input id="tournamentLimit" type="number" min="2" max="256" value="16"></div><div class="form-group"><label>Начало</label><input id="tournamentStarts" type="datetime-local"></div></div>
-    <div class="form-group"><label>Призовой фонд</label><input id="tournamentPrize" maxlength="80" placeholder="Например: ₽ 50 000"></div>
+    <div class="form-group"><label>Призовой фонд</label><input id="tournamentPrize" maxlength="12" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="50000"></div>
     <div class="form-group"><label>Описание</label><textarea id="tournamentDescription" rows="3" maxlength="2000" placeholder="Правила и информация о турнире"></textarea></div>
     <button class="btn btn-primary" style="width:100%;" onclick="createTournament()"><i class="fa-solid fa-flag-checkered"></i> Создать</button>
   </div>
 </div>
 
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
-<div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
+<div id="adminEntityEditModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('adminEntityEditModal')"><i class="fa-solid fa-xmark"></i></button><h2 id="adminEntityEditTitle">Редактирование</h2><div id="adminEntityEditFields"></div><button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="saveAdminEntity()">Сохранить изменения</button></div></div><div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=admin-groups-20261104-20"></script>
+<script src="/assets/app.js?v=20261105-02"></script>
 
 </body>
 </html>
