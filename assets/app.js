@@ -69,7 +69,7 @@
   const sectionRoutes={home:'/',games:'/games',players:'/players',teams:'/teams',tournaments:'/tournaments',community:'/community',ranking:'/ranking',profile:'/profile',library:'/library',friends:'/friends',messages:'/messages',achievements:'/achievements',history:'/history',notifications:'/notifications',settings:'/settings',matchmaking:'/matchmaking',events:'/events',admin:'/admin'};
   function routeSection(path){const p=(path||'/').replace(/\/+$/,'')||'/';if(/^\/players\/[0-9a-f-]{36}$/i.test(p))return{section:'playerProfile',id:p.split('/').pop()};if(/^\/groups\/[0-9a-f-]{36}$/i.test(p))return{section:'groupPage',id:p.split('/').pop()};return{section:Object.keys(sectionRoutes).find(k=>sectionRoutes[k]===p)||'home'};}
   function applyLocationRoute(){const r=routeSection(location.pathname);if(r.section==='admin'&&!authInitialized){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById('admin')?.classList.add('active');const s=document.getElementById('adminStatus');if(s)s.textContent='Проверяем права доступа…';return;}if(r.section==='admin'&&!isModerator){if(currentUser&&!isAdmin){showNotification('Панель доступна только администраторам.');showSection('home',{replace:true});}else if(!currentUser){showSection('home',{replace:true});openModal('loginModal');}return;}showSection(r.section,{fromLocation:true,profileId:r.id});}
-  function showSection(id,options={}){if(id!=='messages'){directChatLoadGeneration++;document.getElementById('messages')?.classList.remove('chat-open');document.body.classList.remove('mobile-chat-open');}if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events'){loadPlatformEvents();loadAdminAccess();}if(id==='matchmaking'){void loadMatchmakingPosts();subscribeMatchmakingPosts();}if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');if(id==='community'&&currentUser)queueCommunityFeedRefresh();if(id==='friends'&&currentUser)void refreshFriendList();if(id==='messages'&&currentUser)void refreshUnreadMessageCount();if(id==='notifications'&&currentUser){void refreshNotifications();void refreshMyReports();}document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);if(!options.skipScroll)window.scrollTo({top:0,behavior:'smooth'});}
+  function showSection(id,options={}){if(id!=='messages'){directChatLoadGeneration++;document.getElementById('messages')?.classList.remove('chat-open');document.body.classList.remove('mobile-chat-open');}if(id==='admin'&&!isModerator){currentUser?showNotification('Панель доступна только администраторам.'):openModal('loginModal');return;}const section=document.getElementById(id);if(!section)return;if(id==='admin')loadAdminPanel();if(id==='ranking')loadLeaderboards();if(id==='events'){loadPlatformEvents();loadAdminAccess();}if(id==='matchmaking'){void loadMatchmakingPosts();subscribeMatchmakingPosts();}if(id==='playerProfile'&&options.profileId)loadPlayerProfile(options.profileId);if(id==='groupPage'&&options.profileId)openGroupChat(options.profileId,{fromRoute:true});document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');if(id!=='groupPage')activeCommunityGroup=null;if(currentUser)setupRealtime();if(id==='community'&&currentUser)queueCommunityFeedRefresh();if(id==='friends'&&currentUser)void refreshFriendList();if(id==='messages'&&currentUser)void refreshUnreadMessageCount();if(id==='notifications'&&currentUser){void refreshNotifications();void refreshMyReports();}document.title=(id==='playerProfile'?'Профиль игрока':({home:'Главная',games:'Игры',players:'Игроки',teams:'Команды',tournaments:'Турниры',community:'Сообщество',ranking:'Рейтинг',profile:'Профиль',library:'Библиотека',friends:'Друзья',messages:'Сообщения',achievements:'Достижения',history:'История',notifications:'Уведомления',settings:'Настройки',matchmaking:'Подбор игроков',events:'События',admin:'Администрирование',groupPage:'Группа'}[id]||'Squadra'))+' — Squadra';document.querySelectorAll('nav a,aside li').forEach(x=>x.classList.remove('active'));document.querySelector(`nav a[onclick*="${id}"],aside li[onclick*="${id}"]`)?.classList.add('active');const path=options.path||sectionRoutes[id];if(path&&!options.fromLocation&&location.pathname!==path)history.pushState({section:id},'',path);toggleNavigation(false);if(!options.skipScroll)window.scrollTo({top:0,behavior:'smooth'});}
   window.addEventListener('popstate',applyLocationRoute);
   function toggleNavigation(force){const open=typeof force==='boolean'?force:!document.body.classList.contains('nav-open');document.body.classList.toggle('nav-open',open);if(open)document.body.classList.remove('mobile-chat-open');const b=document.getElementById('menuToggle');if(b){b.setAttribute('aria-expanded',String(open));b.innerHTML='<i class="fa-solid '+(open?'fa-xmark':'fa-bars')+'"></i>';}}
   function syncModalLock(){document.body.classList.toggle('modal-open',!!document.querySelector('.modal.active'));}
@@ -213,7 +213,7 @@
     host.innerHTML=(rows.map(r=>{const p=pm.get(r.owner_id)||{},mine=r.owner_id===currentUser?.id,teams=tm.get(r.owner_id)||[];return '<article class="card mm-request-card"><div class="mm-request-head"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+' <small>@'+escapeHtml(p.username||'player')+'</small></strong><span class="badge badge-info">'+escapeHtml(r.game_name)+'</span></div><p class="subtitle">'+escapeHtml(r.region)+' · '+escapeHtml(r.role)+' · '+escapeHtml(r.rating_tolerance)+' · '+escapeHtml(r.preferred_level)+' · '+escapeHtml(r.play_time)+' · '+escapeHtml(r.language)+'</p>'+(teams.length?'<p>Команда: '+teams.map(t=>escapeHtml(t.name)+(t.tag?' ['+escapeHtml(t.tag)+']':'')).join(', ')+'</p>':'')+'<div class="mm-request-actions"><button class="btn btn-ghost" onclick="openPlayerProfile(\''+escapeHtml(r.owner_id)+'\')">Профиль</button><button class="btn btn-primary" onclick="openChatWith(\''+escapeHtml(r.owner_id)+'\')">Написать</button>'+(mine?'<button class="btn btn-danger" onclick="deleteMatchmakingPost(\''+escapeHtml(r.id)+'\')">Удалить заявку</button>':'')+'</div></article>';}).join(''))||'<p class="subtitle">Заявок пока нет.</p>';
   }
   async function deleteMatchmakingPost(id){if(!currentUser)return;const {error}=await supabaseClient.from('matchmaking_posts').delete().eq('id',id).eq('owner_id',currentUser.id);if(error){console.error(error);return showNotification('Не удалось удалить заявку.');}showNotification('Заявка удалена.');void loadMatchmakingPosts();}
-  function subscribeMatchmakingPosts(){if(!supabaseClient||window.matchmakingPostsChannel)return;window.matchmakingPostsChannel=supabaseClient.channel('matchmaking-posts-live').on('postgres_changes',{event:'*',schema:'public',table:'matchmaking_posts'},()=>void loadMatchmakingPosts()).subscribe();}
+  function subscribeMatchmakingPosts(){if(currentUser&&isRealtimeForeground())setupRealtime();}
 
   function switchRankTab(tab) {
     ['players','teams','games'].forEach(t => {
@@ -734,7 +734,7 @@ function initCustomSelects(root=document) {
     document.getElementById('profileAchievementsCount').textContent=mapped.filter(a=>a.unlocked_at).length;
     document.getElementById('profileRecentAchievements').innerHTML=mapped.filter(a=>a.unlocked_at).slice(0,4).map(card).join('')||'<p class="subtitle">Пока нет открытых достижений.</p>';
   }
-  function toggleCommunityGroups(force){const card=document.getElementById('communityGroupsCard'),view=document.getElementById('communityGroupsView'),feed=document.getElementById('communityFeedGrid'),button=document.getElementById('communityGroupsButton');if(!card||!view||!feed)return;const open=typeof force==='boolean'?force:view.hidden;feed.hidden=open;view.hidden=!open;card.hidden=false;button?.classList.toggle('btn-primary',open);button?.classList.toggle('btn-ghost',!open);button?.setAttribute('aria-expanded',String(open));document.getElementById('feedAllButton')?.classList.toggle('btn-ghost',open||communityFeedMode!=='all');document.getElementById('feedAllButton')?.classList.toggle('btn-primary',!open&&communityFeedMode==='all');document.getElementById('feedFollowingButton')?.classList.toggle('btn-ghost',open||communityFeedMode!=='following');document.getElementById('feedFollowingButton')?.classList.toggle('btn-primary',!open&&communityFeedMode==='following');if(open)card.querySelector('input')?.focus();}
+  function toggleCommunityGroups(force){const card=document.getElementById('communityGroupsCard'),view=document.getElementById('communityGroupsView'),feed=document.getElementById('communityFeedGrid'),button=document.getElementById('communityGroupsButton');if(!card||!view||!feed)return;const open=typeof force==='boolean'?force:view.hidden;feed.hidden=open;view.hidden=!open;card.hidden=false;button?.classList.toggle('btn-primary',open);button?.classList.toggle('btn-ghost',!open);button?.setAttribute('aria-expanded',String(open));document.getElementById('feedAllButton')?.classList.toggle('btn-ghost',open||communityFeedMode!=='all');document.getElementById('feedAllButton')?.classList.toggle('btn-primary',!open&&communityFeedMode==='all');document.getElementById('feedFollowingButton')?.classList.toggle('btn-ghost',open||communityFeedMode!=='following');document.getElementById('feedFollowingButton')?.classList.toggle('btn-primary',!open&&communityFeedMode==='following');if(open&&currentUser){void loadCommunityGroups();setupRealtime();}}
   function setCommunityFeedMode(mode){communityFeedMode=mode==='following'?'following':'all';toggleCommunityGroups(false);document.getElementById('feedAllButton')?.classList.toggle('btn-primary',communityFeedMode==='all');document.getElementById('feedAllButton')?.classList.toggle('btn-ghost',communityFeedMode!=='all');document.getElementById('feedFollowingButton')?.classList.toggle('btn-primary',communityFeedMode==='following');document.getElementById('feedFollowingButton')?.classList.toggle('btn-ghost',communityFeedMode!=='following');renderCommunity(communityPostRows,communityLiked,communityCommentRows);}
   function renderCommunity(rows,liked,comments=[]) {
     communityPostRows=rows;communityLiked=liked;communityCommentRows=comments;
@@ -1613,7 +1613,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   function stopRealtime() {
     realtimeGeneration++;
     if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=null;}
-    const channels=[realtimeChannel,directMessagesChannel].filter(Boolean);
+    const channels=[realtimeChannel,directMessagesChannel,window.matchmakingPostsChannel].filter(Boolean);window.matchmakingPostsChannel=null;
     realtimeChannel=null;
     directMessagesChannel=null;
     realtimeUserId=null;
@@ -1636,16 +1636,16 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   function setupDirectMessagesRealtime(uid,generation) {
     if(!supabaseClient||!uid||directMessagesChannel)return;
     directMessagesChannel=supabaseClient.channel('squadra-dm-'+uid)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages'},payload=>{
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'receiver_id=eq.'+uid},payload=>{
         const row=payload?.new;if(!row||(row.sender_id!==uid&&row.receiver_id!==uid))return;
         if(row.receiver_id===uid)void refreshUnreadMessageCount();
         const peerId=row.sender_id===uid?row.receiver_id:row.sender_id;
         const prefs=readChatPreferences();prefs.hidden=(prefs.hidden||[]).filter(id=>id!==peerId);writeChatPreferences(prefs);
         void loadChatList();
-        if(row.sender_id!==uid&&document.getElementById('chatRecipient')?.value===peerId)void loadDirectMessages({silent:true});
+        if(document.getElementById('messages')?.classList.contains('active')&&row.sender_id!==uid&&document.getElementById('chatRecipient')?.value===peerId)void loadDirectMessages({silent:true});
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'direct_messages',filter:'receiver_id=eq.'+uid},()=>{void refreshUnreadMessageCount();})
-      .on('postgres_changes',{event:'*',schema:'public',table:'direct_chat_states'},payload=>{
+      .on('postgres_changes',{event:'*',schema:'public',table:'direct_chat_states',filter:'user_id=eq.'+uid},payload=>{
         const row=payload?.new||payload?.old;if(row?.user_id===uid||row?.peer_id===uid)void loadChatList();
       })
       .subscribe((status,error)=>{
@@ -1657,6 +1657,32 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
         }
       });
   }
+
+  let realtimeRouteKey='';
+  function currentRealtimeRoute(){const section=document.querySelector('.section.active')?.id||'home';return section+(section==='admin'?':'+(document.querySelector('.admin-workspace-section.active')?.id||'overview'):'')+(section==='community'&&!document.getElementById('communityGroupsView')?.hidden?':groups':'')+(section==='groupPage'?':'+(activeCommunityGroup||''):'');}
+  function createRouteRealtimeChannel(name){
+    const channel=supabaseClient.channel(name),section=document.querySelector('.section.active')?.id||'home';
+    const scope={
+      community_posts:['community','admin'],community_post_comments:['community','admin'],community_post_likes:['community'],
+      user_library:['games','library','profile'],games:['games','library','community','admin','teams','tournaments','events','matchmaking'],
+      matches:['profile','history','players','ranking'],teams:['teams','admin','ranking'],
+      tournaments:['tournaments','admin','home'],platform_events:['events','admin'],platform_event_registrations:['events'],
+      tournament_matches:['tournaments'],community_reports:['notifications','admin'],community_report_messages:['notifications','admin'],
+      community_groups:['community','groupPage','admin'],community_group_members:['community','groupPage','admin'],
+      community_group_messages:['groupPage'],matchmaking_posts:['matchmaking']
+    };
+    channel.routeOn=function(type,config,callback){
+      const adminTab=document.querySelector('.admin-workspace-section.active')?.id||'adminTab-overview';const adminScope={community_groups:'posts',community_group_members:'posts',community_posts:'posts',community_post_comments:'posts',teams:'platform',tournaments:'platform',platform_events:'platform',games:'games',community_reports:'reports',community_report_messages:'reports'};
+      if(section==='admin'&&adminScope[config.table]&&adminTab!=='adminTab-'+adminScope[config.table])return channel;
+      if(config.table==='profiles'&&!config.filter&&!['players','ranking','friends','playerProfile'].includes(section))return channel;
+      if(scope[config.table]&&!scope[config.table].includes(section))return channel;
+      if(['community_groups','community_group_members'].includes(config.table)&&section==='community'&&document.getElementById('communityGroupsView')?.hidden)return channel;
+      if(['community_posts','community_post_comments','community_post_likes'].includes(config.table)&&section==='community'&&!document.getElementById('communityGroupsView')?.hidden)return channel;
+      if(config.table==='community_group_messages'){if(!activeCommunityGroup)return channel;config={...config,filter:'group_id=eq.'+activeCommunityGroup};}
+      channel.on(type,config,payload=>{if(isRealtimeForeground())callback(payload)});return channel;
+    };return channel;
+  }
+
   function setupRealtime() {
     if(!supabaseClient||!currentUser)return;
     if(!isRealtimeForeground()){
@@ -1664,41 +1690,45 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       return;
     }
     const uid=currentUser.id;
-    if(realtimeChannel&&realtimeUserId===uid){if(!directMessagesChannel)setupDirectMessagesRealtime(uid,realtimeGeneration);return;}
+    const routeKey=currentRealtimeRoute();
+    if(realtimeChannel&&realtimeUserId===uid&&realtimeRouteKey===routeKey){if(!directMessagesChannel)setupDirectMessagesRealtime(uid,realtimeGeneration);return;}
     if(realtimeChannel||directMessagesChannel)stopRealtime();
     const generation=++realtimeGeneration;
-    realtimeUserId=uid;
+    realtimeUserId=uid;realtimeRouteKey=routeKey;
     setupDirectMessagesRealtime(uid,generation);
-    realtimeChannel=supabaseClient.channel('squadra-live-'+uid)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'friendships',filter:'requester_id=eq.'+uid},()=>{void refreshFriendList();})
-       .on('postgres_changes',{event:'INSERT',schema:'public',table:'friendships',filter:'addressee_id=eq.'+uid},()=>{void refreshFriendList();})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'friendships',filter:'requester_id=eq.'+uid},()=>{void refreshFriendList();})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'friendships',filter:'addressee_id=eq.'+uid},()=>{void refreshFriendList();})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'matches',filter:'player_a_id=eq.'+uid},()=>{loadPendingMatches();})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'matches',filter:'player_b_id=eq.'+uid},()=>{loadPendingMatches();})
-      .on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},()=>{if(document.getElementById('community')?.classList.contains('active'))queueCommunityFeedRefresh();})
-      .on('postgres_changes',{event:'*',schema:'public',table:'community_post_comments'},()=>{if(document.getElementById('community')?.classList.contains('active'))queueCommunityFeedRefresh();})
-      .on('postgres_changes',{event:'*',schema:'public',table:'user_library',filter:'user_id=eq.'+uid},payload=>{const row=payload.eventType==='DELETE'?payload.old:payload.new;if(payload.eventType==='DELETE')accountLibrary=(accountLibrary||[]).filter(x=>x.id!==row?.id);else if(row){accountLibrary=[...(accountLibrary||[]).filter(x=>x.game_name!==row.game_name),row];}renderGames();renderLibrary(accountLibrary||[]);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'games'},()=>{void loadGameCatalog();})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+uid},async()=>{const {data}=await supabaseClient.from('profiles').select('*').eq('id',uid).maybeSingle();if(data&&currentUser?.id===uid){accountProfile=data;renderAccountProfile(data);}})
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'user_settings',filter:'user_id=eq.'+uid},async()=>{const {data}=await supabaseClient.from('user_settings').select('*').eq('user_id',uid).maybeSingle();if(data&&currentUser?.id===uid)setTheme(data.theme);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'user_roles',filter:'user_id=eq.'+uid},async()=>{await loadAdminAccess();if(isModerator&&document.getElementById('admin')?.classList.contains('active'))loadAdminPanel();})
-       .on('postgres_changes',{event:'*',schema:'public',table:'teams'},()=>{if(document.getElementById('teams')?.classList.contains('active'))void loadTeamDirectory();if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();})
-       .on('postgres_changes',{event:'*',schema:'public',table:'tournaments'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();if(document.getElementById('tournaments')?.classList.contains('active'))void loadCreatedTournaments();})
-       .on('postgres_changes',{event:'*',schema:'public',table:'platform_events'},()=>{if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
-       .on('postgres_changes',{event:'*',schema:'public',table:'platform_event_registrations'},()=>{if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'community_reports'},payload=>{
+    realtimeChannel=createRouteRealtimeChannel('squadra-live-'+uid)
+      .routeOn('postgres_changes',{event:'INSERT',schema:'public',table:'friendships',filter:'requester_id=eq.'+uid},()=>{void refreshFriendList();})
+       .routeOn('postgres_changes',{event:'INSERT',schema:'public',table:'friendships',filter:'addressee_id=eq.'+uid},()=>{void refreshFriendList();})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'friendships',filter:'requester_id=eq.'+uid},()=>{void refreshFriendList();})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'friendships',filter:'addressee_id=eq.'+uid},()=>{void refreshFriendList();})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'matches',filter:'player_a_id=eq.'+uid},()=>{loadPendingMatches();})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'matches',filter:'player_b_id=eq.'+uid},()=>{loadPendingMatches();})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_posts'},()=>{if(document.getElementById('community')?.classList.contains('active'))queueCommunityFeedRefresh();})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_post_comments'},()=>{if(document.getElementById('community')?.classList.contains('active'))queueCommunityFeedRefresh();})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'user_library',filter:'user_id=eq.'+uid},payload=>{const row=payload.eventType==='DELETE'?payload.old:payload.new;if(payload.eventType==='DELETE')accountLibrary=(accountLibrary||[]).filter(x=>x.id!==row?.id);else if(row){accountLibrary=[...(accountLibrary||[]).filter(x=>x.game_name!==row.game_name),row];}renderGames();renderLibrary(accountLibrary||[]);})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'games'},()=>{void loadGameCatalog();})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+uid},async()=>{const {data}=await supabaseClient.from('profiles').select('*').eq('id',uid).maybeSingle();if(data&&currentUser?.id===uid){accountProfile=data;renderAccountProfile(data);}})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'user_settings',filter:'user_id=eq.'+uid},async()=>{const {data}=await supabaseClient.from('user_settings').select('*').eq('user_id',uid).maybeSingle();if(data&&currentUser?.id===uid)setTheme(data.theme);})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'user_roles',filter:'user_id=eq.'+uid},async()=>{await loadAdminAccess();if(isModerator&&document.getElementById('admin')?.classList.contains('active'))loadAdminPanel();})
+       .routeOn('postgres_changes',{event:'*',schema:'public',table:'teams'},()=>{if(document.getElementById('teams')?.classList.contains('active'))void loadTeamDirectory();if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();})
+       .routeOn('postgres_changes',{event:'*',schema:'public',table:'tournaments'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();if(document.getElementById('tournaments')?.classList.contains('active'))void loadCreatedTournaments();})
+       .routeOn('postgres_changes',{event:'*',schema:'public',table:'platform_events'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
+       .routeOn('postgres_changes',{event:'*',schema:'public',table:'platform_event_registrations'},()=>{if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
+      .routeOn('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'tournament_matches'},()=>{const id=document.getElementById('tournamentBracketSelect')?.value;if(id)loadTournamentBracket(id);})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_reports'},payload=>{
         const row=payload?.new||payload?.old;if(!row)return;
         if(row.reporter_id===uid){void refreshMyReports();void refreshNotifications();}
         if(payload.eventType==='DELETE'){void refreshMyReports();void refreshNotifications();}else if(row.reporter_id===uid){void refreshMyReports();void refreshNotifications();}if(isModerator&&document.getElementById('admin')?.classList.contains('active')){void refreshAdminReports();if(adminSelectedReportId===row.id&&payload.eventType!=='DELETE')void adminInspectReport(row.id);}
       })
-      .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{void refreshNotifications();if(payload.eventType==='INSERT'&&payload.new?.body&&payload.new?.source_type!=='group'&&payload.new?.kind!=='group_message')showNotification(payload.new.body);})
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId&&document.getElementById('adminDetailModal')?.classList.contains('active')){const host=document.getElementById('adminReportConversation');if(host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}}const panel=document.getElementById('report-chat-panel-'+reportId),host=document.getElementById('report-chat-messages-'+reportId);if(panel&&!panel.hidden&&host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}})
-      .on('postgres_changes',{event:'*',schema:'public',table:'community_groups'},()=>{if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
-      .on('postgres_changes',{event:'*',schema:'public',table:'community_group_members'},()=>{if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
-      .on('postgres_changes',{event:'*',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)void loadGroupMessages(activeCommunityGroup);})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},payload=>{void refreshNotifications();if(payload.eventType==='INSERT'&&payload.new?.body&&payload.new?.source_type!=='group'&&payload.new?.kind!=='group_message')showNotification(payload.new.body);})
+      .routeOn('postgres_changes',{event:'INSERT',schema:'public',table:'community_report_messages'},payload=>{const reportId=payload.new?.report_id;if(!reportId)return;if(adminSelectedReportId===reportId&&document.getElementById('adminDetailModal')?.classList.contains('active')){const host=document.getElementById('adminReportConversation');if(host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}}const panel=document.getElementById('report-chat-panel-'+reportId),host=document.getElementById('report-chat-messages-'+reportId);if(panel&&!panel.hidden&&host&&!host.querySelector('[data-message-id="'+payload.new.id+'"]')){host.insertAdjacentHTML('beforeend',reportMessageMarkup([payload.new],uid));host.scrollTop=host.scrollHeight;}})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_groups'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminCommunityGroups();if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_group_members'},()=>{if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_group_messages'},()=>{if(activeCommunityGroup)void loadGroupMessages(activeCommunityGroup);})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>{const section=document.querySelector('.section.active')?.id;if(section==='players')void filterPlayers();if(section==='ranking')void loadLeaderboards();if(section==='friends')void refreshFriendList();})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_post_likes'},()=>queueCommunityFeedRefresh())
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'matchmaking_posts'},()=>void loadMatchmakingPosts())
       .subscribe((status,error)=>{
         if(generation!==realtimeGeneration)return;
         if(status==='SUBSCRIBED'){
@@ -1707,8 +1737,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
           void refreshFriendList();void refreshNotifications();void refreshUnreadMessageCount();
           void loadChatList();
           if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();
-          if(document.getElementById('chatRecipient')?.value)loadDirectMessages();
-          if(activeCommunityGroup)loadGroupMessages(activeCommunityGroup);
+          if(document.getElementById('messages')?.classList.contains('active')&&document.getElementById('chatRecipient')?.value)loadDirectMessages({silent:true});
+          if(document.getElementById('groupPage')?.classList.contains('active')&&activeCommunityGroup)loadGroupMessages(activeCommunityGroup);
           return;
         }
         if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
@@ -1721,9 +1751,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   function resumeForegroundRealtime() {
     if(!currentUser||!isRealtimeForeground())return;
     setupRealtime();
-    void refreshNotifications();void refreshFriendList();void loadChatList();
-    if(document.getElementById('chatRecipient')?.value)void loadDirectMessages();
-    if(activeCommunityGroup)void loadGroupMessages(activeCommunityGroup);
+    void refreshNotifications();void refreshFriendList();void refreshUnreadMessageCount();
+    if(document.getElementById('messages')?.classList.contains('active')){void loadChatList();if(document.getElementById('chatRecipient')?.value)void loadDirectMessages({silent:true});}
+    if(document.getElementById('groupPage')?.classList.contains('active')&&activeCommunityGroup)void loadGroupMessages(activeCommunityGroup);
     if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();
   }
   document.addEventListener('visibilitychange',()=>{
@@ -1743,7 +1773,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const [{data:g},{data:members}]=await Promise.all([supabaseClient.from('community_groups').select('id,name,game_name,description,owner_id,avatar_url').eq('id',groupId).maybeSingle(),supabaseClient.from('community_group_members').select('user_id').eq('group_id',groupId)]);
     const host=document.getElementById('groupPageContent');if(!host||!g){if(host)host.innerHTML='<p class="subtitle">Группа не найдена.</p>';return;}
     const joined=(members||[]).some(m=>m.user_id===currentUser.id),isOwner=g.owner_id===currentUser.id;
-    host.innerHTML='<section class="group-chat-page"><header class="group-chat-header">'+(g.avatar_url?'<img class="group-chat-avatar" src="'+escapeHtml(g.avatar_url)+'" alt="">':'<span class="group-chat-avatar group-chat-avatar-fallback"><i class="fa-solid fa-people-group"></i></span>')+'<div class="group-chat-heading"><span class="eyebrow">ИГРОВОЕ СООБЩЕСТВО</span><h1>'+escapeHtml(g.name)+'</h1><p class="subtitle">'+escapeHtml(g.game_name||'Любая игра')+' · '+(members||[]).length+' участников</p></div><div class="group-chat-actions">'+(isOwner?'<button class="btn btn-ghost" data-clear-group-history="'+escapeHtml(groupId)+'"><i class="fa-solid fa-broom"></i> Очистить историю</button>':'')+'</div></header>'+(g.description?'<div class="group-chat-description"><span>О группе</span><p>'+escapeHtml(g.description)+'</p></div>':'')+'<div id="group-messages-'+groupId+'" class="group-messages" aria-live="polite"></div>'+(joined?'<form class="group-chat-composer" data-group-id="'+escapeHtml(groupId)+'"><textarea id="group-input-'+groupId+'" maxlength="2000" rows="1" placeholder="Написать в группу…"></textarea><button class="btn btn-primary" aria-label="Отправить"><i class="fa-solid fa-paper-plane"></i></button></form>':'<div class="group-chat-join-note">Вступи в группу, чтобы читать и отправлять сообщения.</div>')+'</section>';
+    host.innerHTML='<section class="group-chat-page"><header class="group-chat-header">'+(g.avatar_url?'<img class="group-chat-avatar" src="'+escapeHtml(g.avatar_url)+'" alt="">':'<span class="group-chat-avatar group-chat-avatar-fallback"><i class="fa-solid fa-people-group"></i></span>')+'<div class="group-chat-heading"><h1>'+escapeHtml(g.name)+'</h1><p class="subtitle">'+escapeHtml(g.game_name||'Любая игра')+' · '+(members||[]).length+' участников</p></div><div class="group-chat-actions">'+(isOwner?'<button class="btn btn-ghost" data-clear-group-history="'+escapeHtml(groupId)+'"><i class="fa-solid fa-broom"></i> Очистить историю</button>':'')+'</div></header>'+(g.description?'<div class="group-chat-description"><span>О группе</span><p>'+escapeHtml(g.description)+'</p></div>':'')+'<div id="group-messages-'+groupId+'" class="group-messages" aria-live="polite"></div>'+(joined?'<form class="group-chat-composer" data-group-id="'+escapeHtml(groupId)+'"><textarea id="group-input-'+groupId+'" maxlength="2000" rows="1" placeholder="Написать в группу…"></textarea><button class="btn btn-primary" aria-label="Отправить"><i class="fa-solid fa-paper-plane"></i></button></form>':'<div class="group-chat-join-note">Вступи в группу, чтобы читать и отправлять сообщения.</div>')+'</section>';
     host.querySelector('[data-clear-group-history]')?.addEventListener('click',()=>clearCommunityGroupHistory(groupId));
     host.querySelector('.group-chat-composer')?.addEventListener('submit',event=>{event.preventDefault();sendGroupMessage(groupId);});
     host.querySelector('.group-chat-composer textarea')?.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendGroupMessage(groupId);}});
@@ -1812,6 +1842,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     document.querySelectorAll('.admin-workspace-section').forEach(section=>section.classList.toggle('active',section.id==='adminTab-'+tab));
     const title=document.getElementById('adminWorkspaceTitle'),description=document.getElementById('adminWorkspaceDescription');
     if(title)title.textContent=labels[tab][0];if(description)description.textContent=labels[tab][1];
+    if(currentUser)setupRealtime();
     document.getElementById('admin')?.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
@@ -1820,14 +1851,14 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const host=document.getElementById('adminCommunityGroupsList');if(!host||!isAdmin||!supabaseClient)return;host.setAttribute('aria-busy','true');
     const [{data,error},{data:gameRows}]=await Promise.all([supabaseClient.from('community_groups').select('id,name,game_name,description,avatar_url,owner_id').order('created_at',{ascending:false}).limit(200),supabaseClient.from('games').select('name').eq('is_active',true).order('name')]);
     if(error){console.error('Admin group list failed:',error);host.innerHTML='<p class="subtitle">Не удалось загрузить группы.</p>';host.removeAttribute('aria-busy');return;}groupGameOptions=(gameRows||[]).map(g=>g.name);adminCommunityGroupCache.clear();(data||[]).forEach(g=>adminCommunityGroupCache.set(g.id,g));
-    host.innerHTML=(data||[]).map(g=>'<article class="admin-group-row"><div><strong>'+escapeHtml(g.name)+'</strong><p class="subtitle">'+escapeHtml(g.game_name||'')+' • ID: '+escapeHtml(g.id)+'</p></div><div class="admin-group-actions"><button class="btn btn-ghost" onclick="editCommunityGroupAdmin(&quot;'+escapeHtml(g.id)+'&quot;)">Управлять</button><button class="btn btn-danger" onclick="adminDeleteCommunityGroup(&quot;'+escapeHtml(g.id)+'&quot;)">Удалить</button></div></article>').join('')||'<p class="subtitle">Групп пока нет.</p>';host.removeAttribute('aria-busy');
+    host.innerHTML=(data||[]).map(g=>'<article class="admin-group-row"><div><strong>'+escapeHtml(g.name)+'</strong><p class="subtitle">'+escapeHtml(g.game_name||'')+' • ID: '+escapeHtml(g.id)+'</p></div><div class="admin-group-actions"><button class="btn btn-ghost" onclick="editCommunityGroupAdmin(&quot;'+escapeHtml(g.id)+'&quot;)">Управлять</button></div></article>').join('')||'<p class="subtitle">Групп пока нет.</p>';host.removeAttribute('aria-busy');
   }
-  function editCommunityGroupAdmin(id){if(!isAdmin)return;const g=adminCommunityGroupCache.get(id);if(!g)return showNotification('Обнови список групп и попробуй ещё раз.');document.getElementById('adminGroupId').value=g.id;document.getElementById('adminGroupName').value=g.name||'';setGroupGameOptions('adminGroupGame',g.game_name);document.getElementById('adminGroupDescription').value=g.description||'';document.getElementById('adminGroupAvatar').value=g.avatar_url||'';document.getElementById('adminGroupAvatar').dataset.clear='0';document.getElementById('adminGroupAvatarFile').value='';const p=document.getElementById('adminGroupAvatarPreview');p.innerHTML=g.avatar_url?'<img src="'+escapeHtml(g.avatar_url)+'" alt="Аватар группы">':'';p.hidden=!g.avatar_url;openModal('adminGroupEditModal');}
+  function editCommunityGroupAdmin(id){if(!isAdmin)return;const g=adminCommunityGroupCache.get(id);if(!g)return showNotification('Обнови список групп и попробуй ещё раз.');document.getElementById('adminGroupId').value=g.id;document.getElementById('adminGroupName').value=g.name||'';setGroupGameOptions('adminGroupGame',g.game_name);document.getElementById('adminGroupDescription').value=g.description||'';document.getElementById('adminGroupAvatar').value=g.avatar_url||'';document.getElementById('adminGroupAvatar').dataset.clear='0';document.getElementById('adminGroupAvatarFile').value='';const p=document.getElementById('adminGroupAvatarPreview');p.innerHTML=g.avatar_url?'<img src="'+escapeHtml(g.avatar_url)+'" alt="Аватар группы">':'';p.hidden=!g.avatar_url;document.getElementById('adminGroupDeleteButton').onclick=()=>adminDeleteCommunityGroup(id);openModal('adminGroupEditModal');}
   async function saveAdminCommunityGroup(){if(!isAdmin)return;const id=document.getElementById('adminGroupId').value,av=document.getElementById('adminGroupAvatar'),file=document.getElementById('adminGroupAvatarFile')?.files?.[0];let avatar=av.value||null;try{if(file)avatar=await readGroupAvatar(file);else if(av.dataset.clear==='1')avatar=null;}catch(e){return showNotification(e.message);}const fields={name:document.getElementById('adminGroupName').value.trim(),game_name:document.getElementById('adminGroupGame').value,description:document.getElementById('adminGroupDescription').value.trim(),avatar_url:avatar};if(fields.name.length<3||!fields.game_name)return showNotification('Укажи название и игру.');const b=document.querySelector('#adminGroupEditModal [onclick="saveAdminCommunityGroup()"]');if(b){b.disabled=true;b.textContent='Сохраняю…';}const {error}=await supabaseClient.from('community_groups').update(fields).eq('id',id);if(b){b.disabled=false;b.textContent='Сохранить';}if(error){console.error(error);return showNotification('Не удалось сохранить группу.');}const updated={...(adminCommunityGroupCache.get(id)||{}),...fields,id};adminCommunityGroupCache.set(id,updated);communityGroupCache.set(id,updated);closeModal('adminGroupEditModal');showNotification('Изменения группы сохранены.');void Promise.all([loadAdminCommunityGroups(),loadCommunityGroups()]);}
   async function adminDeleteCommunityGroup(id) {
     if(!isAdmin||!await askConfirm('Удалить группу и всю её переписку?'))return;
     const {error}=await supabaseClient.from('community_groups').delete().eq('id',id);if(error){console.error(error);return showNotification('Не удалось удалить группу.');}
-    await Promise.all([loadAdminCommunityGroups(),loadCommunityGroups()]);showNotification('Группа и переписка удалены.');
+    closeModal('adminGroupEditModal');void Promise.all([loadAdminCommunityGroups(),loadCommunityGroups()]);showNotification('Группа и переписка удалены.');
   }
   async function loadAdminPanelData() {
     if(!isModerator||!supabaseClient)return;
@@ -1959,13 +1990,14 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     select.replaceChildren(...items.map(value=>new Option(value,value)));
     select.value=current||'';
   }
+  let adminEditorOptionsPromise=null;
   async function adminOpenUserEditor() {
     if(!isAdmin||!adminSelectedUserData)return;
     const u=adminSelectedUserData.user||{},p=adminSelectedUserData.profile||{},st=adminSelectedUserData.settings||{};
-    const [gameRows,profileOptions]=await Promise.all([
+    const [gameRows,profileOptions]=await (adminEditorOptionsPromise ||= Promise.all([
       supabaseClient.from('games').select('name').eq('is_active',true).order('sort_order'),
-      supabaseClient.from('profiles').select('game_name,region,rank_name')
-    ]);
+      supabaseClient.from('profiles').select('game_name,region,rank_name').limit(1000)
+    ]));
     adminPopulateSelect('adminEditGame',(gameRows.data||[]).map(row=>row.name),p.game_name);
     adminPopulateSelect('adminEditRegion',[...new Set(['EU','Asia','NA','SA',...(profileOptions.data||[]).map(row=>row.region).filter(Boolean)])],p.region);
     adminPopulateSelect('adminEditRank',(profileOptions.data||[]).map(row=>row.rank_name),p.rank_name);
@@ -1986,6 +2018,9 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     document.getElementById('adminEditRank').value=p.rank_name||'';
     document.getElementById('adminEditLevel').value=p.level??1;
     document.getElementById('adminEditRating').value=p.rating??0;
+    document.getElementById('adminEditMatches').value=p.matches_played??0;
+    document.getElementById('adminEditWins').value=p.wins??0;
+    document.getElementById('adminEditWinrate').value=p.matches_played?Math.round(100*p.wins/p.matches_played):0;
     document.getElementById('adminEditBio').value=p.bio||'';
     document.getElementById('adminEditVerified').value=p.verified_color||'';
     updateAdminEditWarning();openModal('adminUserEditModal');
@@ -2003,9 +2038,12 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       rank_name:document.getElementById('adminEditRank').value.trim(),
       level:Number(document.getElementById('adminEditLevel').value),
       rating:Number(document.getElementById('adminEditRating').value),
+      matches_played:Number(document.getElementById('adminEditMatches').value),
+      wins:Number(document.getElementById('adminEditWins').value),
       bio:document.getElementById('adminEditBio').value.trim(),
       verified_color:document.getElementById('adminEditVerified').value||null
     };
+    if(!Number.isInteger(p.matches_played)||p.matches_played<0||p.matches_played>1000000||!Number.isInteger(p.wins)||p.wins<0||p.wins>p.matches_played)return showNotification('Победы должны быть от 0 до количества матчей.');
     const settings={
       theme:document.getElementById('adminEditTheme').value,
       notify_messages:document.getElementById('adminEditNotifyMessages').checked,
@@ -2026,7 +2064,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(saveButton){saveButton.disabled=false;saveButton.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Сохранить изменения';}
     if(error||data?.error){const message=await adminFunctionError(error,data,'Не удалось сохранить профиль.');console.error('Admin profile update failed:',error||data);showNotification(message==='Username already taken'?'Этот юзернейм уже занят.':message);return;}
     closeModal('adminUserEditModal');showNotification(data.identityChanged?'Профиль сохранён. Верификация снята после изменения имени/юзернейма.':(data.emailChanged?'Профиль и email аккаунта обновлены.':'Профиль пользователя обновлён.'));
-    await loadAdminPanel();await adminInspectUser(adminSelectedUserData.user.id);
+    adminSelectedUserData.profile={...adminSelectedUserData.profile,...p,...data.profile};adminSelectedUserData.settings={...adminSelectedUserData.settings,...settings};
+    void adminInspectUser(adminSelectedUserData.user.id);
   }
 
   let adminSelectedReportId=null,adminReportLoadGeneration=0,adminReportConversationGeneration=0;
@@ -2114,7 +2153,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       days=durationHours/24;
     } else if(!await askConfirm('Подтвердить действие с аккаунтом?')) return;
     const verifyButton=action==='verify'?document.getElementById('adminVerifyButton'):null;
-    const actionButton=action==='verify'?null:[...document.querySelectorAll('#adminDetailBody .admin-user-control-actions button')].find(b=>(b.getAttribute('onclick')||'').includes(targetUserId)&&(b.getAttribute('onclick')||'').includes(action));
+    const actionButton=action==='verify'?null:[...document.querySelectorAll('#adminDetailBody .admin-user-control-actions button')].find(b=>(b.getAttribute('onclick')||'').includes(targetUserId)&&(b.getAttribute('onclick')||'').includes(action)&&(!role||(b.getAttribute('onclick')||'').includes('"'+role+'"')));
     const previousVerify=adminSelectedUserData?.profile?.verified_color??null;
     if(verifyButton){verifyButton.disabled=true;verifyButton.textContent='Сохраняю…';}
     if(actionButton){actionButton.disabled=true;actionButton.dataset.previousLabel=actionButton.textContent;actionButton.textContent='Сохраняю…';}
@@ -2130,6 +2169,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       if(detail){const value=detail.querySelector('strong');if(value)value.textContent=color?'Синяя • '+new Date().toLocaleString('ru-RU'):'Нет';}
       return;
     }
+    if(adminSelectedUserData?.user?.id===targetUserId&&role){adminSelectedUserData.roles=(adminSelectedUserData.roles||[]).filter(r=>r.role!==role);if(action==='grant_role')adminSelectedUserData.roles.push({role});}
     if(actionButton){
       actionButton.disabled=false;
       if(action==='ban'){actionButton.textContent='Разблокировать';actionButton.setAttribute('onclick',actionButton.getAttribute('onclick').replace('"ban"','"unban"'));}
@@ -2158,25 +2198,28 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       supabaseClient.from('tournaments').select('id,name,game_name,status,starts_at,owner_id,prize,description,participant_limit').order('created_at',{ascending:false}).limit(100),
       supabaseClient.from('platform_events').select('id,title,event_type,game_id,starts_at,description,registration_limit,owner_id').order('starts_at',{ascending:false}).limit(100)
     ]);
+    (teams.data||[]).forEach(x=>adminEntityCache.set('team:'+x.id,x));(tournaments.data||[]).forEach(x=>adminEntityCache.set('tournament:'+x.id,x));(events.data||[]).forEach(x=>adminEntityCache.set('event:'+x.id,x));
     const teamEl=document.getElementById('adminTeamsList');
-    if(teamEl)teamEl.innerHTML=(teams.data||[]).map(t=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(t.name)+(t.tag?' ['+escapeHtml(t.tag)+']':'')+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+' • '+escapeHtml(t.region)+' • '+(t.is_active?'Опубликована':'Скрыта')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'team\',\''+t.id+'\')">Редактировать</button><button class="btn '+(t.is_active?'btn-ghost':'btn-primary')+'" onclick="adminToggleTeam(&quot;'+t.id+'&quot;,'+(!t.is_active)+')">'+(t.is_active?'Скрыть':'Показать')+'</button><button class="btn btn-ghost admin-delete-action" onclick="adminDeleteTeam(&quot;'+t.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить команду</button></div></article>').join('')||'<p class="subtitle">Команд пока нет.</p>';
+    if(teamEl)teamEl.innerHTML=(teams.data||[]).map(t=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(t.name)+(t.tag?' ['+escapeHtml(t.tag)+']':'')+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+' • '+escapeHtml(t.region)+' • '+(t.is_active?'Опубликована':'Скрыта')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'team\',\''+t.id+'\')">Редактировать</button></div></article>').join('')||'<p class="subtitle">Команд пока нет.</p>';
     const statusOptions=['upcoming','registration','live','completed','cancelled'],statusLabels={upcoming:'Скоро',registration:'Регистрация',live:'Идёт',completed:'Завершён',cancelled:'Отменён'};
     const tournamentEl=document.getElementById('adminTournamentsList');
-    if(tournamentEl)tournamentEl.innerHTML=(tournaments.data||[]).map(t=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(t.name)+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'tournament\',\''+t.id+'\')">Редактировать</button><select aria-label="Статус турнира" onchange="adminUpdateTournamentStatus(&quot;'+t.id+'&quot;,this.value)">'+statusOptions.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+statusLabels[s]+'</option>').join('')+'</select><button class="btn btn-ghost admin-delete-action" onclick="adminDeleteTournament(&quot;'+t.id+'&quot;)"><i class="fa-solid fa-trash"></i> Удалить турнир</button></div></article>').join('')||'<p class="subtitle">Турниров пока нет.</p>';
+    if(tournamentEl)tournamentEl.innerHTML=(tournaments.data||[]).map(t=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(t.name)+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'tournament\',\''+t.id+'\')">Редактировать</button></div></article>').join('')||'<p class="subtitle">Турниров пока нет.</p>';
     const eventEl=document.getElementById('adminEventsList');
     if(eventEl)eventEl.innerHTML=(events.data||[]).map(e=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(e.title)+'</strong><div class="subtitle">'+escapeHtml(e.event_type)+' • '+(e.starts_at?new Date(e.starts_at).toLocaleString('ru-RU'):'Дата не задана')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'event\',\''+e.id+'\')">Редактировать</button></div></article>').join('')||'<p class="subtitle">Событий пока нет.</p>';
 
   }
 
+  const adminEntityCache=new Map();
   let adminEntityContext=null;
   async function adminEditEntity(type,id){
     if(!isAdmin||!supabaseClient)return;
     const table=type==='team'?'teams':type==='tournament'?'tournaments':'platform_events';
-    const {data,error}=await supabaseClient.from(table).select('*').eq('id',id).maybeSingle();
+    const cached=adminEntityCache.get(type+':'+id);
+    const {data,error}=cached?{data:cached,error:null}:await supabaseClient.from(table).select('*').eq('id',id).maybeSingle();
     if(error||!data){console.error(error);return showNotification('Не удалось открыть данные.');}
     adminEntityContext={type,id};document.getElementById('adminEntityEditTitle').textContent=type==='team'?'Редактировать команду':type==='tournament'?'Редактировать турнир':'Редактировать событие';
     const fields=type==='team'?[['name','Название','text'],['tag','Тег','text'],['game_name','Игра','game'],['region','Регион','region'],['description','Описание','textarea']]:type==='tournament'?[['name','Название','text'],['game_name','Игра','game'],['participant_limit','Лимит команд','number'],['prize','Призовой фонд','number'],['starts_at','Начало','datetime'],['status','Статус','status'],['description','Описание','textarea']]:[['title','Название','text'],['event_type','Тип','eventtype'],['game_id','Игра','gameid'],['starts_at','Начало','datetime'],['registration_limit','Лимит участников','number'],['description','Описание','textarea']];
-    const games=(await supabaseClient.from('games').select('id,name').eq('is_active',true).order('name')).data||[];
+    const games=groupGameOptions.length&&type!=='event'?groupGameOptions.map(name=>({name})):(await supabaseClient.from('games').select('id,name').eq('is_active',true).order('name')).data||[];
     const html=fields.map(([key,label,kind])=>{let value=data[key]??'';if(kind==='datetime'&&value)value=new Date(value).toISOString().slice(0,16);let control='';
       if(kind==='game')control='<select data-field="'+key+'">'+games.map(g=>'<option '+(g.name===value?'selected':'')+'>'+escapeHtml(g.name)+'</option>').join('')+'</select>';
       else if(kind==='gameid')control='<select data-field="'+key+'"><option value="">Без привязки</option>'+games.map(g=>'<option value="'+g.id+'" '+(g.id===value?'selected':'')+'>'+escapeHtml(g.name)+'</option>').join('')+'</select>';
@@ -2185,7 +2228,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       else if(kind==='eventtype')control='<select data-field="'+key+'">'+[['event','Игровое событие'],['championship','Чемпионат'],['league','Лига'],['meetup','Игровая встреча']].map(x=>'<option value="'+x[0]+'" '+(x[0]===value?'selected':'')+'>'+x[1]+'</option>').join('')+'</select>';
       else control=kind==='textarea'?'<textarea data-field="'+key+'" maxlength="3000" rows="4">'+escapeHtml(value)+'</textarea>':'<input data-field="'+key+'" type="'+(kind==='datetime'?'datetime-local':kind)+'" '+(kind==='number'?'min="0"':'')+' value="'+escapeHtml(value)+'">';
       return '<div class="form-group"><label>'+label+'</label>'+control+'</div>';}).join('');
-    document.getElementById('adminEntityEditFields').innerHTML=html;openModal('adminEntityEditModal');
+    document.getElementById('adminEntityEditFields').innerHTML=html;const del=document.getElementById('adminEntityDeleteButton');del.hidden=type==='event';del.textContent=type==='team'?'Удалить команду':'Удалить турнир';del.onclick=()=>type==='team'?adminDeleteTeam(id):adminDeleteTournament(id);openModal('adminEntityEditModal');
   }
   async function saveAdminEntity(){
     if(!isAdmin||!adminEntityContext)return;
@@ -2194,7 +2237,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const {error}=await supabaseClient.from(table).update(payload).eq('id',id);
     if(error){console.error(error);return showNotification('Не удалось сохранить изменения.');}
     closeModal('adminEntityEditModal');showNotification('Изменения сохранены.');
-    await Promise.all([loadAdminTeamsAndTournaments(),loadTeamDirectory(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
+    adminEntityCache.set(type+':'+id,{...adminEntityCache.get(type+':'+id),...payload});
+    void loadAdminTeamsAndTournaments();const route=document.querySelector('.section.active')?.id;if(route==='teams')void loadTeamDirectory();if(route==='tournaments')void loadCreatedTournaments();if(route==='events')void loadPlatformEvents();
   }
   async function adminToggleTeam(id,isActive) {
     if(!isAdmin||!await askConfirm(isActive?'Опубликовать команду?':'Скрыть команду из каталога?'))return;
@@ -2206,14 +2250,14 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить команду безвозвратно? Её участники, заявки и приглашения тоже будут удалены.'))return;
     const {data:deleted,error}=await supabaseClient.from('teams').delete().eq('id',id).select('id').maybeSingle();
     if(error||!deleted){console.error('Team delete failed:',error);return showNotification('Не удалось удалить команду. Обнови страницу и проверь права доступа.');}
-    showNotification('Команда удалена.');
+    closeModal('adminEntityEditModal');showNotification('Команда удалена.');
     await Promise.all([loadAdminTeamsAndTournaments(),loadTeamDirectory(),currentUser?loadAccountData():Promise.resolve()]);
   }
   async function adminDeleteTournament(id) {
     if(!isAdmin||!supabaseClient||!await askConfirm('Удалить турнир безвозвратно? Регистрации и сетка турнира тоже будут удалены.'))return;
     const {data:deleted,error}=await supabaseClient.from('tournaments').delete().eq('id',id).select('id').maybeSingle();
     if(error||!deleted){console.error('Tournament delete failed:',error);return showNotification('Не удалось удалить турнир. Обнови страницу и проверь права доступа.');}
-    showNotification('Турнир удалён.');
+    closeModal('adminEntityEditModal');showNotification('Турнир удалён.');
     await Promise.all([loadAdminTeamsAndTournaments(),loadCreatedTournaments(),loadPlatformEvents(),loadHomeTournaments()]);
   }
   async function adminUpdateTournamentStatus(id,status) {
@@ -2450,6 +2494,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     });
     root.querySelectorAll?.('input,textarea').forEach(field => {
       if(field.type==='file'||field.type==='hidden'||field.type==='checkbox'||field.type==='radio') return;
+      if(field.type==='number'&&!field.dataset.stepperReady){
+        field.dataset.stepperReady='true';const wrap=document.createElement('div');wrap.className='number-control';field.before(wrap);wrap.append(field);
+        for(const [step,label] of [[-1,'Уменьшить'],[1,'Увеличить']]){const b=document.createElement('button');b.type='button';b.className='number-step';b.textContent=step<0?'−':'+';b.setAttribute('aria-label',label);b.onclick=()=>{if(field.disabled||field.readOnly)return;try{step<0?field.stepDown():field.stepUp();}catch{}field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));};wrap.append(b);}
+      }
       field.style.resize='none';
       const max=field.maxLength;
       if(max>0 && !field.dataset.counterReady) {
@@ -2497,3 +2545,10 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     console.error('Supabase Auth initialization failed:', error);
     authInitialized=true;applyLocationRoute();showNotification('Авторизация не загрузилась. Обнови страницу и попробуй ещё раз.');
   });
+document.addEventListener('input',event=>{
+  const id=event.target.id;if(!['adminEditMatches','adminEditWins','adminEditWinrate'].includes(id))return;
+  const matches=document.getElementById('adminEditMatches'),wins=document.getElementById('adminEditWins'),rate=document.getElementById('adminEditWinrate');
+  const n=Math.max(0,Number(matches.value)||0);
+  if(id==='adminEditWinrate')wins.value=Math.round(n*Math.min(100,Math.max(0,Number(rate.value)||0))/100);
+  else {wins.max=n;rate.value=n?Math.round(Math.min(n,Number(wins.value)||0)*100/n):0;}
+});
