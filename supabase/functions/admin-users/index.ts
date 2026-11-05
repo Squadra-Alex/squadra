@@ -235,7 +235,7 @@ Deno.serve(async (req: Request) => {
     if (!language) return response({ error: "Invalid profile language" }, 400);
     const settingsInput = body.settings && typeof body.settings === "object" ? body.settings as Record<string, unknown> : null;
     if (!settingsInput || !["default", "dark", "light", "green", "blue", "purple", "yellow"].includes(String(settingsInput.theme))) return response({ error: "Invalid user settings" }, 400);
-    for (const key of ["notify_messages", "notify_team_invites", "notify_tournaments", "notify_marketing", "discoverable"]) {
+    for (const key of ["notify_messages", "notify_team_invites", "notify_tournaments", "notify_friend_requests", "notify_events", "discoverable"]) {
       if (typeof settingsInput[key] !== "boolean") return response({ error: "Invalid user settings" }, 400);
     }
     const level = Number(input.level);
@@ -299,7 +299,8 @@ Deno.serve(async (req: Request) => {
       notify_messages: settingsInput.notify_messages,
       notify_team_invites: settingsInput.notify_team_invites,
       notify_tournaments: settingsInput.notify_tournaments,
-      notify_marketing: settingsInput.notify_marketing,
+      notify_friend_requests: settingsInput.notify_friend_requests,
+      notify_events: settingsInput.notify_events,
       discoverable: settingsInput.discoverable,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });

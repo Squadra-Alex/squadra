@@ -41,6 +41,8 @@ create table if not exists public.user_settings (
   notify_messages boolean not null default true,
   notify_team_invites boolean not null default true,
   notify_tournaments boolean not null default true,
+  notify_friend_requests boolean not null default true,
+  notify_events boolean not null default true,
   notify_marketing boolean not null default false,
   discoverable boolean not null default true,
   updated_at timestamptz not null default now()

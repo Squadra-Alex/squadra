@@ -2419,3 +2419,53 @@ body > .container > main > .section.active {
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .number-step{flex:0 0 32px;width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--red) 12%,var(--bg-2));color:var(--text);font-size:20px;cursor:pointer;touch-action:manipulation}
 .number-step:hover{background:color-mix(in srgb,var(--red) 24%,var(--bg-2))}
+
+/* Keep the group message composer a single, usable row on narrow screens. */
+#groupPage .group-chat-page,
+#groupPage .group-messages{touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#groupPage .group-chat-composer{
+  display:flex!important;
+  flex-flow:row nowrap!important;
+  align-items:center!important;
+  gap:12px!important;
+  grid-template-columns:none!important;
+  grid-template-rows:none!important;
+  min-width:0!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  padding:14px 16px max(14px,env(safe-area-inset-bottom))!important;
+}
+#groupPage .group-chat-composer textarea{
+  display:block!important;
+  flex:1 1 0!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  width:0!important;
+  min-width:0!important;
+  max-width:none!important;
+  min-height:48px!important;
+  max-height:140px!important;
+  align-self:stretch!important;
+  box-sizing:border-box!important;
+  writing-mode:horizontal-tb!important;
+  text-orientation:mixed!important;
+  white-space:pre-wrap!important;
+  word-break:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#groupPage .group-chat-composer button{
+  flex:0 0 48px!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  width:48px!important;
+  min-width:48px!important;
+  height:48px!important;
+  align-self:center!important;
+  margin:0!important;
+}
+#groupPage .group-chat-composer>.character-counter{display:none!important}
+@media(max-width:700px){
+  #groupPage .group-chat-composer{gap:10px!important;padding:12px 12px max(14px,env(safe-area-inset-bottom))!important}
+  #groupPage .group-chat-composer textarea{flex:1 1 0!important;width:0!important;min-height:48px!important;padding:12px!important;resize:none!important}
+  #groupPage .group-chat-composer button{flex-basis:46px!important;width:46px!important;min-width:46px!important;height:46px!important}
+}
