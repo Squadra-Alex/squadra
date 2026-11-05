@@ -240,6 +240,9 @@ Deno.serve(async (req: Request) => {
     }
     const level = Number(input.level);
     const rating = Number(input.rating);
+    const matchesPlayed = input.matches_played === undefined ? null : Number(input.matches_played);
+    const wins = input.wins === undefined ? null : Number(input.wins);
+    if(matchesPlayed !== null && (!Number.isInteger(matchesPlayed)||matchesPlayed<0||matchesPlayed>1000000||wins===null||!Number.isInteger(wins)||wins<0||wins>matchesPlayed))return response({error:"Проверь количество матчей и побед"},400);
     const requestedColor = input.verified_color === "" ? null : input.verified_color;
     const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
     if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return response({ error: "Invalid account email" }, 400);
@@ -269,6 +272,7 @@ Deno.serve(async (req: Request) => {
       rank_name: rankName,
       level,
       rating,
+      ...(matchesPlayed === null ? {} : {matches_played:matchesPlayed,wins}),
       bio,
       avatar_url: avatarUrl,
       language,
@@ -281,7 +285,7 @@ Deno.serve(async (req: Request) => {
       .from("profiles")
       .update(profileUpdate)
       .eq("id", targetUserId)
-      .select("id,display_name,username,verified_color")
+      .select("id,display_name,username,verified_color,matches_played,wins,rank_name,rating")
       .maybeSingle();
     if (updateError) {
       if (updateError.code === "23505") return response({ error: "Username already taken" }, 409);
