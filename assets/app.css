@@ -2399,3 +2399,23 @@ body > .container > main > .section.active {
     height:46px!important;
   }
 }
+
+/* 20261105-07: stable composer rows, bounded avatar previews and consistent admin controls. */
+#groupPage .group-chat-composer{grid-template-rows:auto auto!important;align-items:center!important;row-gap:5px!important}
+#groupPage .group-chat-composer textarea{grid-row:1!important;align-self:center!important;resize:none!important}
+#groupPage .group-chat-composer button{grid-row:1!important;align-self:center!important;margin:0!important}
+#groupPage .group-chat-composer>.character-counter{grid-column:1/-1!important;grid-row:2!important;justify-self:end!important;margin:0!important;line-height:1.2!important;min-width:0!important}
+#communityGroupsCard .community-group-form,#communityGroupsCard .form-group{min-width:0!important;width:100%!important}
+#communityGroupsCard .community-group-form>*{box-sizing:border-box;max-width:100%}
+.group-avatar-preview{display:flex;min-width:0!important;width:100%;max-width:100%;box-sizing:border-box;gap:12px;padding:10px}
+.group-avatar-preview img{flex:0 0 48px;width:48px;height:48px;object-fit:cover}
+.group-avatar-preview .group-avatar-filename{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-avatar-clear{flex:0 0 32px;margin-left:auto}
+#adminGroupEditModal .group-file-control{margin-top:10px;margin-bottom:14px;min-width:0}
+#adminGroupEditModal .group-edit-footer{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;margin-top:28px!important;padding-top:18px;border-top:1px solid var(--border)}
+.number-control{display:flex;align-items:center;gap:4px;min-width:0;width:100%;box-sizing:border-box;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:4px}
+.number-control:focus-within{border-color:var(--red)}
+.number-control input[type=number]{flex:1 1 0;min-width:0!important;width:0!important;border:0!important;background:transparent!important;box-shadow:none!important;margin:0!important;appearance:textfield;-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.number-step{flex:0 0 32px;width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--red) 12%,var(--bg-2));color:var(--text);font-size:20px;cursor:pointer;touch-action:manipulation}
+.number-step:hover{background:color-mix(in srgb,var(--red) 24%,var(--bg-2))}
