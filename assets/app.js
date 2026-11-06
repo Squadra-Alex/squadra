@@ -197,19 +197,38 @@
     if (p.time === time || time === 'Сейчас' && p.time === 'Вечер') s += 8;
     return Math.round(Math.min(99, Math.max(35, s)));
   }
+  let matchmakingSubmitPending=false;
   async function startMatchmaking(){
     if(!currentUser)return requireAccount();
+    if(matchmakingSubmitPending)return;
+    const button=document.getElementById('startMatchmakingButton');
+    matchmakingSubmitPending=true;if(button){button.disabled=true;button.setAttribute('aria-busy','true');}
     const prefs={owner_id:currentUser.id,game_name:document.getElementById('mmGame').value,role:'Любая',rating_tolerance:'Любой',region:document.getElementById('mmRegion').value,play_time:document.getElementById('mmPlayTime').value,language:document.getElementById('mmLanguage').value,preferred_level:'Любой'};
-    const {data:post,error}=await supabaseClient.from('matchmaking_posts').insert(prefs).select('id').single();
-    if(error){console.error(error);return showNotification('Не удалось опубликовать заявку.');}
-    const {error:joinError}=await supabaseClient.from('matchmaking_post_members').insert({post_id:post.id,user_id:currentUser.id});if(joinError){console.error(joinError);await supabaseClient.from('matchmaking_posts').delete().eq('id',post.id).eq('owner_id',currentUser.id);return showNotification('Не удалось создать заявку.');}
-    showNotification('Заявка опубликована.');void loadMatchmakingPosts();
+    try {
+      const {data:existing,error:lookupError}=await supabaseClient.from('matchmaking_posts').select('id').eq('owner_id',currentUser.id).maybeSingle();
+      if(lookupError)throw lookupError;
+      const {data:post,error}=await supabaseClient.from('matchmaking_posts').upsert(prefs,{onConflict:'owner_id'}).select('id').single();
+      if(error)throw error;
+      const {data:membership,error:membershipError}=await supabaseClient.from('matchmaking_post_members').select('post_id').eq('post_id',post.id).eq('user_id',currentUser.id).maybeSingle();
+      if(membershipError)throw membershipError;
+      if(!membership){
+        const {error:joinError}=await supabaseClient.from('matchmaking_post_members').insert({post_id:post.id,user_id:currentUser.id});
+        if(joinError){console.error('Matchmaking owner membership:',joinError);showNotification('Заявка сохранена, но не удалось обновить список участников.');void loadMatchmakingPosts();return;}
+      }
+      showNotification(existing?'Заявка обновлена.':'Заявка опубликована.');
+      void loadMatchmakingPosts();
+    } catch(error) {
+      console.error('Could not publish matchmaking request:',error);
+      showNotification('Не удалось опубликовать заявку. Попробуй ещё раз.');
+    } finally {
+      matchmakingSubmitPending=false;if(button){button.disabled=false;button.removeAttribute('aria-busy');}
+    }
   }
   async function loadMatchmakingPosts(){
     const host=document.getElementById('matchmakingResults');if(!host||!supabaseClient)return;
     const {data,error}=await supabaseClient.from('matchmaking_posts').select('id,owner_id,game_name,region,play_time,language,created_at').order('created_at',{ascending:false}).limit(100);
     if(error){console.error(error);host.innerHTML='<p class="subtitle">Не удалось загрузить заявки.</p>';return;}
-    const rows=data||[],ids=[...new Set(rows.map(x=>x.owner_id))];
+    const rows=data||[],ids=[...new Set(rows.map(x=>x.owner_id))],submitButton=document.getElementById('startMatchmakingButton');if(submitButton)submitButton.innerHTML='<i class="fa-solid fa-magnifying-glass-location"></i> '+(rows.some(row=>row.owner_id===currentUser?.id)?'Обновить заявку':'Начать подбор');
     const postIds=rows.map(r=>r.id),{data:members}=postIds.length?await supabaseClient.from('matchmaking_post_members').select('post_id,user_id').in('post_id',postIds):{data:[]};const profileIds=[...new Set([...ids,...(members||[]).map(m=>m.user_id)])],{data:profiles}=profileIds.length?await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',profileIds):{data:[]};
     const pm=new Map((profiles||[]).map(p=>[p.id,p])),byPost=new Map();(members||[]).forEach(m=>{const a=byPost.get(m.post_id)||[];a.push(m.user_id);byPost.set(m.post_id,a);});
     host.innerHTML=(rows.map(r=>{const p=pm.get(r.owner_id)||{},mine=r.owner_id===currentUser?.id,joined=(byPost.get(r.id)||[]).includes(currentUser?.id),roster=byPost.get(r.id)||[],avatar=p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>';return '<article class="card mm-request-card"><div class="mm-request-head"><button class="mm-owner-link" type="button" onclick="openPlayerProfile(\''+r.owner_id+'\')"><span class="mm-owner-avatar">'+avatar+'</span><span class="mm-owner-copy"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong><small>@'+escapeHtml(p.username||'player')+'</small></span></button><span class="badge badge-info">'+escapeHtml(r.game_name)+'</span></div><p class="subtitle">'+escapeHtml(r.region)+' · '+escapeHtml(r.play_time)+' · '+escapeHtml(r.language)+' · '+roster.length+'/5 участников</p><div class="mm-request-members">'+roster.map(uid=>{const m=pm.get(uid)||{};return '<button class="btn btn-ghost" onclick="openPlayerProfile(\''+uid+'\')">'+escapeHtml(m.display_name||m.username||'Участник')+'</button>';}).join('')+'</div><div class="mm-request-actions">'+(!joined?'<button class="btn btn-primary" onclick="joinMatchmakingPost(\''+r.id+'\')">Присоединиться</button>':'<button class="btn btn-ghost" onclick="leaveMatchmakingPost(\''+r.id+'\')">Выйти из заявки</button>')+(mine?'<button class="btn btn-danger" onclick="deleteMatchmakingPost(\''+r.id+'\')">Удалить заявку</button>':'')+'</div></article>';}).join(''))||'<p class="subtitle">Заявок пока нет.</p>';
