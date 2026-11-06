@@ -550,8 +550,8 @@ function initCustomSelects(root=document) {
     fillAccountSettings(accountProfile,st.data,prefs.data);
     accountTournamentIds=(regs.data||[]).map(x=>x.tournament_id);
     renderTournamentRegistrations(accountTournamentIds);
-    await Promise.all([loadCreatedTournaments(),loadCommunityGroups(),loadTeamDirectory()]);
-    accountNotifications=notifs.data||[];renderNotifications(accountNotifications);const {data:myReports,error:myReportsError}=await supabaseClient.from('community_reports').select('id,reason,details,status,created_at,reviewed_at,moderator_reply,post_id').eq('reporter_id',uid).order('created_at',{ascending:false}).limit(50);if(myReportsError)console.error('Could not load own reports:',myReportsError);renderMyCommunityReports(myReports||[]);loadChatList();await Promise.all([loadPendingMatches(),loadGameCatalog(),loadLeaderboards(),loadPlatformEvents(),loadHomeTournaments()]);
+    accountNotifications=notifs.data||[];renderNotifications(accountNotifications);loadChatList();
+    void Promise.allSettled([loadPendingMatches(),loadGameCatalog(),loadLeaderboards(),loadPlatformEvents(),loadHomeTournaments(),loadCreatedTournaments(),loadCommunityGroups(),loadTeamDirectory(),supabaseClient.from('community_reports').select('id,reason,details,status,created_at,reviewed_at,moderator_reply,post_id').eq('reporter_id',uid).order('created_at',{ascending:false}).limit(50).then(({data,error})=>{if(error)console.error('Could not load own reports:',error);renderMyCommunityReports(data||[]);})]);
     if(document.getElementById('plName')) filterPlayers();
   }
 
@@ -2551,6 +2551,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     currentUser=session?.user||null;
     renderAuthState(currentUser);
     supabaseClient.auth.onAuthStateChange((event, nextSession) => {
+      if(!['SIGNED_IN','USER_UPDATED','SIGNED_OUT','PASSWORD_RECOVERY'].includes(event))return;
       currentUser=nextSession?.user||null;
       if(currentUser) { loadAccountData(); loadAdminAccess(); setupRealtime(); } else {stopRealtime();activeCommunityGroup=null;isAdmin=false;const adminNav=document.querySelector('nav a[onclick*="admin"]')?.closest('li');if(adminNav)adminNav.hidden=true;accountProfile=null;accountFriends=[];accountTournamentIds=[];}
       renderAuthState(currentUser);
