@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="squadra-build" content="20261106-09">
+<meta name="squadra-build" content="20261106-10">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="/assets/app.css?v=20261106-09">
+<link rel="stylesheet" href="/assets/app.css?v=20261106-10">
 
 <style id="squadra-page-frame-fix">
   body > .container { display:block!important; width:min(1440px,calc(100vw - 48px))!important; max-width:1440px!important; min-width:0!important; margin:34px auto 64px!important; padding:0!important; box-sizing:border-box!important; }
@@ -295,11 +295,9 @@
       <div class="rank-tabs">
         <button class="btn btn-primary rank-tab active" data-tab="players" onclick="switchRankTab('players')">Игроки</button>
         <button class="btn btn-ghost rank-tab" data-tab="teams" onclick="switchRankTab('teams')">Команды</button>
-        <button class="btn btn-ghost rank-tab" data-tab="games" onclick="switchRankTab('games')">По играм</button>
       </div>
       <div id="rankPlayers"><table><thead><tr><th>#</th><th>Игрок</th><th>Ранг</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Игра</th></tr></thead><tbody id="rankPlayersBody"><tr><td colspan="7" class="subtitle">Загружаю рейтинги…</td></tr></tbody></table></div>
       <div id="rankTeams" style="display:none"><table><thead><tr><th>#</th><th>Команда</th><th>Игра</th><th>Рейтинг</th><th>Матчей</th><th>Винрейт</th><th>Регион</th></tr></thead><tbody id="rankTeamsBody"><tr><td colspan="7" class="subtitle">Загружаю рейтинги…</td></tr></tbody></table></div>
-      <div id="rankGames" style="display:none"><div id="rankGamesBody" class="grid grid-2"><p class="subtitle">Загружаю рейтинги…</p></div></div>
     </section>
 
     <!-- MESSAGES / CHAT -->
@@ -335,14 +333,7 @@
         <button class="btn btn-primary" onclick="startMatchmaking()"><i class="fa-solid fa-magnifying-glass-location"></i> Начать подбор</button>
       </div>
 
-      <div class="card mm-panel"><h3>Заявки игроков</h3><div id="matchmakingResults"><p class="subtitle">Загружаем заявки…</p></div></div><div class="card mm-panel" hidden>
-        <div class="mm-icon" id="mmIcon"><i class="fa-solid fa-satellite-dish"></i></div>
-        <h3 style="margin-top:12px; color:var(--red); font-family:Oswald;" id="mmTitle">СКАНЕР МАТЧМЕЙКИНГА В РЕЖИМЕ ОЖИДАНИЯ</h3>
-        <p style="color:var(--muted); font-size:13px; max-width:440px; margin:8px auto 0;">Алгоритм подбирает игроков по рейтингу (±допуск), роли, региону и времени онлайн. Расчёт совпадения — взвешенная сумма параметров.</p>
-        <div class="progress" style="max-width:420px; margin:18px auto 0; display:none;" id="mmBarWrap"><div class="progress-bar" id="mmBar" style="width:0%;"></div></div>
-      </div>
-
-      <div id="matchmakingResults"></div>
+      <div class="card mm-panel"><h3>Заявки игроков</h3><div id="matchmakingResults"><p class="subtitle">Загружаем заявки…</p></div></div>
     </section>
 
     <!-- ACHIEVEMENTS -->
@@ -611,7 +602,7 @@
 <div id="tournamentRegistrationModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('tournamentRegistrationModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Заявка команды</h2><p id="tournamentRegistrationLabel" class="subtitle"></p><div class="form-group"><label for="tournamentTeamSelect">Команда</label><select id="tournamentTeamSelect"></select></div><button class="btn btn-primary" style="width:100%;" onclick="confirmTournamentRegistration()">Подать заявку</button></div></div>
 <div id="adminEntityEditModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('adminEntityEditModal')"><i class="fa-solid fa-xmark"></i></button><h2 id="adminEntityEditTitle">Редактирование</h2><div id="adminEntityEditFields"></div><div class="admin-entity-modal-actions"><button id="adminEntityDeleteButton" class="btn btn-danger" type="button">Удалить</button><button class="btn btn-primary" onclick="saveAdminEntity()">Сохранить изменения</button></div></div></div><div id="createEventModal" class="modal"><div class="modal-content"><button class="modal-close" onclick="closeModal('createEventModal')"><i class="fa-solid fa-xmark"></i></button><h2 style="font-family:Oswald;text-transform:uppercase;">Новое событие</h2><div class="form-group"><label>Название</label><input id="platformEventTitle" maxlength="120"></div><div class="grid grid-2"><div class="form-group"><label>Тип</label><select id="platformEventType"><option value="event">Игровое событие</option><option value="championship">Чемпионат</option><option value="league">Лига</option><option value="meetup">Игровая встреча</option></select></div><div class="form-group"><label>Игра</label><select id="platformEventGame"><option value="">Без привязки к игре</option></select></div><div class="form-group"><label>Дата и время</label><input id="platformEventStarts" type="datetime-local"></div><div class="form-group"><label>Лимит участников</label><input id="platformEventLimit" type="number" min="2" max="10000"></div></div><div class="form-group"><label>Описание</label><textarea id="platformEventDescription" rows="4" maxlength="3000"></textarea></div><button class="btn btn-primary" style="width:100%;" onclick="createPlatformEvent()">Опубликовать событие</button></div></div>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="/assets/app.js?v=20261106-09"></script>
+<script src="/assets/app.js?v=20261106-10"></script>
 
 </body>
 </html>

@@ -210,9 +210,9 @@
     const {data,error}=await supabaseClient.from('matchmaking_posts').select('id,owner_id,game_name,region,play_time,language,created_at').order('created_at',{ascending:false}).limit(100);
     if(error){console.error(error);host.innerHTML='<p class="subtitle">Не удалось загрузить заявки.</p>';return;}
     const rows=data||[],ids=[...new Set(rows.map(x=>x.owner_id))];
-    const postIds=rows.map(r=>r.id),{data:members}=postIds.length?await supabaseClient.from('matchmaking_post_members').select('post_id,user_id').in('post_id',postIds):{data:[]};const profileIds=[...new Set([...ids,...(members||[]).map(m=>m.user_id)])],{data:profiles}=profileIds.length?await supabaseClient.from('profiles').select('id,username,display_name').in('id',profileIds):{data:[]};
+    const postIds=rows.map(r=>r.id),{data:members}=postIds.length?await supabaseClient.from('matchmaking_post_members').select('post_id,user_id').in('post_id',postIds):{data:[]};const profileIds=[...new Set([...ids,...(members||[]).map(m=>m.user_id)])],{data:profiles}=profileIds.length?await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',profileIds):{data:[]};
     const pm=new Map((profiles||[]).map(p=>[p.id,p])),byPost=new Map();(members||[]).forEach(m=>{const a=byPost.get(m.post_id)||[];a.push(m.user_id);byPost.set(m.post_id,a);});
-    host.innerHTML=(rows.map(r=>{const p=pm.get(r.owner_id)||{},mine=r.owner_id===currentUser?.id,joined=(byPost.get(r.id)||[]).includes(currentUser?.id),roster=byPost.get(r.id)||[];return '<article class="card mm-request-card"><div class="mm-request-head"><button class="link-button" onclick="openPlayerProfile(\''+r.owner_id+'\')"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+' <small>@'+escapeHtml(p.username||'player')+'</small></strong></button><span class="badge badge-info">'+escapeHtml(r.game_name)+'</span></div><p class="subtitle">'+escapeHtml(r.region)+' · '+escapeHtml(r.play_time)+' · '+escapeHtml(r.language)+' · '+roster.length+'/5 участников</p><div class="mm-request-members">'+roster.map(uid=>{const m=pm.get(uid)||{};return '<button class="btn btn-ghost" onclick="openPlayerProfile(\''+uid+'\')">'+escapeHtml(m.display_name||m.username||'Участник')+'</button>';}).join('')+'</div><div class="mm-request-actions">'+(!joined?'<button class="btn btn-primary" onclick="joinMatchmakingPost(\''+r.id+'\')">Присоединиться</button>':'<button class="btn btn-ghost" onclick="leaveMatchmakingPost(\''+r.id+'\')">Выйти из заявки</button>')+(mine?'<button class="btn btn-danger" onclick="deleteMatchmakingPost(\''+r.id+'\')">Удалить заявку</button>':'')+'</div></article>';}).join(''))||'<p class="subtitle">Заявок пока нет.</p>';
+    host.innerHTML=(rows.map(r=>{const p=pm.get(r.owner_id)||{},mine=r.owner_id===currentUser?.id,joined=(byPost.get(r.id)||[]).includes(currentUser?.id),roster=byPost.get(r.id)||[],avatar=p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>';return '<article class="card mm-request-card"><div class="mm-request-head"><button class="mm-owner-link" type="button" onclick="openPlayerProfile(\''+r.owner_id+'\')"><span class="mm-owner-avatar">'+avatar+'</span><span class="mm-owner-copy"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong><small>@'+escapeHtml(p.username||'player')+'</small></span></button><span class="badge badge-info">'+escapeHtml(r.game_name)+'</span></div><p class="subtitle">'+escapeHtml(r.region)+' · '+escapeHtml(r.play_time)+' · '+escapeHtml(r.language)+' · '+roster.length+'/5 участников</p><div class="mm-request-members">'+roster.map(uid=>{const m=pm.get(uid)||{};return '<button class="btn btn-ghost" onclick="openPlayerProfile(\''+uid+'\')">'+escapeHtml(m.display_name||m.username||'Участник')+'</button>';}).join('')+'</div><div class="mm-request-actions">'+(!joined?'<button class="btn btn-primary" onclick="joinMatchmakingPost(\''+r.id+'\')">Присоединиться</button>':'<button class="btn btn-ghost" onclick="leaveMatchmakingPost(\''+r.id+'\')">Выйти из заявки</button>')+(mine?'<button class="btn btn-danger" onclick="deleteMatchmakingPost(\''+r.id+'\')">Удалить заявку</button>':'')+'</div></article>';}).join(''))||'<p class="subtitle">Заявок пока нет.</p>';
   }
   async function joinMatchmakingPost(id){if(!currentUser)return requireAccount();const {error}=await supabaseClient.from('matchmaking_post_members').insert({post_id:id,user_id:currentUser.id});if(error){console.error(error);return showNotification('Заявка уже заполнена или ты уже в ней.');}void loadMatchmakingPosts();}
   async function leaveMatchmakingPost(id){if(!currentUser)return;const {error}=await supabaseClient.from('matchmaking_post_members').delete().eq('post_id',id).eq('user_id',currentUser.id);if(error){console.error(error);return showNotification('Не удалось выйти из заявки.');}void loadMatchmakingPosts();}
@@ -220,11 +220,13 @@
   function subscribeMatchmakingPosts(){if(currentUser&&isRealtimeForeground())setupRealtime();}
 
   function switchRankTab(tab) {
-    ['players','teams','games'].forEach(t => {
-      document.getElementById('rank' + t[0].toUpperCase() + t.slice(1)).style.display = t === tab ? 'block' : 'none';
+    const selected=tab==='teams'?'teams':'players';
+    ['players','teams'].forEach(t => {
+      const panel=document.getElementById('rank' + t[0].toUpperCase() + t.slice(1));
+      if(panel)panel.style.display = t === selected ? 'block' : 'none';
     });
     document.querySelectorAll('.rank-tab').forEach(b => {
-      const on = b.dataset.tab === tab;
+      const on = b.dataset.tab === selected;
       b.className = 'btn rank-tab ' + (on ? 'btn-primary active' : 'btn-ghost');
     });
   }
@@ -582,7 +584,7 @@ function initCustomSelects(root=document) {
     const check=(id,key,fallback)=>{const e=document.getElementById(id);if(e)e.checked=s?s[key]:fallback;};
     check('notifyMessages','notify_messages',true);check('notifyTeamInvites','notify_team_invites',true);
     check('notifyTournaments','notify_tournaments',true);check('notifyFriendRequests','notify_friend_requests',true);check('notifyEvents','notify_events',true);
-    if(prefs){document.getElementById('mmGame').value=prefs.game_name;document.getElementById('mmRole').value=prefs.role;document.getElementById('mmTolerance').value=prefs.rating_tolerance;document.getElementById('mmRegion').value=prefs.region;document.getElementById('mmPlayTime').value=prefs.play_time;document.getElementById('mmLanguage').value=prefs.language;if(document.getElementById('mmLevel'))document.getElementById('mmLevel').value=prefs.preferred_level||'Любой';}
+    if(prefs){const fields={mmGame:prefs.game_name,mmRegion:prefs.region,mmPlayTime:prefs.play_time,mmLanguage:prefs.language};Object.entries(fields).forEach(([id,value])=>{const input=document.getElementById(id);if(input&&value)input.value=value;});}
   }
 
   function renderLibrary(rows) {
@@ -1447,21 +1449,17 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
 
   async function loadLeaderboards() {
     if(!supabaseClient)return;
-    const [players,teams,stats,gamesResult]=await Promise.all([
+    const [players,teams]=await Promise.all([
       supabaseClient.from('profiles').select('id,username,display_name,game_name,rank_name,rating,matches_played,wins,level,verified_color').order('rating',{ascending:false}).limit(100),
-      supabaseClient.from('teams').select('id,name,tag,game_name,region,rating,matches_played,wins').order('rating',{ascending:false}).limit(100),
-      supabaseClient.from('player_game_stats').select('user_id,game_id,rating,matches_played,wins').gt('matches_played',0),
-      supabaseClient.from('games').select('id,name,genre').eq('is_active',true).order('sort_order')
+      supabaseClient.from('teams').select('id,name,tag,game_name,region,rating,matches_played,wins').order('rating',{ascending:false}).limit(100)
     ]);
-    if(players.error||teams.error||stats.error||gamesResult.error){console.error('Leaderboard load failed:',players.error||teams.error||stats.error||gamesResult.error);showNotification('Не удалось загрузить таблицу лидеров.');return;}
+    if(players.error||teams.error){console.error('Leaderboard load failed:',players.error||teams.error);showNotification('Не удалось загрузить таблицу лидеров.');return;}
     const roleRows=players.data?.length?await supabaseClient.from('user_roles').select('user_id,role').in('user_id',players.data.map(p=>p.id)).in('role',['admin','moderator']):{data:[]},roleMap=new Map();
     (roleRows.data||[]).forEach(r=>roleMap.set(r.user_id,[...(roleMap.get(r.user_id)||[]),r.role]));
     const playerBody=document.getElementById('rankPlayersBody');
     if(playerBody)playerBody.innerHTML=(players.data||[]).map((p,i)=>{const role=(roleMap.get(p.id)||[]).includes('admin')?'<span class="staff-badge admin">Администратор</span>':(roleMap.get(p.id)||[]).includes('moderator')?'<span class="staff-badge moderator">Модератор</span>':'';const verify=p.verified_color?'<i class="fa-solid fa-circle-check verified-badge '+p.verified_color+'"></i>':'';return '<tr><td class="rank-pos">'+String(i+1).padStart(2,'0')+'</td><td><button class="player-profile-link" onclick="openPlayerProfile(\''+p.id+'\')"><strong>'+escapeHtml(p.display_name||p.username)+'</strong>'+verify+' '+role+'</button></td><td>'+escapeHtml(p.rank_name||'Unranked')+'</td><td>'+fmt(p.rating||0)+'</td><td>'+fmt(p.matches_played||0)+'</td><td>'+(p.matches_played?Math.round(p.wins*100/p.matches_played):0)+'%</td><td>'+escapeHtml(p.game_name||'—')+'</td></tr>';}).join('')||'<tr><td colspan="7" class="subtitle">Пока нет игроков.</td></tr>';
     const teamBody=document.getElementById('rankTeamsBody');
     if(teamBody)teamBody.innerHTML=(teams.data||[]).map((t,i)=>'<tr><td>'+String(i+1).padStart(2,'0')+'</td><td><strong>'+escapeHtml(t.name)+' '+escapeHtml(t.tag||'')+'</strong></td><td>'+escapeHtml(t.game_name)+'</td><td>'+fmt(t.rating||0)+'</td><td>'+fmt(t.matches_played||0)+'</td><td>'+(t.matches_played?Math.round(t.wins*100/t.matches_played):0)+'%</td><td>'+escapeHtml(t.region||'—')+'</td></tr>').join('')||'<tr><td colspan="7" class="subtitle">Пока нет команд.</td></tr>';
-    const gameBody=document.getElementById('rankGamesBody'),gameMap=new Map((gamesResult.data||[]).map(g=>[g.id,g])),playersById=new Map((players.data||[]).map(p=>[p.id,p]));
-    if(gameBody)gameBody.innerHTML=(gamesResult.data||[]).map(g=>{const top=(stats.data||[]).filter(r=>r.game_id===g.id).sort((a,b)=>b.rating-a.rating).slice(0,10),rows=top.map((r,i)=>{const p=playersById.get(r.user_id);return '<tr><td class="rank-pos">'+String(i+1).padStart(2,'0')+'</td><td><button class="player-profile-link" onclick="openPlayerProfile(\''+r.user_id+'\')">'+escapeHtml(p?.display_name||p?.username||'Игрок')+'</button></td><td>'+fmt(r.rating||0)+'</td><td>'+fmt(r.matches_played||0)+'</td><td>'+(r.matches_played?Math.round(r.wins*100/r.matches_played):0)+'%</td></tr>';}).join('');return '<article class="card game-leaderboard-card"><h3>'+escapeHtml(g.name)+' <small class="subtitle">'+escapeHtml(g.genre||'')+'</small></h3><div class="table-scroll"><table><thead><tr><th>#</th><th>Игрок</th><th>Рейтинг</th><th>Матчей</th><th>Побед</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="5" class="subtitle">Нет подтверждённых матчей по этой игре.</td></tr>')+'</tbody></table></div></article>';}).join('')||'<p class="subtitle">Игры не опубликованы.</p>';
     await loadSeason();
   }
 

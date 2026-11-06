@@ -2128,8 +2128,8 @@ body > .container > main > .section.active {
   #players>table tbody td:nth-child(8){grid-column:1/-1}
   #players>table tbody td:nth-child(3),#players>table tbody td:nth-child(4),#players>table tbody td:nth-child(5),#players>table tbody td:nth-child(6){display:none}
   #players>table tbody td:nth-child(8) .btn{margin:4px 5px 0 0}
-  #ranking #rankPlayers,#ranking #rankTeams,#ranking #rankGames{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
-  #ranking #rankPlayers table,#ranking #rankTeams table,#ranking #rankGames table{min-width:600px}
+  #ranking #rankPlayers,#ranking #rankTeams{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+  #ranking #rankPlayers table,#ranking #rankTeams table{min-width:600px}
   #ranking .rank-tabs{display:flex;max-width:100%;overflow-x:auto;white-space:nowrap}
   #messages:not(.chat-open){min-height:0!important}
   #messages:not(.chat-open) .messenger{height:auto!important;min-height:0!important;max-height:none!important}
@@ -2168,8 +2168,8 @@ body > .container > main > .section.active {
 /* Let a finger swipe on data tables continue the document's vertical scroll. */
 .players-mobile-table{width:100%;max-width:100%;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
 .players-mobile-table table{touch-action:pan-x pan-y}
-#rankPlayers,#rankTeams,#rankGames{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
-#rankPlayers table,#rankTeams table,#rankGames table{touch-action:pan-x pan-y}
+#rankPlayers,#rankTeams{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+#rankPlayers table,#rankTeams table{touch-action:pan-x pan-y}
 .community-group-icon{overflow:hidden}
 .group-page-avatar{width:64px;height:64px;object-fit:cover;border-radius:16px;margin:0 0 12px}
 .group-page-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -2229,7 +2229,13 @@ body > .container > main > .section.active {
 .mm-request-card{padding:18px}
 .mm-request-head,.mm-request-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .mm-request-actions{justify-content:flex-start;margin-top:14px}
-.mm-request-head small{color:var(--muted);font-weight:500}
+.mm-owner-link{display:inline-flex;align-items:center;gap:11px;min-width:0;max-width:100%;padding:7px 12px 7px 7px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.035);color:var(--text);text-align:left;cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease}
+.mm-owner-link:hover{border-color:var(--red);background:rgba(169,103,255,.09);transform:translateY(-1px)}
+.mm-owner-avatar{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;overflow:hidden;border:1px solid color-mix(in srgb,var(--red) 55%,var(--border));border-radius:12px;background:color-mix(in srgb,var(--red) 20%,var(--bg-2));color:var(--red);font-size:15px}
+.mm-owner-avatar img{width:100%;height:100%;object-fit:cover}
+.mm-owner-copy{display:grid;gap:2px;min-width:0}
+.mm-owner-copy strong{overflow:hidden;color:var(--text);font-size:14px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.mm-owner-copy small{color:var(--muted);font-size:12px;font-weight:500}
 .admin-managed-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .admin-managed-row{gap:14px}
 #adminEventsCard{margin-top:18px}
