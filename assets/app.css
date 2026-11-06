@@ -2319,6 +2319,14 @@ body > .container > main > .section.active {
  #groupPage .group-chat-actions{grid-column:1/-1;grid-row:2;display:flex;flex:initial;justify-content:flex-start;min-width:0}
 }
 
+/* Reporting form: keep the description field inside the modal on narrow phones. */
+#communityReportModal .modal-content{width:min(520px,calc(100vw - 24px));min-width:0;box-sizing:border-box}
+#communityReportModal #communityReportDetails{display:block;width:100%;min-width:0;max-width:100%;min-height:138px;box-sizing:border-box;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:600px){#communityReportModal .modal-content{width:calc(100vw - 24px);padding:22px 18px}#communityReportModal #communityReportDetails{min-height:150px;font-size:16px;line-height:1.5}}
+.community-group-card.is-pinned{border-color:var(--border-hi);box-shadow:inset 3px 0 var(--red),0 12px 30px rgba(0,0,0,.2)}
+.community-group-pin{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb,var(--red) 5%,transparent);color:var(--muted);cursor:pointer}
+.community-group-pin:hover,.community-group-pin[aria-pressed="true"]{border-color:var(--border-hi);background:color-mix(in srgb,var(--red) 12%,transparent);color:var(--red)}
+
 
 /* 20261105-05: three-column group cards, natural page scroll, robust chat composer sizing. */
 @media(min-width:761px){

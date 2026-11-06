@@ -44,6 +44,7 @@ create table if not exists public.user_settings (
   notify_friend_requests boolean not null default true,
   notify_events boolean not null default true,
   notify_marketing boolean not null default false,
+  pinned_community_group_ids text[] not null default '{}',
   discoverable boolean not null default true,
   updated_at timestamptz not null default now()
 );

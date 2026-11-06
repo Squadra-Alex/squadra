@@ -136,28 +136,63 @@ Deno.serve(async (req: Request) => {
     return response({ ok: true, message: inserted });
   }
 
+  if (action === "platform-entity-update" || action === "platform-entity-delete") {
+    if (!callerIsAdmin) return response({ error: "Forbidden" }, 403);
+    const entityType = typeof body.entityType === "string" ? body.entityType : "";
+    const entityId = typeof body.entityId === "string" ? body.entityId.trim() : "";
+    const entityTables: Record<string, string> = { team: "teams", tournament: "tournaments", event: "platform_events" };
+    const table = entityTables[entityType];
+    if (!table || !entityId || entityId.length > 100) return response({ error: "Invalid platform entity" }, 400);
+    if (action === "platform-entity-delete") {
+      if (entityType !== "event") return response({ error: "Only events can be deleted here" }, 400);
+      const { data, error } = await admin.from(table).delete().eq("id", entityId).select("id").maybeSingle();
+      if (error) { console.error("Could not delete platform event:", error); return response({ error: "Could not delete platform event" }, 500); }
+      if (!data) return response({ error: "Platform event not found" }, 404);
+      return response({ ok: true, deleted: data.id });
+    }
+    const input = body.values && typeof body.values === "object" && !Array.isArray(body.values)
+      ? body.values as Record<string, unknown> : null;
+    if (!input || !Object.keys(input).length) return response({ error: "No platform entity changes provided" }, 400);
+    const allowed: Record<string, string[]> = {
+      team: ["name", "tag", "game_name", "region", "description"],
+      tournament: ["name", "game_name", "participant_limit", "prize", "starts_at", "status", "description"],
+      event: ["title", "event_type", "game_id", "starts_at", "registration_limit", "description"],
+    };
+    if (Object.keys(input).some((key) => !allowed[entityType].includes(key))) return response({ error: "Unsupported platform entity field" }, 400);
+    const values: Record<string, unknown> = { ...input };
+    if (entityType === "event") {
+      if (typeof values.title !== "string" || values.title.trim().length < 3 || values.title.length > 120) return response({ error: "Event title must contain 3–120 characters" }, 400);
+      if (typeof values.event_type !== "string" || !["event", "championship", "league", "meetup"].includes(values.event_type)) return response({ error: "Invalid event type" }, 400);
+      if (values.description !== undefined && (typeof values.description !== "string" || values.description.length > 3000)) return response({ error: "Event description is too long" }, 400);
+      if (values.registration_limit !== undefined && values.registration_limit !== null && (!Number.isInteger(values.registration_limit) || Number(values.registration_limit) < 2 || Number(values.registration_limit) > 10000)) return response({ error: "Invalid event registration limit" }, 400);
+    }
+    if (entityType === "tournament") {
+      if (values.status !== undefined && !["upcoming", "registration", "live", "completed", "cancelled", "finished"].includes(String(values.status))) return response({ error: "Invalid tournament status" }, 400);
+      if (values.participant_limit !== undefined && values.participant_limit !== null && (!Number.isInteger(values.participant_limit) || Number(values.participant_limit) < 2 || Number(values.participant_limit) > 256)) return response({ error: "Invalid tournament limit" }, 400);
+    }
+    const { data, error } = await admin.from(table).update(values).eq("id", entityId).select("*").maybeSingle();
+    if (error) { console.error("Could not update platform entity:", error); return response({ error: "Could not save platform entity" }, 500); }
+    if (!data) return response({ error: "Platform entity not found" }, 404);
+    return response({ ok: true, entity: data });
+  }
+
   const targetUserId = typeof body.targetUserId === "string" ? body.targetUserId : "";
-  const accountActions = new Set(["user-detail", "user-update", "user-delete", "ban", "unban", "grant_role", "revoke_role", "verify"]);
+  const accountActions = new Set(["user-detail", "user-insights", "user-update", "user-delete", "ban", "unban", "grant_role", "revoke_role", "verify"]);
   if (accountActions.has(String(action)) && !/^[0-9a-f-]{36}$/i.test(targetUserId)) return response({ error: "Invalid target user" }, 400);
   if (action === "user-detail") {
     if (!callerIsAdmin) return response({ error: "Forbidden" }, 403);
-    const [authResult, profileResult, settingsResult, rolesResult, friendsResult, postsResult, teamsResult, matchesResult, activityResult] = await Promise.all([
+    const [authResult, profileResult, settingsResult, rolesResult] = await Promise.all([
       admin.auth.admin.getUserById(targetUserId),
       admin.from("profiles").select("*").eq("id", targetUserId).maybeSingle(),
       admin.from("user_settings").select("*").eq("user_id", targetUserId).maybeSingle(),
       admin.from("user_roles").select("role").eq("user_id", targetUserId),
-      admin.from("friendships").select("id", { count: "exact", head: true }).eq("status", "accepted").or(`requester_id.eq.${targetUserId},addressee_id.eq.${targetUserId}`),
-      admin.from("community_posts").select("id", { count: "exact", head: true }).eq("user_id", targetUserId),
-      admin.from("team_members").select("role,teams(id,name,tag,game_name)").eq("user_id", targetUserId),
-      admin.from("matches").select("game_id,status,score_a,score_b,played_at,created_at").or(`player_a_id.eq.${targetUserId},player_b_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(10),
-      admin.from("activity_history").select("action,game_name,result,rating_delta,created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(100),
     ]);
     if (authResult.error || !authResult.data?.user) return response({ error: "User not found" }, 404);
     if (profileResult.error) return response({ error: "Could not load profile" }, 500);
     if (!profileResult.data) return response({ error: "Profile not found" }, 404);
-    if (settingsResult.error || rolesResult.error || friendsResult.error || postsResult.error || teamsResult.error || matchesResult.error || activityResult.error) {
-      console.error("Could not load admin user details", settingsResult.error, rolesResult.error, friendsResult.error, postsResult.error, teamsResult.error, matchesResult.error, activityResult.error);
-      return response({ error: "Could not load full user details" }, 500);
+    if (settingsResult.error || rolesResult.error) {
+      console.error("Could not load admin user details", settingsResult.error, rolesResult.error);
+      return response({ error: "Could not load user settings" }, 500);
     }
     const authUser = authResult.data.user;
     return response({
@@ -173,12 +208,22 @@ Deno.serve(async (req: Request) => {
       profile: profileResult.data,
       settings: settingsResult.data || {},
       roles: rolesResult.data || [],
-      friendCount: friendsResult.count || 0,
-      communityPostCount: postsResult.count || 0,
-      teams: teamsResult.data || [],
-      matches: matchesResult.data || [],
-      activity: activityResult.data || [],
     });
+  }
+  if (action === "user-insights") {
+    if (!callerIsAdmin) return response({ error: "Forbidden" }, 403);
+    const [friendsResult, postsResult, teamsResult, matchesResult, activityResult] = await Promise.all([
+      admin.from("friendships").select("id", { count: "exact", head: true }).eq("status", "accepted").or(`requester_id.eq.${targetUserId},addressee_id.eq.${targetUserId}`),
+      admin.from("community_posts").select("id", { count: "exact", head: true }).eq("user_id", targetUserId),
+      admin.from("team_members").select("role,teams(id,name,tag,game_name)").eq("user_id", targetUserId),
+      admin.from("matches").select("game_id,status,score_a,score_b,played_at,created_at").or(`player_a_id.eq.${targetUserId},player_b_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(8),
+      admin.from("activity_history").select("action,game_name,result,rating_delta,created_at").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(25),
+    ]);
+    if (friendsResult.error || postsResult.error || teamsResult.error || matchesResult.error || activityResult.error) {
+      console.error("Could not load admin user insights", friendsResult.error, postsResult.error, teamsResult.error, matchesResult.error, activityResult.error);
+      return response({ error: "Could not load user activity" }, 500);
+    }
+    return response({ friendCount: friendsResult.count || 0, communityPostCount: postsResult.count || 0, teams: teamsResult.data || [], matches: matchesResult.data || [], activity: activityResult.data || [] });
   }
   if (action === "post-update" || action === "post-delete" || action === "comment-update" || action === "comment-delete") {
     const contentId = typeof body.contentId === "string" ? body.contentId : "";
@@ -238,6 +283,7 @@ Deno.serve(async (req: Request) => {
     for (const key of ["notify_messages", "notify_team_invites", "notify_tournaments", "notify_friend_requests", "notify_events", "discoverable"]) {
       if (typeof settingsInput[key] !== "boolean") return response({ error: "Invalid user settings" }, 400);
     }
+    if (settingsInput.pinned_community_group_ids !== undefined && (!Array.isArray(settingsInput.pinned_community_group_ids) || settingsInput.pinned_community_group_ids.length > 500 || settingsInput.pinned_community_group_ids.some((id) => typeof id !== "string" || id.length > 100))) return response({ error: "Invalid pinned groups" }, 400);
     const level = Number(input.level);
     const rating = Number(input.rating);
     const matchesPlayed = input.matches_played === undefined ? null : Number(input.matches_played);
@@ -302,6 +348,7 @@ Deno.serve(async (req: Request) => {
       notify_friend_requests: settingsInput.notify_friend_requests,
       notify_events: settingsInput.notify_events,
       discoverable: settingsInput.discoverable,
+      ...(Array.isArray(settingsInput.pinned_community_group_ids) ? { pinned_community_group_ids: settingsInput.pinned_community_group_ids } : {}),
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
     if (settingsError) {
