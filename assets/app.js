@@ -199,20 +199,23 @@
   }
   async function startMatchmaking(){
     if(!currentUser)return requireAccount();
-    const prefs={owner_id:currentUser.id,game_name:document.getElementById('mmGame').value,role:document.getElementById('mmRole').value,rating_tolerance:document.getElementById('mmTolerance').value,region:document.getElementById('mmRegion').value,play_time:document.getElementById('mmPlayTime').value,language:document.getElementById('mmLanguage').value,preferred_level:document.getElementById('mmLevel')?.value||'Любой'};
-    const {error}=await supabaseClient.from('matchmaking_posts').upsert({...prefs,updated_at:new Date().toISOString()},{onConflict:'owner_id'});
+    const prefs={owner_id:currentUser.id,game_name:document.getElementById('mmGame').value,role:'Любая',rating_tolerance:'Любой',region:document.getElementById('mmRegion').value,play_time:document.getElementById('mmPlayTime').value,language:document.getElementById('mmLanguage').value,preferred_level:'Любой'};
+    const {data:post,error}=await supabaseClient.from('matchmaking_posts').insert(prefs).select('id').single();
     if(error){console.error(error);return showNotification('Не удалось опубликовать заявку.');}
-    showNotification('Заявка опубликована.');await loadMatchmakingPosts();
+    const {error:joinError}=await supabaseClient.from('matchmaking_post_members').insert({post_id:post.id,user_id:currentUser.id});if(joinError){console.error(joinError);await supabaseClient.from('matchmaking_posts').delete().eq('id',post.id).eq('owner_id',currentUser.id);return showNotification('Не удалось создать заявку.');}
+    showNotification('Заявка опубликована.');void loadMatchmakingPosts();
   }
   async function loadMatchmakingPosts(){
     const host=document.getElementById('matchmakingResults');if(!host||!supabaseClient)return;
-    const {data,error}=await supabaseClient.from('matchmaking_posts').select('id,owner_id,game_name,role,rating_tolerance,region,play_time,language,preferred_level,created_at').order('created_at',{ascending:false}).limit(100);
+    const {data,error}=await supabaseClient.from('matchmaking_posts').select('id,owner_id,game_name,region,play_time,language,created_at').order('created_at',{ascending:false}).limit(100);
     if(error){console.error(error);host.innerHTML='<p class="subtitle">Не удалось загрузить заявки.</p>';return;}
     const rows=data||[],ids=[...new Set(rows.map(x=>x.owner_id))];
-    const [profiles,members]=await Promise.all([ids.length?supabaseClient.from('profiles').select('id,username,display_name').in('id',ids):{data:[]},ids.length?supabaseClient.from('team_members').select('user_id,teams(name,tag,game_name)').in('user_id',ids):{data:[]}]);
-    const pm=new Map((profiles.data||[]).map(p=>[p.id,p])),tm=new Map();(members.data||[]).forEach(x=>{const list=tm.get(x.user_id)||[];if(x.teams)list.push(x.teams);tm.set(x.user_id,list);});
-    host.innerHTML=(rows.map(r=>{const p=pm.get(r.owner_id)||{},mine=r.owner_id===currentUser?.id,teams=tm.get(r.owner_id)||[];return '<article class="card mm-request-card"><div class="mm-request-head"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+' <small>@'+escapeHtml(p.username||'player')+'</small></strong><span class="badge badge-info">'+escapeHtml(r.game_name)+'</span></div><p class="subtitle">'+escapeHtml(r.region)+' · '+escapeHtml(r.role)+' · '+escapeHtml(r.rating_tolerance)+' · '+escapeHtml(r.preferred_level)+' · '+escapeHtml(r.play_time)+' · '+escapeHtml(r.language)+'</p>'+(teams.length?'<p>Команда: '+teams.map(t=>escapeHtml(t.name)+(t.tag?' ['+escapeHtml(t.tag)+']':'')).join(', ')+'</p>':'')+'<div class="mm-request-actions"><button class="btn btn-ghost" onclick="openPlayerProfile(\''+escapeHtml(r.owner_id)+'\')">Профиль</button><button class="btn btn-primary" onclick="openChatWith(\''+escapeHtml(r.owner_id)+'\')">Написать</button>'+(mine?'<button class="btn btn-danger" onclick="deleteMatchmakingPost(\''+escapeHtml(r.id)+'\')">Удалить заявку</button>':'')+'</div></article>';}).join(''))||'<p class="subtitle">Заявок пока нет.</p>';
+    const postIds=rows.map(r=>r.id),{data:members}=postIds.length?await supabaseClient.from('matchmaking_post_members').select('post_id,user_id').in('post_id',postIds):{data:[]};const profileIds=[...new Set([...ids,...(members||[]).map(m=>m.user_id)])],{data:profiles}=profileIds.length?await supabaseClient.from('profiles').select('id,username,display_name').in('id',profileIds):{data:[]};
+    const pm=new Map((profiles||[]).map(p=>[p.id,p])),byPost=new Map();(members||[]).forEach(m=>{const a=byPost.get(m.post_id)||[];a.push(m.user_id);byPost.set(m.post_id,a);});
+    host.innerHTML=(rows.map(r=>{const p=pm.get(r.owner_id)||{},mine=r.owner_id===currentUser?.id,joined=(byPost.get(r.id)||[]).includes(currentUser?.id),roster=byPost.get(r.id)||[];return '<article class="card mm-request-card"><div class="mm-request-head"><button class="link-button" onclick="openPlayerProfile(\''+r.owner_id+'\')"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+' <small>@'+escapeHtml(p.username||'player')+'</small></strong></button><span class="badge badge-info">'+escapeHtml(r.game_name)+'</span></div><p class="subtitle">'+escapeHtml(r.region)+' · '+escapeHtml(r.play_time)+' · '+escapeHtml(r.language)+' · '+roster.length+'/5 участников</p><div class="mm-request-members">'+roster.map(uid=>{const m=pm.get(uid)||{};return '<button class="btn btn-ghost" onclick="openPlayerProfile(\''+uid+'\')">'+escapeHtml(m.display_name||m.username||'Участник')+'</button>';}).join('')+'</div><div class="mm-request-actions">'+(!joined?'<button class="btn btn-primary" onclick="joinMatchmakingPost(\''+r.id+'\')">Присоединиться</button>':'<button class="btn btn-ghost" onclick="leaveMatchmakingPost(\''+r.id+'\')">Выйти из заявки</button>')+(mine?'<button class="btn btn-danger" onclick="deleteMatchmakingPost(\''+r.id+'\')">Удалить заявку</button>':'')+'</div></article>';}).join(''))||'<p class="subtitle">Заявок пока нет.</p>';
   }
+  async function joinMatchmakingPost(id){if(!currentUser)return requireAccount();const {error}=await supabaseClient.from('matchmaking_post_members').insert({post_id:id,user_id:currentUser.id});if(error){console.error(error);return showNotification('Заявка уже заполнена или ты уже в ней.');}void loadMatchmakingPosts();}
+  async function leaveMatchmakingPost(id){if(!currentUser)return;const {error}=await supabaseClient.from('matchmaking_post_members').delete().eq('post_id',id).eq('user_id',currentUser.id);if(error){console.error(error);return showNotification('Не удалось выйти из заявки.');}void loadMatchmakingPosts();}
   async function deleteMatchmakingPost(id){if(!currentUser)return;const {error}=await supabaseClient.from('matchmaking_posts').delete().eq('id',id).eq('owner_id',currentUser.id);if(error){console.error(error);return showNotification('Не удалось удалить заявку.');}showNotification('Заявка удалена.');void loadMatchmakingPosts();}
   function subscribeMatchmakingPosts(){if(currentUser&&isRealtimeForeground())setupRealtime();}
 
@@ -680,29 +683,30 @@ function initCustomSelects(root=document) {
     const html=pending.map(x=>'<div class="card"><span class="badge badge-warning">Приглашение</span><h3>'+escapeHtml(x.teams?.name||'Команда')+'</h3><button class="btn btn-primary" onclick="respondTeamInvite(\''+x.id+'\',\'accepted\')">Принять</button> <button class="btn btn-ghost" onclick="respondTeamInvite(\''+x.id+'\',\'declined\')">Отклонить</button></div>').join('');
     grid.insertAdjacentHTML('afterbegin',html);
   }
-  let pendingTeamInviteId=null,teamInviteSearchTimer=0,teamInviteSearchSequence=0;
+  let pendingTeamInviteId=null,teamInviteSearchTimer=0,teamInviteSearchSequence=0,teamInviteSearchOffset=0,teamInviteSearchTerm='';
   function inviteToTeam(teamId) {
     if(!currentUser)return requireAccount();
     pendingTeamInviteId=teamId;
     const input=document.getElementById('teamInviteSearch'),results=document.getElementById('teamInviteResults');
-    if(input)input.value='';
+    if(input)input.value='';teamInviteSearchOffset=0;teamInviteSearchTerm='';
     if(results)results.innerHTML='<p class="subtitle">Начни вводить ник игрока.</p>';
     openModal('teamInviteModal');setTimeout(()=>input?.focus(),0);
   }
   function searchTeamInvitePlayers() {
     clearTimeout(teamInviteSearchTimer);
-    const term=(document.getElementById('teamInviteSearch')?.value||'').trim(),results=document.getElementById('teamInviteResults'),sequence=++teamInviteSearchSequence;
+    const term=(document.getElementById('teamInviteSearch')?.value||'').trim(),results=document.getElementById('teamInviteResults'),sequence=++teamInviteSearchSequence;teamInviteSearchOffset=0;teamInviteSearchTerm=term;
     if(!results)return;
     if(term.length<2){results.innerHTML='<p class="subtitle">Введи минимум 2 символа.</p>';return;}
     results.innerHTML='<p class="subtitle">Ищем игроков…</p>';
     teamInviteSearchTimer=setTimeout(async()=>{
       const safe=term.replace(/[%_]/g,'');
-      const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).ilike('username','%'+safe+'%').order('username').limit(8);
+      const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).ilike('username','%'+safe+'%').order('username').range(0,9);
       if(sequence!==teamInviteSearchSequence)return;
       if(error){console.error('Team invite search failed:',error);results.innerHTML='<p class="subtitle">Не удалось найти игроков.</p>';return;}
-      results.innerHTML=(data||[]).map(p=>'<button type="button" class="team-invite-result" onclick="selectTeamInvitePlayer(&quot;'+escapeHtml(p.id)+'&quot;)"><span class="team-invite-avatar">'+(p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>')+'</span><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><i class="fa-solid fa-arrow-right"></i></button>').join('')||'<p class="subtitle">Игроки не найдены.</p>';
+      teamInviteSearchOffset=data?.length||0;results.innerHTML=(data||[]).map(p=>'<button type="button" class="team-invite-result" onclick="selectTeamInvitePlayer(&quot;'+escapeHtml(p.id)+'&quot;)"><span class="team-invite-avatar">'+(p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>')+'</span><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><i class="fa-solid fa-arrow-right"></i></button>').join('')||'<p class="subtitle">Игроки не найдены.</p>';if((data||[]).length===10)results.insertAdjacentHTML('beforeend','<button class="btn btn-ghost" type="button" onclick="loadMoreTeamInvitePlayers()">Загрузить ещё 10 игроков</button>');
     },180);
   }
+  async function loadMoreTeamInvitePlayers(){const results=document.getElementById('teamInviteResults');if(!results||!currentUser||!teamInviteSearchTerm)return;const safe=teamInviteSearchTerm.replace(/[%_]/g,'');const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).ilike('username','%'+safe+'%').order('username').range(teamInviteSearchOffset,teamInviteSearchOffset+9);if(error){console.error(error);return showNotification('Не удалось загрузить игроков.');}results.querySelector('button.btn-ghost')?.remove();results.insertAdjacentHTML('beforeend',(data||[]).map(p=>'<button type="button" class="team-invite-result" onclick="selectTeamInvitePlayer(&quot;'+escapeHtml(p.id)+'&quot;)"><span class="team-invite-avatar">'+(p.avatar_url?'<img src="'+escapeHtml(p.avatar_url)+'" alt="">':'<i class="fa-solid fa-user"></i>')+'</span><span><strong>'+escapeHtml(p.display_name||p.username)+'</strong><small>@'+escapeHtml(p.username)+'</small></span><i class="fa-solid fa-arrow-right"></i></button>').join(''));teamInviteSearchOffset+=(data||[]).length;if((data||[]).length===10)results.insertAdjacentHTML('beforeend','<button class="btn btn-ghost" type="button" onclick="loadMoreTeamInvitePlayers()">Загрузить ещё 10 игроков</button>');}
   async function selectTeamInvitePlayer(playerId) {
     if(!currentUser||!pendingTeamInviteId||!playerId)return;
     const teamId=pendingTeamInviteId;
@@ -1072,7 +1076,7 @@ function initCustomSelects(root=document) {
     const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,description,participant_limit,owner_id').order('created_at',{ascending:false}).limit(100);
     if(error){console.error('Could not load tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить турниры.</p>';return;}
     const ids=(data||[]).map(t=>t.id);
-    const registrations=ids.length?await supabaseClient.from('tournament_registrations').select('tournament_id,team_id,user_id').in('tournament_id',ids):{data:[]};
+    const registrations=ids.length?await supabaseClient.from('tournament_registrations').select('id,tournament_id,team_id,user_id,status').in('tournament_id',ids):{data:[]};
     const allTeamIds=[...new Set((registrations.data||[]).map(x=>x.team_id).filter(Boolean))];
     const teamResult=allTeamIds.length?await supabaseClient.from('teams').select('id,name,tag').in('id',allTeamIds):{data:[]};
     const teamMap=new Map((teamResult.data||[]).map(t=>[t.id,t]));
@@ -1082,13 +1086,15 @@ function initCustomSelects(root=document) {
     el.innerHTML=(data||[]).map(t=>{
       const count=registrationCounts.get(t.id)||0;
       const myReg=(registrations.data||[]).some(x=>x.tournament_id===t.id&&x.user_id===currentUser?.id);
-      const registeredTeams=(registrations.data||[]).filter(x=>x.tournament_id===t.id&&x.team_id).map(x=>teamMap.get(x.team_id)?.name).filter(Boolean);
-      return '<article class="card"><span class="badge '+(t.status==='registration'?'badge-warning':'badge-info')+'">'+escapeHtml(tournamentStatusLabel(t.status))+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+' • заявок '+count+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong style="color:var(--red)">'+escapeHtml(t.prize)+'</strong></p>':'')+(t.description?'<p>'+escapeHtml(t.description)+'</p>':'')+'<p class="subtitle">Команды: '+escapeHtml(registeredTeams.join(', ')||'пока нет команд')+'</p>'+(t.status==='registration'&&!myReg?'<button class="btn btn-primary" data-tournament-id="'+escapeHtml(t.id)+'" onclick="registerForTournament(\''+escapeHtml(t.id)+'\')">Зарегистрировать команду</button>':myReg?'<span class="badge badge-info">Заявка отправлена</span>':'')+'</article>';
+      const tournamentRegs=(registrations.data||[]).filter(x=>x.tournament_id===t.id&&x.team_id),registeredTeams=tournamentRegs.map(x=>teamMap.get(x.team_id)?.name).filter(Boolean);
+      const review=tournamentRegs.map(x=>'<div class="tournament-registration-row"><span>'+escapeHtml(teamMap.get(x.team_id)?.name||'Команда')+' • '+escapeHtml(x.status==='approved'?'Принята':x.status==='rejected'?'Отклонена':'Ожидает решения')+'</span>'+(isAdmin&&x.status==='pending'?'<button class="btn btn-primary" onclick="adminReviewTournamentRegistration(\''+x.id+'\',\'approved\')">Принять</button><button class="btn btn-ghost" onclick="adminReviewTournamentRegistration(\''+x.id+'\',\'rejected\')">Отклонить</button>':'')+'</div>').join('');
+      return '<article class="card"><span class="badge '+(t.status==='registration'?'badge-warning':'badge-info')+'">'+escapeHtml(tournamentStatusLabel(t.status))+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+' • заявок '+count+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong style="color:var(--red)">'+escapeHtml(t.prize)+'</strong></p>':'')+(t.description?'<p>'+escapeHtml(t.description)+'</p>':'')+'<p class="subtitle">Команды: '+escapeHtml(registeredTeams.join(', ')||'пока нет команд')+'</p>'+(review?'<div class="tournament-registration-list"><h4>Заявки команд</h4>'+review+'</div>':'')+(t.status==='registration'&&!myReg?'<button class="btn btn-primary" data-tournament-id="'+escapeHtml(t.id)+'" onclick="registerForTournament(\''+escapeHtml(t.id)+'\')">Зарегистрировать команду</button>':myReg?'<span class="badge badge-info">Заявка отправлена</span>':'')+'</article>';
     }).join('')||'<p class="subtitle">Турниров пока нет. Создай первый.</p>';
     const select=document.getElementById('tournamentBracketSelect');
     if(select){const selected=select.value;select.innerHTML='<option value="">Выбери турнир</option>'+(data||[]).map(t=>'<option value="'+escapeHtml(t.id)+'">'+escapeHtml(t.name)+'</option>').join('');if((data||[]).some(t=>t.id===selected))select.value=selected;}
     renderTournamentRegistrations(accountTournamentIds||[]);
   }
+  async function adminReviewTournamentRegistration(id,status){if(!isAdmin)return showNotification('Решение по заявке принимает только администратор.');const {error}=await supabaseClient.from('tournament_registrations').update({status}).eq('id',id).eq('status','pending');if(error){console.error(error);return showNotification('Не удалось обновить заявку.');}showNotification(status==='approved'?'Заявка команды принята.':'Заявка команды отклонена.');void loadCreatedTournaments();}
 
   async function generateTournamentBracket(tournamentId) {
     if(!currentUser)return requireAccount();
@@ -1208,7 +1214,7 @@ function initCustomSelects(root=document) {
     const el=document.getElementById('communityGroups');if(!el||!supabaseClient||!currentUser)return;
     const uid=currentUser.id;
     const [groupsResult,membersResult,gamesResult,pinsResult]=await Promise.all([
-      supabaseClient.from('community_groups').select('id,name,game_name,description,owner_id,avatar_url').order('name'),
+      supabaseClient.from('community_groups').select('id,name,game_name,description,owner_id,avatar_url,created_at').order('created_at',{ascending:true}),
       supabaseClient.from('community_group_members').select('group_id,user_id'),
       supabaseClient.from('games').select('name').eq('is_active',true).order('name'),
       supabaseClient.from('user_settings').select('pinned_community_group_ids').eq('user_id',uid).maybeSingle()
@@ -1218,7 +1224,7 @@ function initCustomSelects(root=document) {
     communityPinnedGroupIds=new Set(pinsResult.data?.pinned_community_group_ids||[]);
     groupGameOptions=(gamesResult.data||[]).map(g=>g.name);setGroupGameOptions('communityGroupGame',document.getElementById('communityGroupGame')?.value||'');communityGroupCache.clear();(groupsResult.data||[]).forEach(g=>communityGroupCache.set(g.id,g));
     const members=membersResult.data||[];
-    const groups=[...(groupsResult.data||[])].sort((a,b)=>Number(communityPinnedGroupIds.has(b.id))-Number(communityPinnedGroupIds.has(a.id))||a.name.localeCompare(b.name,'ru'));
+    const groups=[...(groupsResult.data||[])].sort((a,b)=>Number(communityPinnedGroupIds.has(b.id))-Number(communityPinnedGroupIds.has(a.id))||new Date(a.created_at||0)-new Date(b.created_at||0));
     el.innerHTML=groups.map(g=>{
       const joined=members.some(m=>m.group_id===g.id&&m.user_id===currentUser.id),count=members.filter(m=>m.group_id===g.id).length,owner=g.owner_id===currentUser.id;
       const pinned=communityPinnedGroupIds.has(g.id);
@@ -1228,9 +1234,9 @@ function initCustomSelects(root=document) {
   async function toggleCommunityGroupPin(groupId){
     if(!currentUser||!supabaseClient)return requireAccount();
     const next=new Set(communityPinnedGroupIds);if(next.has(groupId))next.delete(groupId);else next.add(groupId);
-    const {data,error}=await supabaseClient.from('user_settings').update({pinned_community_group_ids:[...next]}).eq('user_id',currentUser.id).select('user_id').maybeSingle();
-    if(error||!data){console.error('Could not update pinned groups:',error);return showNotification('Не удалось закрепить группу.');}
-    communityPinnedGroupIds=next;void loadCommunityGroups();
+    const previous=communityPinnedGroupIds;communityPinnedGroupIds=next;void loadCommunityGroups();
+    const {error}=await supabaseClient.from('user_settings').update({pinned_community_group_ids:[...next]}).eq('user_id',currentUser.id);
+    if(error){console.error('Could not update pinned groups:',error);communityPinnedGroupIds=previous;void loadCommunityGroups();showNotification('Не удалось закрепить группу.');}
   }
   async function createCommunityGroup() {
     if(!currentUser)return requireAccount();
@@ -1541,7 +1547,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       const start=e.starts_at?new Date(e.starts_at):null,started=start&&start.getTime()<=Date.now(),dateText=start&&!Number.isNaN(start.getTime())?start.toLocaleString('ru-RU',{weekday:'short',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}):'Дата не задана';
       if(e._event){
         const count=counts.get(e.id)||0,full=e.registration_limit&&count>=e.registration_limit,joined=mine.has(e.id),type=({event:'Событие',championship:'Чемпионат',league:'Лига',meetup:'Встреча'})[e.event_type]||'Событие';
-        return '<article class="card event-card"><div class="event-card-top"><span class="badge badge-info"><i class="fa-solid fa-calendar-check"></i> '+type+'</span><span class="event-date"><i class="fa-regular fa-clock"></i> '+escapeHtml(dateText)+'</span></div><h3>'+escapeHtml(e.title)+'</h3><p class="event-game"><i class="fa-solid fa-gamepad"></i> '+escapeHtml(names.get(e.game_id)||'Все игры')+'</p><p class="event-description">'+escapeHtml(e.description||'Описание появится скоро.')+'</p><div class="event-card-footer"><span class="event-attendance"><i class="fa-solid fa-user-group"></i> '+count+(e.registration_limit?'/'+e.registration_limit:'')+' участников</span><div class="event-actions">'+(currentUser?(joined?'<button class="btn btn-ghost" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,true)">Отменить участие</button>':!full?'<button class="btn btn-primary" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,false)">Участвовать</button>':'<span class="badge badge-warning">Мест нет</span>'):'<button class="btn btn-primary" onclick="requireAccount()">Войти для участия</button>')+'</div></div></article>';
+      return '<article class="card event-card"><div class="event-card-top"><span class="badge badge-info"><i class="fa-solid fa-calendar-check"></i> '+type+'</span><span class="event-date"><i class="fa-regular fa-clock"></i> '+escapeHtml(dateText)+'</span></div><h3>'+escapeHtml(e.title)+'</h3><p class="event-game"><i class="fa-solid fa-gamepad"></i> '+escapeHtml(names.get(e.game_id)||'Все игры')+'</p><p class="event-description">'+escapeHtml(e.description||'Описание появится скоро.')+'</p><div class="event-card-footer"><button class="event-attendance event-attendance-button" type="button" onclick="openPlatformEventParticipants(&quot;'+e.id+'&quot;)"><i class="fa-solid fa-user-group"></i> '+count+(e.registration_limit?'/'+e.registration_limit:'')+' участников</button><div class="event-actions">'+(currentUser?(joined?'<button class="btn btn-ghost" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,true)">Отменить участие</button>':!full?'<button class="btn btn-primary" onclick="togglePlatformEventRegistration(&quot;'+e.id+'&quot;,false)">Участвовать</button>':'<span class="badge badge-warning">Мест нет</span>'):'<button class="btn btn-primary" onclick="requireAccount()">Войти для участия</button>')+'</div></div></article>';
       }
       const status=e.status||'upcoming',tone=status==='live'?'is-live':status==='completed'?'is-complete':status==='cancelled'?'is-cancelled':'';
       return '<article class="card event-card tournament-event '+tone+'"><div class="event-card-top"><span class="badge '+(status==='registration'?'badge-warning':'badge-info')+'">'+escapeHtml(statusLabel[status]||tournamentStatusLabel(status))+'</span><span class="event-date"><i class="fa-regular fa-clock"></i> '+escapeHtml(dateText)+'</span></div><h3>'+escapeHtml(e.name)+'</h3><p class="event-game"><i class="fa-solid fa-gamepad"></i> '+escapeHtml(e.game_name)+'</p><p class="event-description">'+escapeHtml(e.description||'Турнир сообщества Squadra.')+'</p><div class="event-card-footer">'+(e.prize?'<strong class="event-prize"><i class="fa-solid fa-trophy"></i> '+escapeHtml(e.prize)+'</strong>':'<span></span>')+(status==='registration'?'<button class="btn btn-primary" onclick="registerForTournament(&quot;'+escapeHtml(e.id)+'&quot;)">Записаться в турнир</button>':'<span class="event-status-copy">'+(status==='live'?'Турнир уже идёт':status==='completed'?'Турнир завершён':status==='cancelled'?'Турнир отменён':'Скоро начало')+'</span>')+'</div></article>';
@@ -1557,11 +1563,18 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(error){console.error(error);return showNotification('Не удалось создать событие.');}
     closeModal('createEventModal');showNotification('Событие опубликовано.');await loadPlatformEvents();
   }
+  async function openPlatformEventParticipants(eventId){
+    const {data:registrations,error}=await supabaseClient.from('platform_event_registrations').select('user_id,created_at').eq('event_id',eventId).order('created_at');
+    if(error){console.error(error);return showNotification('Не удалось загрузить участников события.');}
+    const ids=[...new Set((registrations||[]).map(r=>r.user_id))],{data:profiles}=ids.length?await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',ids):{data:[]};
+    let modal=document.getElementById('eventParticipantsModal');if(!modal){modal=document.createElement('div');modal.id='eventParticipantsModal';modal.className='modal';modal.innerHTML='<div class="modal-content"><button class="modal-close" onclick="closeModal(\'eventParticipantsModal\')">×</button><h2>Участники события</h2><div data-event-roster></div></div>';document.body.appendChild(modal);}
+    const map=new Map((profiles||[]).map(p=>[p.id,p]));modal.querySelector('[data-event-roster]').innerHTML=ids.map(id=>{const p=map.get(id)||{};return '<div class="team-member-row"><strong>'+escapeHtml(p.display_name||p.username||'Игрок')+'</strong><span class="subtitle">@'+escapeHtml(p.username||'player')+'</span><button class="btn btn-ghost" onclick="openPlayerProfile(\''+id+'\')">Профиль</button></div>';}).join('')||'<p class="subtitle">Пока никто не записался.</p>';openModal('eventParticipantsModal');
+  }
   async function togglePlatformEventRegistration(eventId,isRegistered) {
     if(!currentUser)return requireAccount();
     const request=isRegistered?supabaseClient.from('platform_event_registrations').delete().eq('event_id',eventId).eq('user_id',currentUser.id):supabaseClient.from('platform_event_registrations').insert({event_id:eventId,user_id:currentUser.id});
     const {error}=await request;if(error){console.error(error);return showNotification(error.message?.includes('full')?'Все места заняты.':'Не удалось изменить регистрацию.');}
-    showNotification(isRegistered?'Участие отменено.':'Ты зарегистрирован.');await loadPlatformEvents();
+    showNotification(isRegistered?'Участие отменено.':'Ты зарегистрирован.');void loadPlatformEvents();
   }
   async function deletePlatformEvent(eventId) {
     if(!isAdmin||!currentUser||!await askConfirm('Удалить событие?'))return;
@@ -1739,6 +1752,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .routeOn('postgres_changes',{event:'*',schema:'public',table:'user_roles',filter:'user_id=eq.'+uid},async()=>{await loadAdminAccess();if(isModerator&&document.getElementById('admin')?.classList.contains('active'))loadAdminPanel();})
        .routeOn('postgres_changes',{event:'*',schema:'public',table:'teams'},()=>{if(document.getElementById('teams')?.classList.contains('active'))void loadTeamDirectory();if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();})
        .routeOn('postgres_changes',{event:'*',schema:'public',table:'tournaments'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();if(document.getElementById('tournaments')?.classList.contains('active'))void loadCreatedTournaments();})
+       .routeOn('postgres_changes',{event:'*',schema:'public',table:'tournament_registrations'},()=>{if(document.getElementById('tournaments')?.classList.contains('active'))void loadCreatedTournaments();})
        .routeOn('postgres_changes',{event:'*',schema:'public',table:'platform_events'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminTeamsAndTournaments();if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
        .routeOn('postgres_changes',{event:'*',schema:'public',table:'platform_event_registrations'},()=>{if(document.getElementById('events')?.classList.contains('active'))void loadPlatformEvents();})
       .routeOn('postgres_changes',{event:'INSERT',schema:'public',table:'platform_event_registrations',filter:'user_id=eq.'+uid},()=>loadPlatformEvents())
@@ -1755,7 +1769,8 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .routeOn('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},async payload=>{const row=payload?.new,groupId=activeCommunityGroup;if(!row||!groupId||row.group_id!==groupId)return;const host=document.getElementById('group-messages-'+groupId);if(!host||host.querySelector('[data-message-id="'+row.id+'"]'))return;const own=row.user_id===uid;const {data:p}=own?{data:null}:await supabaseClient.from('profiles').select('username,display_name').eq('id',row.user_id).maybeSingle();if(activeCommunityGroup!==groupId)return;host.querySelector('.subtitle')?.remove();const time=new Date(row.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});if(own){const pending=host.querySelector('.group-message-pending');if(pending){pending.classList.remove('group-message-pending');pending.dataset.messageId=row.id;const stamp=pending.querySelector('small');if(stamp)stamp.outerHTML='<time>'+time+'</time>';host.scrollTop=host.scrollHeight;return;}}host.insertAdjacentHTML('beforeend','<article class="group-chat-message '+(own?'is-own':'')+'" data-message-id="'+escapeHtml(row.id)+'"><div class="group-message-meta"><strong>'+escapeHtml(own?'Ты':p?.display_name||p?.username||'Игрок')+'</strong>'+(p?.username&&!own?'<small>@'+escapeHtml(p.username)+'</small>':'')+'<time>'+time+'</time></div><p>'+escapeHtml(row.body)+'</p></article>');host.scrollTop=host.scrollHeight;})
       .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>{const section=document.querySelector('.section.active')?.id;if(section==='players')void filterPlayers();if(section==='ranking')void loadLeaderboards();if(section==='friends')void refreshFriendList();})
       .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_post_likes'},()=>queueCommunityFeedRefresh())
-      .routeOn('postgres_changes',{event:'*',schema:'public',table:'matchmaking_posts'},()=>void loadMatchmakingPosts())
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'matchmaking_posts'},()=>{if(document.getElementById('matchmaking')?.classList.contains('active'))void loadMatchmakingPosts();})
+      .routeOn('postgres_changes',{event:'*',schema:'public',table:'matchmaking_post_members'},()=>{if(document.getElementById('matchmaking')?.classList.contains('active'))void loadMatchmakingPosts();})
       .subscribe((status,error)=>{
         if(generation!==realtimeGeneration)return;
         if(status==='SUBSCRIBED'){
@@ -2005,7 +2020,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const entries=recent.map(x=>'<article class="admin-detail-row"><div><strong>'+escapeHtml(x.action||'Активность')+'</strong><span class="subtitle"> • '+escapeHtml(x.game_name||'без игры')+' • '+adminFormatDate(x.created_at)+'</span></div><p>'+escapeHtml(x.result||'')+(x.rating_delta!==null&&x.rating_delta!==undefined?' • рейтинг '+(x.rating_delta>0?'+':'')+x.rating_delta:'')+'</p></article>').join('');
     return '<details class="admin-activity-disclosure"><summary><strong>История активности</strong><span>'+recent.length+' из 100 записей</span></summary><div class="admin-activity-entries">'+(entries||'<p class="subtitle">История активности пока пуста.</p>')+'</div></details>';
   }
-  let adminSelectedUserData=null;
+  let adminSelectedUserData=null,adminUserInspectGeneration=0;
   function adminUserControlsMarkup(id,data) {
     const u=data?.user||{},p=data?.profile||{},roleSet=(data?.roles||[]).map(x=>x.role),isSelf=id===currentUser?.id;
     const banned=u.bannedUntil&&new Date(u.bannedUntil)>new Date(),banAction=banned?'unban':'ban';
@@ -2013,12 +2028,15 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
   }
   async function adminInspectUser(id) {
     if(!isAdmin||!supabaseClient)return;
+    const generation=++adminUserInspectGeneration;
     adminDetailShell('Загружаю профиль…','<div class="admin-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> Получаю данные аккаунта</div>');
     const {data,error}=await supabaseClient.functions.invoke('admin-users',{body:{action:'user-detail',targetUserId:id}});
+    if(generation!==adminUserInspectGeneration)return;
     if(error||data?.error){console.error('Admin user detail failed:',error||data);adminDetailShell('Не удалось открыть профиль','<p class="subtitle">Не удалось загрузить сведения аккаунта. Проверь доступ к админ-функции и повтори попытку.</p>');return;}
     adminSelectedUserData={...data,insightsLoaded:false};
     renderAdminUserDetail(id,adminSelectedUserData);
     const insights=await supabaseClient.functions.invoke('admin-users',{body:{action:'user-insights',targetUserId:id}});
+    if(generation!==adminUserInspectGeneration)return;
     if(adminSelectedUserData?.user?.id!==id)return;
     if(insights.error||insights.data?.error){console.warn('Admin user insights failed:',insights.error||insights.data);adminSelectedUserData={...adminSelectedUserData,insightsLoaded:true,insightsError:true};}
     else adminSelectedUserData={...adminSelectedUserData,...insights.data,insightsLoaded:true};
@@ -2269,7 +2287,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     const tournamentEl=document.getElementById('adminTournamentsList');
     if(tournamentEl)tournamentEl.innerHTML=(tournaments.data||[]).map(t=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(t.name)+'</strong><div class="subtitle">'+escapeHtml(t.game_name)+(t.starts_at?' • '+new Date(t.starts_at).toLocaleString('ru-RU'):'')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'tournament\',\''+t.id+'\')">Редактировать</button></div></article>').join('')||'<p class="subtitle">Турниров пока нет.</p>';
     const eventEl=document.getElementById('adminEventsList');
-    if(eventEl)eventEl.innerHTML=(events.data||[]).map(e=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(e.title)+'</strong><div class="subtitle">'+escapeHtml(e.event_type)+' • '+(e.starts_at?new Date(e.starts_at).toLocaleString('ru-RU'):'Дата не задана')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'event\',\''+e.id+'\')"><i class="fa-solid fa-pen"></i> Редактировать событие</button></div></article>').join('')||'<p class="subtitle">Событий пока нет.</p>';
+    if(eventEl)eventEl.innerHTML=(events.data||[]).map(e=>'<article class="list-divider admin-managed-row"><div><strong>'+escapeHtml(e.title)+'</strong><div class="subtitle">'+escapeHtml(e.event_type)+' • '+(e.starts_at?new Date(e.starts_at).toLocaleString('ru-RU'):'Дата не задана')+'</div></div><div class="admin-managed-actions"><button class="btn btn-ghost" onclick="adminEditEntity(\'event\',\''+e.id+'\')"><i class="fa-solid fa-pen"></i> Редактировать</button></div></article>').join('')||'<p class="subtitle">Событий пока нет.</p>';
 
   }
 

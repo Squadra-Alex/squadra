@@ -2483,3 +2483,14 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 #adminEventsCard .admin-managed-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
 #adminEventsCard .admin-managed-actions{width:auto;justify-content:flex-end}
 @media(max-width:640px){.admin-entity-modal-actions{gap:8px}.admin-entity-modal-actions .btn{padding-inline:10px;font-size:.9rem}#adminEventsCard .admin-managed-row{grid-template-columns:minmax(0,1fr);gap:12px}#adminEventsCard .admin-managed-actions{width:100%;justify-content:flex-start}#adminEventsCard .admin-managed-actions .btn{width:100%}}
+#teamDirectory{align-items:stretch}
+#teamDirectory>.card{display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:18px;padding:22px;background:linear-gradient(145deg,rgba(151,82,232,.07),rgba(255,255,255,.015))}
+#teamDirectory>.card h3{margin:0;font-size:1.2rem}
+#teamDirectory>.card>p{margin:0;line-height:1.5}
+#teamDirectory>.card>.btn{align-self:flex-start}
+.team-member-row,.tournament-registration-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.event-attendance-button{border:0;background:none;color:var(--muted);padding:0;cursor:pointer;font:inherit}
+.event-attendance-button:hover{color:var(--accent,#b277ff)}
+.tournament-registration-list{margin:14px 0}
+.mm-request-members{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+@media(max-width:600px){.team-member-row,.tournament-registration-row{grid-template-columns:minmax(0,1fr) auto}.team-member-row .btn:last-child,.tournament-registration-row .btn:last-child{grid-column:2}.tournament-registration-row span{grid-column:1/-1}}
