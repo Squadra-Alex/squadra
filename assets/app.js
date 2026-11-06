@@ -1403,11 +1403,16 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     if(!supabaseClient)return;
     if(gameCatalogPromise)return gameCatalogPromise;
     gameCatalogPromise=(async()=>{
-    const {data,error}=await supabaseClient.from('games').select('id,name,genre,sort_order').eq('is_active',true).order('sort_order');
+    const [{data,error},{data:countRows,error:countError}]=await Promise.all([
+      supabaseClient.from('games').select('id,name,genre,sort_order').eq('is_active',true).order('sort_order'),
+      supabaseClient.rpc('get_game_player_counts')
+    ]);
     if(error){console.error('Game catalog:',error);return;}
+    if(countError)console.error('Game player counts:',countError);
     if(!data?.length)return;
     const old=new Map(games.map(g=>[g.name,g]));
-    games=data.map(g=>({...old.get(g.name),id:g.id,name:g.name,genre:g.genre,sort_order:g.sort_order,playerCount:old.get(g.name)?.playerCount||0}));
+    const playerCounts=new Map((countRows||[]).map(row=>[row.game_name,Number(row.player_count)||0]));
+    games=data.map(g=>({...old.get(g.name),id:g.id,name:g.name,genre:g.genre,sort_order:g.sort_order,playerCount:playerCounts.get(g.name)??old.get(g.name)?.playerCount??0}));
     const populate=(id,allowAny,fallback)=>{
       const el=document.getElementById(id);if(!el)return;
       const selected=el.value, options=games.map(g=>'<option value="'+escapeHtml(g.name)+'">'+escapeHtml(g.name)+'</option>').join('');
@@ -1778,7 +1783,7 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_groups'},()=>{if(isAdmin&&document.getElementById('admin')?.classList.contains('active'))void loadAdminCommunityGroups();if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
       .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_group_members'},()=>{if(document.getElementById('community')?.classList.contains('active')&&!document.getElementById('communityGroupsView')?.hidden)void loadCommunityGroups();})
       .routeOn('postgres_changes',{event:'INSERT',schema:'public',table:'community_group_messages'},async payload=>{const row=payload?.new,groupId=activeCommunityGroup;if(!row||!groupId||row.group_id!==groupId)return;const host=document.getElementById('group-messages-'+groupId);if(!host||host.querySelector('[data-message-id="'+row.id+'"]'))return;const own=row.user_id===uid;const {data:p}=own?{data:null}:await supabaseClient.from('profiles').select('username,display_name').eq('id',row.user_id).maybeSingle();if(activeCommunityGroup!==groupId)return;host.querySelector('.subtitle')?.remove();const time=new Date(row.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});if(own){const pending=host.querySelector('.group-message-pending');if(pending){pending.classList.remove('group-message-pending');pending.dataset.messageId=row.id;const stamp=pending.querySelector('small');if(stamp)stamp.outerHTML='<time>'+time+'</time>';host.scrollTop=host.scrollHeight;return;}}host.insertAdjacentHTML('beforeend','<article class="group-chat-message '+(own?'is-own':'')+'" data-message-id="'+escapeHtml(row.id)+'"><div class="group-message-meta"><strong>'+escapeHtml(own?'Ты':p?.display_name||p?.username||'Игрок')+'</strong>'+(p?.username&&!own?'<small>@'+escapeHtml(p.username)+'</small>':'')+'<time>'+time+'</time></div><p>'+escapeHtml(row.body)+'</p></article>');host.scrollTop=host.scrollHeight;})
-      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>{const section=document.querySelector('.section.active')?.id;if(section==='players')void filterPlayers();if(section==='ranking')void loadLeaderboards();if(section==='friends')void refreshFriendList();})
+      .routeOn('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},()=>{const section=document.querySelector('.section.active')?.id;if(section==='players')void filterPlayers();if(section==='ranking')void loadLeaderboards();if(section==='friends')void refreshFriendList();if(section==='home'||section==='games')void loadGameCatalog();})
       .routeOn('postgres_changes',{event:'*',schema:'public',table:'community_post_likes'},()=>queueCommunityFeedRefresh())
       .routeOn('postgres_changes',{event:'*',schema:'public',table:'matchmaking_posts'},()=>{if(document.getElementById('matchmaking')?.classList.contains('active'))void loadMatchmakingPosts();})
       .routeOn('postgres_changes',{event:'*',schema:'public',table:'matchmaking_post_members'},()=>{if(document.getElementById('matchmaking')?.classList.contains('active'))void loadMatchmakingPosts();})
