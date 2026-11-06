@@ -330,6 +330,7 @@ function initCustomSelects(root=document) {
   const SUPABASE_URL = 'https://vblunxderjsyudlrsrai.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_NqXL2IVq6GATI0qbTs5iDA_5bVLpzo8';
   let supabaseClient = null;
+  let homeTournamentPromise = null;
   let currentUser = null;
   let playerProfileRequest=0;
   let isAdmin = false;
@@ -1400,16 +1401,18 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
 
   let gameCatalogPromise=null;
   async function loadGameCatalog() {
-    if(!supabaseClient)return;
+    if(!supabaseClient){const home=document.getElementById('homeGames');if(home)home.innerHTML='<p class="subtitle">Не удалось подключиться к каталогу игр.</p>';return;}
     if(gameCatalogPromise)return gameCatalogPromise;
     gameCatalogPromise=(async()=>{
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+    try {
     const [{data,error},{data:countRows,error:countError}]=await Promise.all([
-      supabaseClient.from('games').select('id,name,genre,sort_order').eq('is_active',true).order('sort_order'),
-      supabaseClient.rpc('get_game_player_counts')
+      supabaseClient.from('games').select('id,name,genre,sort_order').eq('is_active',true).order('sort_order').abortSignal(controller.signal),
+      supabaseClient.rpc('get_game_player_counts').abortSignal(controller.signal)
     ]);
-    if(error){console.error('Game catalog:',error);return;}
+    if(error)throw error;
     if(countError)console.error('Game player counts:',countError);
-    if(!data?.length)return;
+    if(!data?.length){const home=document.getElementById('homeGames'),host=document.getElementById('gamesGrid');if(home)home.innerHTML='<p class="subtitle">Игры пока не добавлены.</p>';if(host)host.innerHTML='<p class="subtitle">Игры пока не добавлены.</p>';return;}
     const old=new Map(games.map(g=>[g.name,g]));
     const playerCounts=new Map((countRows||[]).map(row=>[row.game_name,Number(row.player_count)||0]));
     games=data.map(g=>({...old.get(g.name),id:g.id,name:g.name,genre:g.genre,sort_order:g.sort_order,playerCount:playerCounts.get(g.name)??old.get(g.name)?.playerCount??0}));
@@ -1434,14 +1437,30 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
     populate('teamDirectoryGame',true,'');
     renderGames();renderLibrary(accountLibrary,accountGameStats);
     const home=document.getElementById('homeGames');if(home)home.innerHTML=games.slice(0,4).map(gameCard).join('');
+    } catch(error) {
+      console.error('Game catalog:',error);
+      const message='<p class="subtitle">Не удалось загрузить игры. Попробуй обновить страницу.</p>',home=document.getElementById('homeGames'),host=document.getElementById('gamesGrid');
+      if(home)home.innerHTML=message;if(host)host.innerHTML=message;
+    } finally { clearTimeout(timeout); }
     })();try{return await gameCatalogPromise;}finally{gameCatalogPromise=null;}
   }
 
   async function loadHomeTournaments() {
-    const el=document.getElementById('homeTournaments');if(!el||!supabaseClient)return;
-    const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,participant_limit').order('starts_at',{ascending:true,nullsFirst:false}).limit(2);
-    if(error){console.error('Home tournaments:',error);el.innerHTML='<p class="subtitle">Не удалось загрузить турниры.</p>';return;}
-    el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='live'?'badge-danger':'badge-warning')+'">'+escapeHtml(tournamentStatusLabel(t.status))+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+(t.starts_at?' • '+new Date(t.starts_at).toLocaleDateString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong>'+escapeHtml(t.prize)+'</strong></p>':'')+'<button class="btn btn-ghost" onclick="showSection(\'tournaments\')">Подробнее</button></article>').join('')||'<p class="subtitle">Опубликованных турниров пока нет.</p>';
+    const el=document.getElementById('homeTournaments');if(!el)return;
+    if(!supabaseClient){el.innerHTML='<p class="subtitle">Не удалось подключиться к каталогу турниров.</p>';return;}
+    if(homeTournamentPromise)return homeTournamentPromise;
+    homeTournamentPromise=(async()=>{
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+      try {
+        const {data,error}=await supabaseClient.from('tournaments').select('id,name,game_name,status,prize,starts_at,participant_limit').order('starts_at',{ascending:true,nullsFirst:false}).limit(2).abortSignal(controller.signal);
+        if(error)throw error;
+        el.innerHTML=(data||[]).map(t=>'<article class="card"><span class="badge '+(t.status==='live'?'badge-danger':'badge-warning')+'">'+escapeHtml(tournamentStatusLabel(t.status))+'</span><h3 style="margin-top:10px">'+escapeHtml(t.name)+'</h3><p class="subtitle">'+escapeHtml(t.game_name)+(t.participant_limit?' • до '+t.participant_limit+' команд':'')+(t.starts_at?' • '+new Date(t.starts_at).toLocaleDateString('ru-RU'):'')+'</p>'+(t.prize?'<p><strong>'+escapeHtml(t.prize)+'</strong></p>':'')+'<button class="btn btn-ghost" onclick="showSection(\'tournaments\')">Подробнее</button></article>').join('')||'<p class="subtitle">Опубликованных турниров пока нет.</p>';
+      } catch(error) {
+        console.error('Home tournaments:',error);
+        el.innerHTML='<p class="subtitle">Не удалось загрузить турниры. Попробуй обновить страницу.</p>';
+      } finally { clearTimeout(timeout); }
+    })();
+    try{return await homeTournamentPromise;}finally{homeTournamentPromise=null;}
   }
 
   async function loadSeason() {
@@ -2499,15 +2518,27 @@ function notificationIcon(k){return({message:'fa-comment-dots',team_invite:'fa-p
       const cleanUrl = location.pathname + location.hash;
       history.replaceState({}, document.title, cleanUrl);
     }
-    if (!authIsConfigured()) { authInitialized=true; applyLocationRoute(); return; }
+    if (!authIsConfigured()) {
+      authInitialized=true;applyLocationRoute();
+      const gamesHost=document.getElementById('homeGames'),tournamentsHost=document.getElementById('homeTournaments');
+      if(gamesHost)gamesHost.innerHTML='<p class="subtitle">Каталог игр временно недоступен.</p>';
+      if(tournamentsHost)tournamentsHost.innerHTML='<p class="subtitle">Каталог турниров временно недоступен.</p>';
+      return;
+    }
     try {
       supabaseClient = await ensureSupabaseClient();
     } catch (error) {
       console.error('Supabase Auth could not initialize:', error);
       authInitialized=true;applyLocationRoute();
+      const gamesHost=document.getElementById('homeGames'),tournamentsHost=document.getElementById('homeTournaments');
+      if(gamesHost)gamesHost.innerHTML='<p class="subtitle">Не удалось подключиться к каталогу игр.</p>';
+      if(tournamentsHost)tournamentsHost.innerHTML='<p class="subtitle">Не удалось подключиться к каталогу турниров.</p>';
       showNotification('Не удалось загрузить авторизацию. Обнови страницу и попробуй ещё раз.');
       return;
     }
+    // Public home content should not wait for session restoration; auth storage can be slow
+    // even though the games and tournament catalog is readable without signing in.
+    void Promise.allSettled([loadGameCatalog(),loadHomeTournaments()]);
     let session = null;
     try {
       const { data, error } = await supabaseClient.auth.getSession();
