@@ -161,6 +161,7 @@ Deno.serve(async (req: Request) => {
     if (Object.keys(input).some((key) => !allowed[entityType].includes(key))) return response({ error: "Unsupported platform entity field" }, 400);
     const values: Record<string, unknown> = { ...input };
     if (entityType === "event") {
+      if (values.game_id === "") values.game_id = null;
       if (typeof values.title !== "string" || values.title.trim().length < 3 || values.title.length > 120) return response({ error: "Event title must contain 3–120 characters" }, 400);
       if (typeof values.event_type !== "string" || !["event", "championship", "league", "meetup"].includes(values.event_type)) return response({ error: "Invalid event type" }, 400);
       if (values.description !== undefined && (typeof values.description !== "string" || values.description.length > 3000)) return response({ error: "Event description is too long" }, 400);
